@@ -2,6 +2,7 @@ export const tmdbEndpoints = {
   airingTodayTv: '/tv/airing_today',
   animeTv: '/discover/tv',
   movieDetails: (tmdbId: number) => `/movie/${tmdbId}`,
+  movieVideos: (tmdbId: number) => `/movie/${tmdbId}/videos`,
   nowPlayingMovies: '/movie/now_playing',
   onTheAirTv: '/tv/on_the_air',
   popularMovies: '/movie/popular',
@@ -12,5 +13,6 @@ export const tmdbEndpoints = {
   topRatedTv: '/tv/top_rated',
   trending: '/trending/all/day',
   tvDetails: (tmdbId: number) => `/tv/${tmdbId}`,
+  tvVideos: (tmdbId: number) => `/tv/${tmdbId}/videos`,
   upcomingMovies: '/movie/upcoming',
 } as const;

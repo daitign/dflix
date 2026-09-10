@@ -9,6 +9,7 @@ const endpointPatterns = [
   /^\/tv\/(popular|top_rated|on_the_air|airing_today)$/,
   /^\/movie\/\d+$/,
   /^\/tv\/\d+$/,
+  /^\/(movie|tv)\/\d+\/videos$/,
   /^\/tv\/\d+\/season\/\d+$/,
   /^\/discover\/(movie|tv)$/,
   /^\/search\/multi$/,

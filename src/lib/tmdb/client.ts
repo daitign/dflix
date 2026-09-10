@@ -6,6 +6,7 @@ import type {
   TmdbPagedResponse,
   TmdbSeasonDetails,
   TmdbTvDetails,
+  TmdbVideoResponse,
 } from './types';
 
 type QueryValue = boolean | number | string | undefined;
@@ -27,6 +28,7 @@ async function requestTmdb<T>(
   endpoint: string,
   query: Record<string, QueryValue> = {},
   cacheMs = 5 * 60_000,
+  signal?: AbortSignal,
 ): Promise<T> {
   const { language, region } = getTmdbLocale();
   const params = new URLSearchParams({ endpoint, language });
@@ -39,10 +41,10 @@ async function requestTmdb<T>(
   const cached = requestCache.get(requestUrl);
   if (cached && cached.expiresAt > Date.now()) return cached.value as T;
 
-  const existing = pendingRequests.get(requestUrl);
+  const existing = signal ? undefined : pendingRequests.get(requestUrl);
   if (existing) return existing as Promise<T>;
 
-  const pending = fetch(requestUrl, { headers: { Accept: 'application/json' } })
+  const pending = fetch(requestUrl, { headers: { Accept: 'application/json' }, signal })
     .then(async (response) => {
       const payload = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) {
@@ -54,9 +56,11 @@ async function requestTmdb<T>(
       requestCache.set(requestUrl, { expiresAt: Date.now() + cacheMs, value: payload });
       return payload as T;
     })
-    .finally(() => pendingRequests.delete(requestUrl));
+    .finally(() => {
+      if (!signal) pendingRequests.delete(requestUrl);
+    });
 
-  pendingRequests.set(requestUrl, pending);
+  if (!signal) pendingRequests.set(requestUrl, pending);
   return pending;
 }
 
@@ -80,6 +84,12 @@ export const tmdbClient = {
     tmdbEndpoints.movieDetails(tmdbId),
     { append_to_response: detailsAppend, include_image_language: imageLanguages() },
     60 * 60_000,
+  ),
+  getMediaVideos: (type: 'movie' | 'tv', tmdbId: number, signal?: AbortSignal) => requestTmdb<TmdbVideoResponse>(
+    type === 'movie' ? tmdbEndpoints.movieVideos(tmdbId) : tmdbEndpoints.tvVideos(tmdbId),
+    {},
+    30 * 60_000,
+    signal,
   ),
   getNowPlayingMovies: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.nowPlayingMovies),
   getOnTheAirTv: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.onTheAirTv),

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DAITIGN">
+  <rect width="64" height="64" rx="12" fill="#08090b"/>
+  <path fill="#f0183d" fill-rule="evenodd" d="M11 7h18c18 0 27 9 27 25S47 57 29 57H11V7Zm15 11v28h3c8 0 12-4 12-14s-4-14-12-14h-3Z"/>
+  <path fill="#9c0926" d="M11 7h9v50h-9z"/>
+  <path fill="#ff4966" d="m20 7 6 11v28l-6 11V7Z" opacity=".82"/>
+</svg>

@@ -1,12 +1,16 @@
-import { useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import { ResponsiveImage } from '../../components/primitives/ResponsiveImage';
+import type { TmdbVideo } from '../../lib/tmdb/types';
+import { getMediaVideos, selectBestPreviewVideo } from '../../lib/tmdb/videos';
 import type {
   HoverPreviewAction,
   HoverPreviewPlacement,
   MediaPreviewData,
 } from './types';
+import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
+import { YouTubePreview } from './YouTubePreview';
 
 interface HoverPreviewCardProps {
   anchorElement: HTMLElement;
@@ -42,6 +46,24 @@ export function HoverPreviewCard({
 }: HoverPreviewCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isListed, setIsListed] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<TmdbVideo | null>(null);
+  const canPlayPreview = usePreviewPlaybackEligibility();
+
+  useEffect(() => {
+    setPreviewVideo(null);
+    if (phase !== 'open' || !canPlayPreview || !data.tmdbId) return undefined;
+
+    const controller = new AbortController();
+    getMediaVideos(data.playbackType, data.tmdbId, { signal: controller.signal })
+      .then((videos) => {
+        if (!controller.signal.aborted) setPreviewVideo(selectBestPreviewVideo(videos));
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPreviewVideo(null);
+      });
+
+    return () => controller.abort();
+  }, [canPlayPreview, data.playbackType, data.tmdbId, phase]);
 
   const handleBlur = (event: FocusEvent<HTMLElement>) => {
     const nextTarget = event.relatedTarget;
@@ -81,7 +103,7 @@ export function HoverPreviewCard({
       role="region"
       style={style}
     >
-      <div aria-label="Cinematic preview image; video support is reserved for a future phase" className="hover-preview-card__media" data-preview-video-slot>
+      <div aria-label={`Cinematic preview for ${data.title}`} className="hover-preview-card__media" data-preview-video-slot>
         <ResponsiveImage
           alt=""
           fallbackLabel={`${data.title} artwork unavailable`}
@@ -90,6 +112,9 @@ export function HoverPreviewCard({
           sources={data.artwork ? [{ srcSet: data.artwork.srcSet, type: data.artwork.type }] : []}
           src={data.artwork?.fallback ?? data.artworkUrl ?? ''}
         />
+        {phase === 'open' && previewVideo && (
+          <YouTubePreview title={data.title} video={previewVideo} />
+        )}
         <span aria-hidden="true" className="hover-preview-card__media-shade" />
         <h2>{data.title}</h2>
       </div>
@@ -119,7 +144,7 @@ export function HoverPreviewCard({
             tone="glass"
             tooltip={isListed ? 'In My List' : 'My List'}
           >
-            <Icon name={isListed ? 'bookmark' : 'plus'} size={19} />
+            <Icon name={isListed ? 'check' : 'plus'} size={20} />
           </IconButton>
           <IconButton
             aria-label={isLiked ? `Unlike ${data.title}` : `Like ${data.title}`}
@@ -133,7 +158,7 @@ export function HoverPreviewCard({
             tone="glass"
             tooltip={isLiked ? 'Liked' : 'Like'}
           >
-            <Icon name="heart" size={19} />
+            <Icon name="thumbUp" size={19} />
           </IconButton>
           <span className="hover-preview-card__control-spacer" />
           <IconButton
@@ -143,15 +168,15 @@ export function HoverPreviewCard({
             tone="glass"
             tooltip="More Details"
           >
-            <Icon name="info" size={20} />
+            <Icon name="chevronDown" size={21} />
           </IconButton>
         </div>
 
         <div aria-label="Title information" className="hover-preview-card__facts">
-          {data.year && <span>{data.year}</span>}
           {data.maturityRating && <span className="hover-preview-card__rating">{data.maturityRating}</span>}
-          <span className="hover-preview-card__quality">{data.quality}</span>
           <span>{getLengthLabel(data)}</span>
+          <span className="hover-preview-card__quality">{data.quality}</span>
+          {data.year && <span>{data.year}</span>}
         </div>
 
         {data.genres.length > 0 && (

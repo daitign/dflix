@@ -4,3 +4,5 @@ export { configureTmdbLocale, getTmdbLocale } from './config';
 export { getTmdbArtwork, getTmdbImageUrl } from './images';
 export { getMediaDetails, getMediaIdentity, getMediaSeason, searchMulti } from './service';
 export type { MediaIdentity } from './service';
+export { getMediaVideos, selectBestPreviewVideo } from './videos';
+export type { TmdbVideo } from './types';

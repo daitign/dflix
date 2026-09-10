@@ -106,3 +106,21 @@ export interface TmdbSeasonDetails {
   poster_path: string | null;
   season_number: number;
 }
+
+export interface TmdbVideo {
+  id: string;
+  iso_3166_1?: string;
+  iso_639_1?: string;
+  key: string;
+  name: string;
+  official: boolean;
+  published_at?: string;
+  site: string;
+  size?: number;
+  type: string;
+}
+
+export interface TmdbVideoResponse {
+  id: number;
+  results: TmdbVideo[];
+}

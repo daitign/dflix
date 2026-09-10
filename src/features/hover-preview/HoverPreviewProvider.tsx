@@ -224,11 +224,14 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   }, [close]);
 
   useEffect(() => {
-    const closeForViewportChange = () => {
+    const closeForViewportChange = (event: Event) => {
       const current = activePreviewRef.current;
+      const isCarouselScroll = event.target instanceof Element
+        && Boolean(event.target.closest('.carousel-shell__track'));
       const isInitialKeyboardFocusScroll = current?.source === 'keyboard'
         && document.activeElement === current.anchorElement
-        && window.performance.now() - current.openedAt < 180;
+        && window.performance.now() - current.openedAt < 180
+        && !isCarouselScroll;
 
       if (current && isInitialKeyboardFocusScroll) {
         const position = getPreviewPosition(current.anchorElement, current.referenceElement);

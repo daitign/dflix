@@ -210,10 +210,6 @@
     height: 2rem;
   }
 
-  .brand-mark__wordmark {
-    font-size: 0.78rem;
-  }
-
   .mobile-navigation {
     position: fixed;
     z-index: var(--z-sticky);
