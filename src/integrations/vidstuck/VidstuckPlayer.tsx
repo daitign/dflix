@@ -8,7 +8,7 @@ interface VidstuckPlayerProps {
 }
 
 /**
- * The single future embed boundary. Phase 1 renders a safe placeholder until a
+ * The single future embed boundary. It renders a safe placeholder until a
  * configured URL builder is injected by the application composition root.
  */
 export function VidstuckPlayer({ source, title, urlBuilder }: VidstuckPlayerProps) {
@@ -16,7 +16,7 @@ export function VidstuckPlayer({ source, title, urlBuilder }: VidstuckPlayerProp
     return (
       <div className="vidstuck-player vidstuck-player--placeholder" role="status">
         <span>Player boundary ready</span>
-        <small>{source.mediaType === 'movie' ? 'Movie' : 'Series'} service is not configured in Phase 1.</small>
+        <small>{source.mediaType === 'movie' ? 'Movie' : 'Series'} playback is reserved for Phase 5.</small>
       </div>
     );
   }

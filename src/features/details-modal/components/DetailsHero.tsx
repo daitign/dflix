@@ -15,7 +15,7 @@ export function DetailsHero({ details, onAction }: DetailsHeroProps) {
   const [isListed, setIsListed] = useState(false);
 
   return (
-    <section className="details-hero">
+    <section className="details-hero" data-details-video-slot>
       <ResponsiveImage
         alt=""
         className="details-hero__backdrop"
