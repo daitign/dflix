@@ -29,9 +29,23 @@ npm start
 
 Use `npm run typecheck` for a standalone TypeScript check.
 
+## Vercel deployment
+
+Import the GitHub repository into Vercel with the Vite framework preset. The project uses the standard build command and output directory:
+
+```text
+Build command: npm run build
+Output directory: dist
+```
+
+Configure `TMDB_ACCESS_TOKEN` as a server-side Vercel environment variable. `TMDB_API_KEY` remains an optional fallback and should be omitted when the access token is configured. The public locale defaults can optionally be overridden with `VITE_TMDB_LANGUAGE` and `VITE_TMDB_REGION`.
+
+`api/tmdb.mjs` exposes the existing `/api/tmdb` proxy contract as a Vercel Function. `vercel.json` rewrites only the movie and TV watch routes to the SPA entry point, leaving `/api/*` available to serverless functions.
+
 ## Phase 5 architecture
 
 - `server/tmdbProxy.mjs` — allowlisted, credential-safe TMDB transport with in-flight request de-duplication and TTL caching.
+- `api/tmdb.mjs` — thin Vercel Function entry point for the shared TMDB proxy.
 - `src/lib/tmdb` — endpoint definitions, raw response types, image helpers, normalized adapters, cached client methods, and reusable multi-search.
 - `src/features/catalog/data/tmdbHomeCatalog.ts` — maps real TMDB datasets into the existing DAITIGN row hierarchy.
 - `src/features/details-modal` — fetches real details on demand and lazily loads/cache seasons within the modal lifecycle.

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/watch/movie/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/watch/tv/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
