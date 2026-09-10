@@ -19,7 +19,7 @@ function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item
           alt=""
           loading="lazy"
           sizes="(max-width: 480px) 50vw, (max-width: 960px) 33vw, 18rem"
-          sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: 'image/webp' }] : []}
+          sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: item.backdrop.type }] : []}
           src={item.backdrop?.fallback ?? item.backdropUrl ?? ''}
         />
         <span className="similar-card__title">{item.title}</span>
@@ -27,7 +27,8 @@ function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item
       <div className="similar-card__body">
         <div className="similar-card__meta">
           <span>{item.year}</span>
-          {item.rating && <span className="similar-card__rating">{item.rating}</span>}
+          {(item.maturityRating ?? item.rating) && <span className="similar-card__rating">{item.maturityRating ?? item.rating}</span>}
+          {!item.maturityRating && !item.rating && item.voteAverage !== undefined && item.voteAverage > 0 && <span>{item.voteAverage.toFixed(1)} ★</span>}
           <IconButton
             aria-label={isListed ? `Remove ${item.title} from My List` : `Add ${item.title} to My List`}
             aria-pressed={isListed}

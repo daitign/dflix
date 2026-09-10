@@ -22,6 +22,7 @@ const posterPositionById: Record<string, string> = {
 };
 
 export function RankedMediaCard({ item, rank }: RankedMediaCardProps) {
+  const artwork = item.poster ?? item.backdrop;
   const { anchorProps, anchorRef, referenceRef } = useHoverPreviewAnchor<HTMLElement>({
     data: toMediaPreviewData(item),
   });
@@ -41,8 +42,8 @@ export function RankedMediaCard({ item, rank }: RankedMediaCardProps) {
           fallbackLabel={`${item.title} artwork unavailable`}
           objectPosition={posterPositionById[String(item.id)] ?? 'center'}
           sizes="(max-width: 767px) 104px, (max-width: 1023px) 120px, 132px"
-          sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: 'image/webp' }] : []}
-          src={item.backdrop?.fallback ?? item.backdropUrl ?? ''}
+          sources={artwork ? [{ srcSet: artwork.srcSet, type: artwork.type }] : []}
+          src={artwork?.fallback ?? item.posterUrl ?? item.backdropUrl ?? ''}
         />
       </button>
     </article>

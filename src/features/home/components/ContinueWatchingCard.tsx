@@ -27,7 +27,7 @@ export function ContinueWatchingCard({ item }: ContinueWatchingCardProps) {
           alt=""
           fallbackLabel={`${item.title} artwork unavailable`}
           sizes="(max-width: 767px) 74vw, 24vw"
-          sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: 'image/webp' }] : []}
+          sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: item.backdrop.type }] : []}
           src={item.backdrop?.fallback ?? item.backdropUrl ?? ''}
         />
         <span aria-hidden="true" className="continue-card__shade" />

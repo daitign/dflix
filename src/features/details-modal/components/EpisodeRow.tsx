@@ -6,7 +6,15 @@ interface EpisodeRowProps {
   onPlay: (episode: EpisodeData) => void;
 }
 
+function formatAirDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+
 export function EpisodeRow({ episode, onPlay }: EpisodeRowProps) {
+  const airDate = formatAirDate(episode.airDate);
   return (
     <li className="episode-row">
       <button aria-label={`Play episode ${episode.episodeNumber}: ${episode.title}`} onClick={() => onPlay(episode)} type="button">
@@ -16,7 +24,7 @@ export function EpisodeRow({ episode, onPlay }: EpisodeRowProps) {
             alt=""
             loading="lazy"
             sizes="(max-width: 480px) 8.5rem, 11rem"
-            sources={episode.still ? [{ srcSet: episode.still.srcSet, type: 'image/webp' }] : []}
+            sources={episode.still ? [{ srcSet: episode.still.srcSet, type: episode.still.type }] : []}
             src={episode.still?.fallback ?? episode.stillUrl ?? ''}
           />
           {episode.progress !== undefined && (
@@ -28,7 +36,7 @@ export function EpisodeRow({ episode, onPlay }: EpisodeRowProps) {
         <span className="episode-row__copy">
           <span className="episode-row__heading">
             <strong>{episode.title}</strong>
-            {episode.runtime && <span>{episode.runtime}m</span>}
+            {(airDate || episode.runtime) && <span>{[airDate, episode.runtime ? `${episode.runtime}m` : null].filter(Boolean).join(' · ')}</span>}
           </span>
           <span className="episode-row__overview">{episode.overview}</span>
         </span>

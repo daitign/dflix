@@ -1,4 +1,4 @@
-export { getMockHomeCatalog, mockHomeCatalogGateway } from './data/mockHomeCatalog';
+export { getTmdbHomeCatalog, tmdbHomeCatalogGateway } from './data/tmdbHomeCatalog';
 export type {
   HomeCatalog,
   HomeCatalogGateway,

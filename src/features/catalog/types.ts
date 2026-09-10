@@ -10,6 +10,7 @@ export type MediaBadge =
 export interface MediaArtwork {
   fallback: string;
   srcSet: string;
+  type?: string;
 }
 
 export interface MediaItem {
@@ -17,18 +18,25 @@ export interface MediaItem {
   tmdbId?: number;
   type: MediaType;
   title: string;
+  originalTitle?: string;
   overview?: string;
   backdropUrl?: string;
   backdrop?: MediaArtwork;
   posterUrl?: string;
+  poster?: MediaArtwork;
+  logoUrl?: string;
   year?: number;
+  voteAverage?: number;
   rating?: string;
+  maturityRating?: string;
   genres?: string[];
   runtime?: number;
   seasons?: number;
   badge?: MediaBadge;
   progress?: number;
   episodeLabel?: string;
+  playbackType?: 'movie' | 'tv';
+  catalogCategory?: MediaType;
 }
 
 export interface MediaRowModel {

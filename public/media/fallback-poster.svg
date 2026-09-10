@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1500" role="img" aria-label="DAITIGN poster unavailable">
+  <defs>
+    <radialGradient id="g" cx="68%" cy="20%" r="85%">
+      <stop stop-color="#2b3540"/><stop offset=".48" stop-color="#141a20"/><stop offset="1" stop-color="#080b0e"/>
+    </radialGradient>
+  </defs>
+  <rect width="1000" height="1500" fill="url(#g)"/>
+  <path d="M130 1110h560M130 1140h360" stroke="#d9b56d" stroke-opacity=".42" stroke-width="4"/>
+  <text x="130" y="1050" fill="#eef1f3" font-family="Arial,sans-serif" font-size="72" font-weight="700" letter-spacing="10">DAITIGN</text>
+</svg>

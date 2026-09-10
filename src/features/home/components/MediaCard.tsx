@@ -27,7 +27,7 @@ export function MediaCard({ item }: MediaCardProps) {
           alt=""
           fallbackLabel={`${item.title} artwork unavailable`}
           sizes="(max-width: 767px) 47vw, (max-width: 1279px) 24vw, 16vw"
-          sources={artwork ? [{ srcSet: artwork.srcSet, type: 'image/webp' }] : []}
+          sources={artwork ? [{ srcSet: artwork.srcSet, type: artwork.type }] : []}
           src={artwork?.fallback ?? item.backdropUrl ?? ''}
         />
         <span aria-hidden="true" className="media-card__shade" />
@@ -40,7 +40,8 @@ export function MediaCard({ item }: MediaCardProps) {
         <p>
           {item.year && <span>{item.year}</span>}
           {item.type && <span>{item.type === 'tv' ? 'Series' : item.type === 'anime' ? 'Anime' : 'Film'}</span>}
-          {item.rating && <span>{item.rating}</span>}
+          {(item.maturityRating ?? item.rating) && <span>{item.maturityRating ?? item.rating}</span>}
+          {!item.maturityRating && !item.rating && item.voteAverage !== undefined && item.voteAverage > 0 && <span>{item.voteAverage.toFixed(1)} ★</span>}
         </p>
       </div>
     </article>

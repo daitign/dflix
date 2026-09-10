@@ -1,6 +1,17 @@
-# DAITIGN Stream — Phase 2
+# DAITIGN Stream — Phase 5
 
-A responsive, cinematic Home / Browse experience built on the Phase 1 React, TypeScript, and Vite foundation.
+A responsive cinematic streaming interface with a real TMDB catalog boundary and isolated VIDSTUCK playback.
+
+## Local configuration
+
+Copy `.env.example` to `.env.local`, then add either a TMDB v4 read access token (preferred) or a v3 API key:
+
+```bash
+TMDB_ACCESS_TOKEN=your_v4_read_access_token
+# or TMDB_API_KEY=your_v3_api_key
+```
+
+Secrets are read only by the same-origin Node/Vite TMDB proxy. They are not bundled into browser JavaScript. Locale values default to `en-US` and `PH` and can be adjusted with `VITE_TMDB_LANGUAGE` and `VITE_TMDB_REGION`.
 
 ## Run locally
 
@@ -9,26 +20,32 @@ npm install
 npm run dev
 ```
 
-Use `npm run build` for a production build and `npm run typecheck` for a standalone type check.
+For a production-style local server:
 
-## Phase 2 additions
+```bash
+npm run build
+npm start
+```
 
-- Cinematic featured-title hero with responsive metadata and UI-only deferred-action notices
-- Curated row hierarchy covering Top 10, trending, continue watching, recently added, releases, movies, series, genres, Korean series, anime, and critically acclaimed titles
-- Reusable `HeroBanner`, `MediaRow`, `MediaCard`, `RankedMediaCard`, `ContinueWatchingCard`, `StatusBadge`, and `CarouselControls`
-- Normalized `MediaItem` and `HomeCatalog` types with a mock gateway/adapter boundary
-- Original DAITIGN-owned cinematic artwork in responsive WebP sizes
-- Lazy-loaded below-the-fold artwork, fixed media aspect ratios, image fade-in, keyboard carousel navigation, touch scrolling, and desktop controls
+Use `npm run typecheck` for a standalone TypeScript check.
 
-## Architecture
+## Phase 5 architecture
 
-- `src/styles/tokens.css` — Phase 1 global color, type, spacing, radius, shadow, motion, layout, breakpoint, and z-index tokens
-- `src/components` — Phase 1 primitives and responsive navigation shell
-- `src/features/catalog` — normalized catalog types plus the mock home-catalog adapter
-- `src/features/home` — Phase 2 browse components
-- `src/integrations` — typed TMDB, Supabase, and Vidstuck boundaries; concrete implementations remain deferred
-- `public/media` — optimized original artwork with 640px/960px card sources and a 1600px hero source
+- `server/tmdbProxy.mjs` — allowlisted, credential-safe TMDB transport with in-flight request de-duplication and TTL caching.
+- `src/lib/tmdb` — endpoint definitions, raw response types, image helpers, normalized adapters, cached client methods, and reusable multi-search.
+- `src/features/catalog/data/tmdbHomeCatalog.ts` — maps real TMDB datasets into the existing DAITIGN row hierarchy.
+- `src/features/details-modal` — fetches real details on demand and lazily loads/cache seasons within the modal lifecycle.
+- `src/lib/vidstuck` — the only VIDSTUCK URL construction and progress-payload validation boundary.
+- `src/components/player` — the only live iframe component and postMessage listener.
+- `src/features/watch` — distraction-free movie and episode watch pages.
 
-## Deferred by design
+## Internal watch routes
 
-Authentication, profiles, TMDB calls, Supabase persistence, Vidstuck playback, a full details modal, and expanding hover cards are not implemented in Phase 2.
+- Movies: `/watch/movie/:tmdbId`
+- TV/anime playback: `/watch/tv/:tmdbId/:season/:episode`
+
+Anime remains a DAITIGN catalog category while retaining its real TMDB ID and underlying movie/TV playback type.
+
+## Deferred to Phase 6
+
+Accounts, profiles, My List persistence, likes, watch history, progress persistence, and Continue Watching persistence remain intentionally unimplemented. Player progress is validated and exposed in memory through `onProgress`.

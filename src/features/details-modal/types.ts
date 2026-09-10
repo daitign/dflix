@@ -1,6 +1,7 @@
 import type { MediaArtwork, MediaItem, MediaType } from '../catalog';
 
 export interface EpisodeData {
+  airDate?: string;
   episodeNumber: number;
   id: string;
   overview: string;
@@ -13,9 +14,11 @@ export interface EpisodeData {
 }
 
 export interface SeasonData {
+  airDate?: string;
   episodeCount: number;
-  episodes: EpisodeData[];
+  episodes?: EpisodeData[];
   name: string;
+  posterUrl?: string;
   seasonNumber: number;
   year?: number;
 }
@@ -24,6 +27,7 @@ export interface MediaDetails {
   backdrop?: MediaArtwork;
   backdropUrl?: string;
   cast: string[];
+  catalogCategory: MediaType;
   creators: string[];
   descriptors: string[];
   genres: string[];
@@ -32,6 +36,9 @@ export interface MediaDetails {
   maturityRating?: string;
   originalTitle?: string;
   overview: string;
+  playbackType: 'movie' | 'tv';
+  poster?: MediaArtwork;
+  posterUrl?: string;
   quality: 'HD' | '4K';
   runtime?: number;
   seasons?: SeasonData[];
@@ -39,10 +46,11 @@ export interface MediaDetails {
   title: string;
   tmdbId?: number;
   type: MediaType;
+  voteAverage?: number;
   year?: number;
 }
 
 export interface DetailsModalContextValue {
   closeDetails: () => void;
-  openDetails: (mediaId: MediaItem['id'], trigger?: HTMLElement | null) => void;
+  openDetails: (media: MediaItem, trigger?: HTMLElement | null) => void;
 }

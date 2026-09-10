@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { navigateToWatch } from '../../lib/navigation/watchRoutes';
 import { HoverPreviewCard } from './HoverPreviewCard';
 import {
   HOVER_PREVIEW_ACTION_EVENT,
@@ -203,18 +204,20 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
 
   const performAction = useCallback((action: HoverPreviewAction, data: MediaPreviewData, trigger?: HTMLElement | null) => {
     const messages: Record<HoverPreviewAction, string> = {
-      play: `${data.title} is ready for the future player integration.`,
+      play: `Playback is unavailable for ${data.title}.`,
       'add-to-list': `${data.title} list preference updated for this preview.`,
       like: `${data.title} rating preference updated for this preview.`,
       details: `${data.title} details opened.`,
     };
 
     if (action === 'details') close({ immediate: true });
+    if (action === 'play') close({ immediate: true });
 
     window.dispatchEvent(new CustomEvent<HoverPreviewActionDetail>(HOVER_PREVIEW_ACTION_EVENT, {
       detail: { action, media: data, trigger },
     }));
     if (action === 'details') return;
+    if (action === 'play' && navigateToWatch(data)) return;
     setAnnouncement(messages[action]);
     clearTimer(announcementTimerRef);
     announcementTimerRef.current = window.setTimeout(() => setAnnouncement(''), 2600);

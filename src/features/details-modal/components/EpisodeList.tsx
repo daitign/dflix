@@ -3,7 +3,7 @@ import { EpisodeRow } from './EpisodeRow';
 
 interface EpisodeListProps {
   onPlayEpisode: (episode: EpisodeData) => void;
-  season: SeasonData;
+  season: SeasonData & { episodes: EpisodeData[] };
 }
 
 export function EpisodeList({ onPlayEpisode, season }: EpisodeListProps) {

@@ -23,6 +23,7 @@ export function DetailsMetadata({ details }: DetailsMetadataProps) {
         <div aria-label="Title information" className="details-metadata__facts">
           {details.year && <span>{details.year}</span>}
           {details.maturityRating && <span className="details-metadata__rating">{details.maturityRating}</span>}
+          {details.voteAverage !== undefined && details.voteAverage > 0 && <span>{details.voteAverage.toFixed(1)} ★</span>}
           {length && <span>{length}</span>}
           <span className="details-metadata__quality">{details.quality}</span>
         </div>
@@ -31,19 +32,19 @@ export function DetailsMetadata({ details }: DetailsMetadataProps) {
       <dl className="details-metadata__credits">
         <div>
           <dt>Cast</dt>
-          <dd>{details.cast.join(', ')}</dd>
+          <dd>{details.cast.join(', ') || 'Not available'}</dd>
         </div>
         <div>
           <dt>Genres</dt>
-          <dd>{details.genres.join(', ')}</dd>
+          <dd>{details.genres.join(', ') || 'Not available'}</dd>
         </div>
         <div>
           <dt>{details.type === 'movie' ? 'Creators' : 'Created by'}</dt>
-          <dd>{details.creators.join(', ')}</dd>
+          <dd>{details.creators.join(', ') || 'Not available'}</dd>
         </div>
         <div>
           <dt>This title is</dt>
-          <dd>{details.descriptors.join(', ')}</dd>
+          <dd>{details.descriptors.join(', ') || 'Not available'}</dd>
         </div>
       </dl>
     </section>

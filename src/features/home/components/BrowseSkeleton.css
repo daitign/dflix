@@ -1,0 +1,55 @@
+.browse-loading {
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.browse-loading__hero {
+  width: 100%;
+  height: clamp(35rem, 72vh, 52rem);
+  border-radius: 0;
+}
+
+.browse-loading__catalog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(2.75rem, 5vw, 4.5rem);
+  margin-top: -5rem;
+  padding-bottom: var(--space-12);
+}
+
+.browse-loading__row {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.browse-loading__row > div {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.browse-loading__card,
+.browse-loading__ranked {
+  flex: 0 0 clamp(12.75rem, 16vw, 17.25rem);
+  aspect-ratio: 16 / 9;
+}
+
+.browse-loading__ranked {
+  height: clamp(15rem, 23vw, 20rem);
+  aspect-ratio: 0.72;
+}
+
+@media (max-width: 47.999rem) {
+  .browse-loading__hero {
+    height: 35rem;
+  }
+
+  .browse-loading__catalog {
+    margin-top: -2rem;
+  }
+
+  .browse-loading__card {
+    flex-basis: 47vw;
+  }
+}

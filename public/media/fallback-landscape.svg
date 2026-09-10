@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="DAITIGN artwork unavailable">
+  <defs>
+    <radialGradient id="glow" cx="72%" cy="24%" r="72%">
+      <stop offset="0" stop-color="#27323c"/>
+      <stop offset=".5" stop-color="#12181e"/>
+      <stop offset="1" stop-color="#080b0e"/>
+    </radialGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d9b56d" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#d9b56d" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+  <circle cx="1160" cy="300" r="180" fill="none" stroke="url(#line)" stroke-width="2"/>
+  <path d="M140 735h540M140 760h330" stroke="#d9b56d" stroke-opacity=".35" stroke-width="3"/>
+  <text x="140" y="680" fill="#eef1f3" font-family="Arial,sans-serif" font-size="76" font-weight="700" letter-spacing="12">DAITIGN</text>
+</svg>

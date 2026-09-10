@@ -8,9 +8,10 @@ import type { MediaDetails } from '../types';
 interface DetailsHeroProps {
   details: MediaDetails;
   onAction: (message: string) => void;
+  onPlay: () => void;
 }
 
-export function DetailsHero({ details, onAction }: DetailsHeroProps) {
+export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [isListed, setIsListed] = useState(false);
 
@@ -23,7 +24,7 @@ export function DetailsHero({ details, onAction }: DetailsHeroProps) {
         loading="eager"
         objectPosition="center center"
         sizes="(min-width: 1024px) 62rem, 100vw"
-        sources={details.backdrop ? [{ srcSet: details.backdrop.srcSet, type: 'image/webp' }] : []}
+        sources={details.backdrop ? [{ srcSet: details.backdrop.srcSet, type: details.backdrop.type }] : []}
         src={details.backdrop?.fallback ?? details.backdropUrl ?? ''}
       />
       <div aria-hidden="true" className="details-hero__shade" />
@@ -34,7 +35,7 @@ export function DetailsHero({ details, onAction }: DetailsHeroProps) {
           <p aria-hidden="true" className="details-hero__title">{details.title}</p>
         )}
         <div className="details-hero__actions">
-          <Button onClick={() => onAction(`Playback for ${details.title} will connect in Phase 5.`)} size="lg" startIcon={<Icon name="play" />}>
+          <Button onClick={onPlay} size="lg" startIcon={<Icon name="play" />}>
             Play
           </Button>
           <IconButton

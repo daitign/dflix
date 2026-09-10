@@ -1,4 +1,5 @@
 export { ContinueWatchingCard } from './components/ContinueWatchingCard';
+export { BrowseSkeleton } from './components/BrowseSkeleton';
 export { HeroBanner } from './components/HeroBanner';
 export { MediaCard } from './components/MediaCard';
 export { MediaRow } from './components/MediaRow';

@@ -83,6 +83,20 @@
   display: block;
 }
 
+.hero-banner .hero-banner__logo-title {
+  width: min(100%, 31rem);
+  margin-top: var(--space-6);
+}
+
+.hero-banner__logo-title img {
+  display: block;
+  width: 100%;
+  max-height: 11rem;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 10px 24px rgb(0 0 0 / 55%));
+}
+
 .hero-banner h1 span {
   font-size: 0.43em;
   letter-spacing: 0.19em;

@@ -4,6 +4,93 @@
   background: #0c0f12;
 }
 
+.details-loading {
+  min-height: min(76dvh, 47rem);
+}
+
+.details-loading__hero {
+  width: 100%;
+  height: clamp(23rem, 49vw, 31rem);
+  border-radius: 0;
+}
+
+.details-loading__body {
+  display: grid;
+  gap: var(--space-4);
+  padding: clamp(2rem, 5vw, 3.25rem);
+}
+
+.details-loading__cards,
+.episode-loading {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.details-error {
+  display: grid;
+  min-height: min(76dvh, 43rem);
+  place-items: center;
+  align-content: center;
+  padding: clamp(2rem, 8vw, 5rem);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 38%, rgb(var(--color-accent-rgb) / 9%), transparent 18rem),
+    #0c0f12;
+}
+
+.details-error > span {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  margin-bottom: var(--space-5);
+  border: 1px solid rgb(var(--color-accent-rgb) / 34%);
+  border-radius: var(--radius-lg);
+  color: var(--color-accent-400);
+  font-family: var(--font-display);
+}
+
+.details-error h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  letter-spacing: var(--tracking-tight);
+}
+
+.details-error p,
+.episode-error p {
+  max-width: 36rem;
+  margin: var(--space-3) auto var(--space-6);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.episode-loading {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+}
+
+.episode-error {
+  padding: var(--space-7);
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  background: rgb(255 255 255 / 3%);
+}
+
+.episode-error p {
+  margin-top: 0;
+}
+
+.episodes-empty {
+  padding: var(--space-8) var(--space-5);
+  border-block: 1px solid rgb(255 255 255 / 8%);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .details-hero {
   position: relative;
   min-height: clamp(24rem, 49vw, 31.5rem);
@@ -552,6 +639,14 @@
 }
 
 @media (max-width: 47.999rem) {
+  .details-loading__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .details-loading__cards .skeleton:last-child {
+    display: none;
+  }
+
   .details-hero {
     min-height: clamp(25rem, 105vw, 34rem);
   }

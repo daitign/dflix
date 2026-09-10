@@ -87,7 +87,7 @@ export function HoverPreviewCard({
           fallbackLabel={`${data.title} artwork unavailable`}
           loading="eager"
           sizes="(min-width: 1024px) 32rem, 70vw"
-          sources={data.artwork ? [{ srcSet: data.artwork.srcSet, type: 'image/webp' }] : []}
+          sources={data.artwork ? [{ srcSet: data.artwork.srcSet, type: data.artwork.type }] : []}
           src={data.artwork?.fallback ?? data.artworkUrl ?? ''}
         />
         <span aria-hidden="true" className="hover-preview-card__media-shade" />

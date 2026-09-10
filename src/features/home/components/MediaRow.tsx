@@ -20,6 +20,8 @@ export function MediaRow({ items, mode = 'standard', row, title }: MediaRowProps
   const isRanked = mode === 'ranked';
   const isContinue = mode === 'continue';
 
+  if (resolvedItems.length === 0) return null;
+
   return (
     <section
       className={`media-row media-row--${row?.emphasis ?? (isRanked ? 'featured' : 'standard')}${isRanked ? ' media-row--ranked' : ''}`}

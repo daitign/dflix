@@ -10,9 +10,9 @@ export function AboutTitle({ details }: AboutTitleProps) {
       <h3 id="about-title-heading">About {details.title}</h3>
       <dl>
         {details.originalTitle && <div><dt>Original title</dt><dd>{details.originalTitle}</dd></div>}
-        <div><dt>Creators</dt><dd>{details.creators.join(', ')}</dd></div>
-        <div><dt>Cast</dt><dd>{details.cast.join(', ')}</dd></div>
-        <div><dt>Genres</dt><dd>{details.genres.join(', ')}</dd></div>
+        <div><dt>Creators</dt><dd>{details.creators.join(', ') || 'Not available'}</dd></div>
+        <div><dt>Cast</dt><dd>{details.cast.join(', ') || 'Not available'}</dd></div>
+        <div><dt>Genres</dt><dd>{details.genres.join(', ') || 'Not available'}</dd></div>
         <div><dt>Maturity rating</dt><dd>{details.maturityRating ?? 'Not rated'}</dd></div>
       </dl>
     </section>

@@ -1,0 +1,16 @@
+export const tmdbEndpoints = {
+  airingTodayTv: '/tv/airing_today',
+  animeTv: '/discover/tv',
+  movieDetails: (tmdbId: number) => `/movie/${tmdbId}`,
+  nowPlayingMovies: '/movie/now_playing',
+  onTheAirTv: '/tv/on_the_air',
+  popularMovies: '/movie/popular',
+  popularTv: '/tv/popular',
+  searchMulti: '/search/multi',
+  seasonDetails: (tmdbId: number, season: number) => `/tv/${tmdbId}/season/${season}`,
+  topRatedMovies: '/movie/top_rated',
+  topRatedTv: '/tv/top_rated',
+  trending: '/trending/all/day',
+  tvDetails: (tmdbId: number) => `/tv/${tmdbId}`,
+  upcomingMovies: '/movie/upcoming',
+} as const;

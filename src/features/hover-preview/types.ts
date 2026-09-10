@@ -11,10 +11,12 @@ export interface MediaPreviewData {
   genres: string[];
   id: MediaItem['id'];
   maturityRating?: string;
+  playbackType: 'movie' | 'tv';
   quality: 'HD';
   runtime?: number;
   seasons?: number;
   title: string;
+  tmdbId?: number;
   type: MediaType;
   year?: number;
 }
@@ -34,11 +36,13 @@ export function toMediaPreviewData(item: MediaItem): MediaPreviewData {
     badge: item.badge,
     genres: item.genres?.slice(0, 3) ?? [],
     id: item.id,
-    maturityRating: item.rating,
+    maturityRating: item.maturityRating ?? item.rating,
+    playbackType: item.playbackType ?? (item.type === 'movie' ? 'movie' : 'tv'),
     quality: 'HD',
     runtime: item.runtime,
     seasons: item.seasons,
     title: item.title,
+    tmdbId: item.tmdbId,
     type: item.type,
     year: item.year,
   };
