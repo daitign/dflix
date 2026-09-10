@@ -1,0 +1,141 @@
+:root {
+  color-scheme: dark;
+
+  /* Core palette */
+  --color-ink-950: #07080a;
+  --color-ink-900: #0b0d10;
+  --color-ink-850: #101318;
+  --color-ink-800: #15191f;
+  --color-ink-750: #1a2028;
+  --color-ink-700: #222a34;
+  --color-stone-500: #77808c;
+  --color-stone-400: #929ba7;
+  --color-stone-300: #b7bdc5;
+  --color-stone-200: #d5d9de;
+  --color-white: #f8f8f6;
+  --color-accent-600: #b58232;
+  --color-accent-500: #d1a354;
+  --color-accent-400: #e2bd76;
+  --color-accent-soft: rgb(209 163 84 / 14%);
+  --color-success: #77c69b;
+  --color-danger: #ff7d73;
+  --color-info: #82b9ee;
+
+  /* Semantic colors */
+  --color-bg: var(--color-ink-950);
+  --color-surface-1: var(--color-ink-900);
+  --color-surface-2: var(--color-ink-850);
+  --color-surface-3: var(--color-ink-800);
+  --color-surface-raised: #181c22;
+  --color-text: var(--color-white);
+  --color-text-secondary: var(--color-stone-300);
+  --color-text-muted: var(--color-stone-400);
+  --color-border: rgb(255 255 255 / 9%);
+  --color-border-strong: rgb(255 255 255 / 15%);
+  --color-overlay: rgb(2 3 5 / 76%);
+  --color-focus: var(--color-accent-400);
+
+  /* Typography */
+  --font-display: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-body: 'DM Sans', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: clamp(1.65rem, 3vw, 2.25rem);
+  --font-size-3xl: clamp(2.15rem, 5vw, 4.25rem);
+  --line-height-tight: 1.08;
+  --line-height-heading: 1.2;
+  --line-height-body: 1.55;
+  --tracking-tight: -0.035em;
+  --tracking-wide: 0.14em;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-section: clamp(3.5rem, 7vw, 6.5rem);
+
+  /* Shape */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 28%);
+  --shadow-sm: 0 6px 18px rgb(0 0 0 / 22%);
+  --shadow-md: 0 16px 42px rgb(0 0 0 / 34%);
+  --shadow-lg: 0 28px 80px rgb(0 0 0 / 48%);
+  --shadow-focus: 0 0 0 3px rgb(226 189 118 / 28%);
+  --shadow-accent: 0 14px 36px rgb(181 130 50 / 18%);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 420ms;
+  --duration-preview-enter: 220ms;
+  --duration-preview-exit: 170ms;
+  --ease-standard: cubic-bezier(0.2, 0.72, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-preview: cubic-bezier(0.18, 0.78, 0.24, 1);
+
+  /* Layout */
+  --container-max: 96rem;
+  --container-gutter: clamp(1rem, 4vw, 4.5rem);
+  --nav-height: 4.75rem;
+  --mobile-nav-height: 4.5rem;
+  --touch-target: 2.75rem;
+
+  /* Documented breakpoint values (media queries use literal equivalents) */
+  --breakpoint-sm: 30rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* Layering */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 30;
+  --z-hover-preview: 45;
+  --z-drawer: 50;
+  --z-modal: 70;
+  --z-toast: 90;
+}
+
+@media (max-width: 47.999rem) {
+  :root {
+    --nav-height: 4rem;
+    --container-gutter: 1rem;
+  }
+}
+
+@media (min-width: 96rem) {
+  :root {
+    --container-gutter: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

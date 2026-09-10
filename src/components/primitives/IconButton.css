@@ -1,0 +1,67 @@
+.icon-button-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color var(--duration-base) var(--ease-standard),
+    background var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.icon-button:hover:not(:disabled) {
+  color: var(--color-text);
+  background: rgb(255 255 255 / 8%);
+  transform: translateY(-1px);
+}
+
+.icon-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.icon-button:disabled {
+  opacity: 0.38;
+}
+
+.icon-button--sm {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.icon-button--md {
+  width: var(--touch-target);
+  height: var(--touch-target);
+}
+
+.icon-button--lg {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.icon-button--glass {
+  border-color: var(--color-border);
+  background: rgb(10 12 15 / 64%);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(14px);
+}
+
+.icon-button--accent {
+  color: #181107;
+  background: var(--color-accent-400);
+  box-shadow: var(--shadow-accent);
+}
+
+.icon-button--accent:hover:not(:disabled) {
+  color: #181107;
+  background: #edcb89;
+}

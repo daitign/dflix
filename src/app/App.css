@@ -1,0 +1,116 @@
+.browse-page {
+  overflow: clip;
+}
+
+.browse-catalog {
+  position: relative;
+  z-index: 3;
+  padding-bottom: clamp(4rem, 8vw, 8rem);
+  background:
+    radial-gradient(circle at 92% 18%, rgb(209 163 84 / 4%), transparent 26rem),
+    radial-gradient(circle at 4% 65%, rgb(93 112 136 / 5%), transparent 30rem),
+    var(--color-bg);
+}
+
+.top-ten-feature {
+  position: relative;
+  margin-top: -6.75rem;
+  padding-top: 3rem;
+}
+
+.top-ten-feature::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 13rem;
+  background: linear-gradient(to bottom, transparent, var(--color-bg) 58%);
+  content: '';
+  pointer-events: none;
+}
+
+.top-ten-feature .media-row {
+  position: relative;
+  z-index: 1;
+}
+
+.discovery-divider {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+  margin-bottom: clamp(1rem, 2vw, 2rem);
+  padding-top: clamp(2rem, 4vw, 3.5rem);
+  border-top: 1px solid var(--color-border);
+}
+
+.discovery-divider span {
+  color: var(--color-accent-400);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.discovery-divider p {
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+}
+
+.browse-footer {
+  position: relative;
+  z-index: 3;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-1);
+}
+
+.browse-footer__inner {
+  display: flex;
+  min-height: 9rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.browse-footer__inner strong,
+.browse-footer__inner span {
+  display: block;
+}
+
+.browse-footer__inner strong {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+}
+
+.browse-footer__inner div span,
+.browse-footer__phase {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 47.999rem) {
+  .top-ten-feature {
+    margin-top: -3.5rem;
+    padding-top: 1rem;
+  }
+
+  .discovery-divider {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-12);
+  }
+
+  .browse-footer__inner {
+    min-height: 8rem;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .browse-footer__phase {
+    margin-top: 0;
+  }
+}

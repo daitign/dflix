@@ -1,0 +1,123 @@
+.media-card {
+  min-width: 0;
+}
+
+.media-card__surface {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transform: translateZ(0);
+  transition:
+    border-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+
+.media-card__surface:hover {
+  border-color: rgb(226 189 118 / 22%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+.media-card__surface .responsive-image {
+  aspect-ratio: 16 / 9 !important;
+  border-radius: 0;
+}
+
+.media-card__surface img {
+  transform: scale(1.001);
+  transition:
+    opacity var(--duration-slow) var(--ease-standard),
+    transform 600ms var(--ease-standard);
+}
+
+.media-card__surface:hover img {
+  transform: scale(1.018);
+}
+
+.media-card__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(4 5 7 / 42%), transparent 55%);
+  pointer-events: none;
+}
+
+.media-card__badge {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+}
+
+.media-card__badge .badge {
+  min-height: 1.45rem;
+  padding: 0.25rem 0.5rem;
+  background-color: rgb(8 9 11 / 74%);
+  backdrop-filter: blur(10px);
+}
+
+.media-card__meta {
+  padding: var(--space-3) var(--space-1) 0;
+}
+
+.media-card__meta h3 {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-card__meta p {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-2xs);
+}
+
+.media-card__meta p span + span::before {
+  margin-right: var(--space-2);
+  color: var(--color-stone-500);
+  content: '·';
+}
+
+@media (max-width: 47.999rem) {
+  .media-card__meta {
+    padding-top: var(--space-2);
+  }
+
+  .media-card__meta h3 {
+    font-size: var(--font-size-xs);
+  }
+
+  .media-card__meta p span:nth-child(n + 3) {
+    display: none;
+  }
+
+  .media-card__badge {
+    top: var(--space-2);
+    left: var(--space-2);
+  }
+
+  .media-card__badge .badge {
+    font-size: 0.56rem;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .media-card__surface:hover,
+  .media-card__surface:hover img {
+    transform: none;
+  }
+}

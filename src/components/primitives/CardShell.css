@@ -1,0 +1,51 @@
+.card-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-shell--base {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 2.5%), transparent 42%),
+    var(--color-surface-2);
+}
+
+.card-shell--raised {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 4%), transparent 46%),
+    var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.card-shell--glass {
+  background: rgb(18 21 26 / 72%);
+  backdrop-filter: blur(20px);
+}
+
+.card-shell--compact {
+  padding: var(--space-4);
+}
+
+.card-shell--comfortable {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.card-shell--none {
+  padding: 0;
+}
+
+.card-shell--interactive {
+  transition:
+    transform var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.card-shell--interactive:hover {
+  z-index: var(--z-raised);
+  border-color: rgb(226 189 118 / 25%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+}

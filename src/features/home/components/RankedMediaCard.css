@@ -1,0 +1,225 @@
+.ranked-card {
+  --rank-zone-width: 8.75rem;
+  --rank-poster-width: 8.25rem;
+  --rank-poster-height: 12.375rem;
+  --rank-poster-overlap: 1.25rem;
+  --rank-number-size: 14.4rem;
+
+  position: relative;
+  width: calc(var(--rank-zone-width) + var(--rank-poster-width) - var(--rank-poster-overlap));
+  height: var(--rank-poster-height);
+  overflow: visible;
+  isolation: isolate;
+}
+
+.ranked-card--double-digit {
+  --rank-zone-width: 10rem;
+  --rank-poster-overlap: 1.5rem;
+}
+
+.ranked-card__number {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: var(--rank-zone-width);
+  align-items: flex-end;
+  justify-content: flex-end;
+  overflow: visible;
+  color: #090b0e;
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', 'Arial Narrow', sans-serif;
+  font-size: var(--rank-number-size);
+  font-stretch: condensed;
+  font-weight: 900;
+  letter-spacing: -0.065em;
+  line-height: 0.79;
+  text-align: right;
+  white-space: nowrap;
+  -webkit-text-stroke: 3px rgb(137 143 151 / 68%);
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 1px rgb(0 0 0 / 88%),
+    0 8px 22px rgb(0 0 0 / 62%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.ranked-card--double-digit .ranked-card__number {
+  letter-spacing: -0.11em;
+}
+
+.ranked-card__art {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: calc(var(--rank-zone-width) - var(--rank-poster-overlap));
+  width: var(--rank-poster-width);
+  height: var(--rank-poster-height);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  box-shadow: 0 12px 26px rgb(0 0 0 / 28%);
+  color: inherit;
+  cursor: pointer;
+  transform: translateZ(0);
+  transition:
+    transform var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.ranked-card__art .responsive-image {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+.ranked-card__art .responsive-image::after {
+  border-color: rgb(255 255 255 / 8%);
+}
+
+.ranked-card__art img {
+  transform: scale(1.01);
+  transition:
+    opacity var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+}
+
+.ranked-card__art:hover {
+  box-shadow: 0 16px 32px rgb(0 0 0 / 36%);
+  transform: translateY(-3px);
+}
+
+.ranked-card__art:hover img {
+  transform: scale(1.025);
+}
+
+.ranked-card__art:active {
+  box-shadow: 0 8px 20px rgb(0 0 0 / 26%);
+  transform: translateY(-1px) scale(0.99);
+}
+
+.ranked-card__art:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus), 0 16px 32px rgb(0 0 0 / 36%);
+}
+
+.carousel-shell--ranked .carousel-shell__controls {
+  opacity: 0.32;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.carousel-shell--ranked::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--container-gutter) * -1);
+  width: var(--container-gutter);
+  background: var(--color-bg);
+  content: '';
+  pointer-events: none;
+}
+
+.carousel-shell--ranked:hover .carousel-shell__controls,
+.carousel-shell--ranked:focus-within .carousel-shell__controls {
+  opacity: 1;
+}
+
+.carousel-shell--ranked .carousel-shell__controls .icon-button {
+  width: 2rem;
+  height: 2rem;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.carousel-shell--ranked .carousel-shell__controls .icon-button:hover:not(:disabled),
+.carousel-shell--ranked .carousel-shell__controls .icon-button:focus-visible {
+  background: rgb(255 255 255 / 7%);
+}
+
+.carousel-shell--ranked .carousel-shell__track {
+  gap: clamp(0.5rem, 0.9vw, 0.75rem);
+  padding-top: 0.75rem;
+  padding-bottom: 1.75rem;
+  overflow-y: hidden;
+  overscroll-behavior-block: none;
+}
+
+.carousel-shell--ranked .carousel-shell__item {
+  overflow: visible;
+  scroll-snap-stop: always;
+}
+
+.carousel-shell--ranked .carousel-shell__track::after {
+  display: block;
+  width: calc(8.75rem + 8.25rem - 1.25rem + var(--container-gutter));
+  content: '';
+}
+
+@media (min-width: 48rem) and (max-width: 63.999rem) {
+  .ranked-card {
+    --rank-zone-width: 7.5rem;
+    --rank-poster-width: 7.5rem;
+    --rank-poster-height: 11.25rem;
+    --rank-poster-overlap: 1.125rem;
+    --rank-number-size: 13rem;
+  }
+
+  .ranked-card--double-digit {
+    --rank-zone-width: 9rem;
+    --rank-poster-overlap: 1.35rem;
+  }
+
+  .ranked-card__number {
+    -webkit-text-stroke-width: 2.5px;
+  }
+
+  .carousel-shell--ranked .carousel-shell__track::after {
+    width: calc(7.5rem + 7.5rem - 1.125rem + var(--container-gutter));
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .ranked-card {
+    --rank-zone-width: 5.5rem;
+    --rank-poster-width: 6.5rem;
+    --rank-poster-height: 9.75rem;
+    --rank-poster-overlap: 0.75rem;
+    --rank-number-size: 11.1rem;
+  }
+
+  .ranked-card--double-digit {
+    --rank-zone-width: 6.75rem;
+    --rank-poster-overlap: 1rem;
+  }
+
+  .ranked-card__number {
+    -webkit-text-stroke-width: 2px;
+  }
+
+  .ranked-card__art {
+    box-shadow: 0 9px 20px rgb(0 0 0 / 28%);
+  }
+
+  .carousel-shell--ranked .carousel-shell__track {
+    gap: 0.45rem;
+    padding-top: 0.625rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .carousel-shell--ranked .carousel-shell__track::after {
+    width: calc(5.5rem + 6.5rem - 0.75rem + var(--container-gutter));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .ranked-card__art:hover,
+  .ranked-card__art:hover img {
+    transform: none;
+  }
+}

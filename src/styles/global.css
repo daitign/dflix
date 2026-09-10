@@ -1,0 +1,56 @@
+body {
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at 82% -5%, rgb(209 163 84 / 8%), transparent 27rem),
+    radial-gradient(circle at -8% 32%, rgb(91 112 138 / 7%), transparent 30rem),
+    var(--color-bg);
+  font-family: var(--font-body);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus);
+}
+
+:where(button, a)[aria-disabled='true'],
+:where(button, input, textarea, select):disabled {
+  cursor: not-allowed;
+}
+
+.skip-link {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: var(--z-toast);
+  translate: 0 -180%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-950);
+  background: var(--color-accent-400);
+  font-weight: 700;
+  transition: translate var(--duration-base) var(--ease-standard);
+}
+
+.skip-link:focus {
+  translate: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

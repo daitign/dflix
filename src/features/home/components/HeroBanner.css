@@ -1,0 +1,255 @@
+.hero-banner {
+  position: relative;
+  min-height: clamp(40rem, 78vh, 55rem);
+  overflow: hidden;
+  background: var(--color-ink-950);
+}
+
+.hero-banner__backdrop {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.hero-banner__backdrop picture,
+.hero-banner__backdrop img {
+  height: 100%;
+}
+
+.hero-banner__backdrop::after {
+  border: 0;
+}
+
+.hero-banner__wash {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(5 6 8 / 98%) 0%, rgb(5 6 8 / 86%) 27%, rgb(5 6 8 / 24%) 61%, rgb(5 6 8 / 8%) 100%),
+    linear-gradient(to top, var(--color-bg) 0%, rgb(7 8 10 / 22%) 31%, rgb(7 8 10 / 15%) 72%, rgb(7 8 10 / 55%) 100%);
+}
+
+.hero-banner__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: clamp(40rem, 78vh, 55rem);
+  align-items: center;
+  padding-top: var(--nav-height);
+  padding-bottom: 5.5rem;
+}
+
+.hero-banner__copy {
+  width: min(100%, 40rem);
+  padding-top: clamp(2rem, 7vh, 6rem);
+}
+
+.hero-banner__kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.hero-banner__brand-glyph {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1px solid rgb(226 189 118 / 32%);
+  border-radius: 0.35rem;
+  color: var(--color-accent-400);
+  background: var(--color-accent-soft);
+  font-family: var(--font-display);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0;
+}
+
+.hero-banner h1 {
+  margin-top: var(--space-6);
+  font-family: var(--font-display);
+  font-size: clamp(3.25rem, 6vw, 6.25rem);
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 0.84;
+  text-transform: uppercase;
+}
+
+.hero-banner h1 span,
+.hero-banner h1 em {
+  display: block;
+}
+
+.hero-banner h1 span {
+  font-size: 0.43em;
+  letter-spacing: 0.19em;
+  line-height: 1;
+}
+
+.hero-banner h1 em {
+  margin-top: 0.12em;
+  color: var(--color-accent-400);
+  font-style: normal;
+  font-weight: 600;
+  text-shadow: 0 12px 38px rgb(0 0 0 / 48%);
+}
+
+.hero-banner__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.hero-banner__meta span + span::before {
+  margin-right: var(--space-3);
+  color: var(--color-stone-500);
+  content: '·';
+}
+
+.hero-banner__rating {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.25rem;
+  font-size: var(--font-size-xs);
+}
+
+.hero-banner__rating::before {
+  display: none;
+}
+
+.hero-banner__overview {
+  display: -webkit-box;
+  max-width: 37rem;
+  margin-top: var(--space-5);
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+  line-height: 1.55;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 72%);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.hero-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+.hero-banner__notice {
+  min-height: 1.25rem;
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.hero-banner__fade {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 12rem;
+  background: linear-gradient(to top, var(--color-bg), transparent);
+  pointer-events: none;
+}
+
+@media (max-width: 63.999rem) {
+  .hero-banner {
+    min-height: 42rem;
+  }
+
+  .hero-banner__content {
+    min-height: 42rem;
+  }
+
+  .hero-banner__wash {
+    background:
+      linear-gradient(90deg, rgb(5 6 8 / 96%) 0%, rgb(5 6 8 / 72%) 40%, rgb(5 6 8 / 14%) 88%),
+      linear-gradient(to top, var(--color-bg), transparent 52%, rgb(7 8 10 / 42%));
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .hero-banner,
+  .hero-banner__content {
+    min-height: 35rem;
+  }
+
+  .hero-banner__backdrop {
+    inset: 0 0 auto;
+    height: 62%;
+  }
+
+  .hero-banner__wash {
+    background:
+      linear-gradient(to right, rgb(5 6 8 / 42%), transparent 80%),
+      linear-gradient(to top, var(--color-bg) 7%, rgb(7 8 10 / 18%) 66%, rgb(7 8 10 / 35%));
+  }
+
+  .hero-banner__content {
+    align-items: flex-end;
+    padding-top: 8rem;
+    padding-bottom: 3rem;
+  }
+
+  .hero-banner__copy {
+    padding-top: 0;
+  }
+
+  .hero-banner__kicker {
+    font-size: 0.58rem;
+  }
+
+  .hero-banner h1 {
+    max-width: 100%;
+    margin-top: var(--space-4);
+    font-size: clamp(2.75rem, 15vw, 4.25rem);
+  }
+
+  .hero-banner__meta {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-xs);
+  }
+
+  .hero-banner__meta-detail {
+    display: none;
+  }
+
+  .hero-banner__overview {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-sm);
+    -webkit-line-clamp: 2;
+  }
+
+  .hero-banner__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+  }
+
+  .hero-banner__actions .button {
+    width: 100%;
+    min-height: 2.7rem;
+    padding: 0.75rem 1rem;
+    font-size: var(--font-size-xs);
+  }
+
+  .hero-banner__notice {
+    margin-top: var(--space-2);
+  }
+
+  .hero-banner__fade {
+    height: 7rem;
+  }
+}
