@@ -1,55 +1,133 @@
 .browse-loading {
   min-height: 100dvh;
-  overflow: hidden;
-  background: var(--color-bg);
+  overflow-x: hidden;
+  background: var(--color-bg, #141414);
 }
 
+/* Hero Billboard Skeleton */
 .browse-loading__hero {
+  position: relative;
   width: 100%;
-  height: clamp(35rem, 72vh, 52rem);
-  border-radius: 0;
+  min-height: clamp(34rem, 68vh, 50rem);
+  background:
+    linear-gradient(77deg, rgba(20, 20, 20, 0.9) 0%, rgba(20, 20, 20, 0.45) 45%, transparent 70%),
+    linear-gradient(180deg,
+      rgba(20, 20, 20, 0.5) 0%,
+      rgba(20, 20, 20, 0.2) 15%,
+      transparent 30%,
+      rgba(20, 20, 20, 0.6) 65%,
+      #141414 85%,
+      #141414 100%
+    ),
+    #181818;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 }
 
+.browse-loading__hero::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.03) 50%, transparent 80%);
+  content: '';
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 2.5s infinite var(--ease-standard);
+}
+
+.browse-loading__hero-container {
+  width: 100%;
+  padding-top: var(--nav-height, 4.25rem);
+  padding-bottom: 6rem;
+}
+
+.browse-loading__hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 40rem;
+}
+
+.browse-loading__hero-badge {
+  margin-bottom: 0.25rem;
+}
+
+.browse-loading__hero-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.browse-loading__hero-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Full Screen Catalog Rows */
 .browse-loading__catalog {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
-  gap: clamp(2.75rem, 5vw, 4.5rem);
+  gap: clamp(2.25rem, 4.5vw, 3.5rem);
   margin-top: -5rem;
-  padding-bottom: var(--space-12);
+  padding-bottom: var(--space-12, 3rem);
 }
 
 .browse-loading__row {
+  width: 100%;
+}
+
+.browse-loading__title {
+  margin-bottom: 0.85rem;
+}
+
+/* Edge-to-edge full-width track matching CarouselShell */
+.browse-loading__track {
   display: grid;
-  gap: var(--space-5);
+  grid-auto-flow: column;
+  grid-auto-columns: calc(
+    (100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 8px))) / var(--items-per-page, 6)
+  );
+  gap: var(--carousel-gap, 8px);
+  margin-inline: calc(var(--container-gutter) * -1);
+  padding: 0.25rem var(--container-gutter) 0.5rem;
+  overflow: hidden;
+  width: calc(100% + var(--container-gutter) * 2);
+  box-sizing: border-box;
 }
 
-.browse-loading__row > div {
-  display: flex;
-  gap: var(--space-4);
+.browse-loading__track--ranked {
+  grid-auto-columns: calc(
+    (100% - ((var(--items-per-page-ranked, var(--items-per-page, 6)) - 1) * var(--carousel-gap, 8px))) /
+    var(--items-per-page-ranked, var(--items-per-page, 6))
+  );
 }
 
-.browse-loading__card,
-.browse-loading__ranked {
-  flex: 0 0 clamp(12.75rem, 16vw, 17.25rem);
+.browse-loading__card {
+  width: 100%;
   aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: var(--color-surface-2, #232323);
 }
 
-.browse-loading__ranked {
-  height: clamp(15rem, 23vw, 20rem);
+.browse-loading__card--ranked {
   aspect-ratio: 0.72;
+  height: clamp(11.5rem, 15.5vw, 15.75rem);
+  border-radius: 4px 10px 10px 4px;
 }
 
 @media (max-width: 47.999rem) {
   .browse-loading__hero {
-    height: 35rem;
+    min-height: 28rem;
   }
 
   .browse-loading__catalog {
     margin-top: -2rem;
   }
 
-  .browse-loading__card {
-    flex-basis: 47vw;
+  .browse-loading__card--ranked {
+    height: clamp(8.75rem, 30vw, 11.5rem);
+    border-radius: 2px 7px 7px 2px;
   }
 }

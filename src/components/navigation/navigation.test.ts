@@ -108,11 +108,18 @@ test('6. Top 10 row: flex track and in-flow poster margin prevents iPhone WebKit
   );
 });
 
-test('7. Favicon: has transparent background with no background rect like Netflix', () => {
+test('7. Favicon & Profile Avatar: uses the D/ emblem across browser tabs and profile menu', () => {
   const faviconSvg = fs.readFileSync(path.resolve('public/favicon.svg'), 'utf-8');
-  assert.ok(!faviconSvg.includes('<rect'), 'Favicon must not have a solid background rect element');
   assert.ok(faviconSvg.includes('viewBox="0 0 64 64"'), 'Favicon must define a clean square viewBox');
-  assert.ok(faviconSvg.includes('#f0183d'), 'Favicon must contain the DAITIGN crimson path');
+  assert.ok(fs.existsSync(path.resolve('public/favicon.png')), 'public/favicon.png must exist');
+  assert.ok(fs.existsSync(path.resolve('public/profile-avatar.png')), 'public/profile-avatar.png must exist');
+
+  const navShell = fs.readFileSync(path.resolve('src/components/navigation/NavigationShell.tsx'), 'utf-8');
+  assert.ok(navShell.includes('src="/profile-avatar.png"'), 'NavigationShell must use profile-avatar.png for user avatar');
+
+  const html = fs.readFileSync(path.resolve('index.html'), 'utf-8');
+  assert.ok(html.includes('href="/favicon.svg"'), 'index.html must reference favicon.svg');
+  assert.ok(html.includes('href="/favicon.png"'), 'index.html must reference favicon.png');
 });
 
 test('8. Search input: harsh outer focus outline is suppressed', () => {
@@ -231,6 +238,23 @@ test('15. MoviesPage: defines MOVIE_GENRES and mounts CategoryHeader with Movies
   assert.ok(moviesContent.includes("name: 'Thrillers'"), 'MOVIE_GENRES should include Thrillers');
   assert.ok(moviesContent.includes("name: 'Romantic Movies'"), 'MOVIE_GENRES should include Romantic Movies');
 });
+
+test('16. BrowseSkeleton: renders full-screen edge-to-edge loading cards and authentic hero billboard', () => {
+  const skeletonPath = path.resolve('src/features/home/components/BrowseSkeleton.tsx');
+  const skeletonContent = fs.readFileSync(skeletonPath, 'utf8');
+
+  assert.ok(skeletonContent.includes('browse-loading__track'), 'BrowseSkeleton must render track for full-width cards');
+  assert.ok(skeletonContent.includes('browse-loading__hero-copy'), 'BrowseSkeleton must render hero billboard copy skeleton');
+  assert.ok(skeletonContent.includes('CARDS_PER_ROW = [0, 1, 2, 3, 4, 5]'), 'BrowseSkeleton must render 6 full-width cards per row');
+
+  const cssPath = path.resolve('src/features/home/components/BrowseSkeleton.css');
+  const cssContent = fs.readFileSync(cssPath, 'utf8');
+
+  assert.ok(cssContent.includes('var(--items-per-page, 6)'), 'Skeleton card width must match responsive items-per-page');
+  assert.ok(cssContent.includes('margin-inline: calc(var(--container-gutter) * -1)'), 'Track must bleed to screen edges');
+  assert.ok(cssContent.includes('border-radius: 12px'), 'Standard skeleton cards must have 12px rounded corners');
+});
+
 
 
 

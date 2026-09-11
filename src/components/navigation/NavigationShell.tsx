@@ -370,18 +370,11 @@ export function NavigationShell({
                 type="button"
               >
                 <div className="profile-button__avatar">
-                  <svg
-                    aria-hidden="true"
-                    fill="none"
-                    height="100%"
-                    viewBox="0 0 32 32"
-                    width="100%"
-                  >
-                    <rect fill="#e5a00d" height="32" rx="4" width="32" />
-                    <circle cx="10" cy="12" fill="#ffffff" r="2" />
-                    <circle cx="22" cy="12" fill="#ffffff" r="2" />
-                    <path d="M10 18.5C12 22 20 22 22 18.5" stroke="#ffffff" strokeLinecap="round" strokeWidth="2.2" />
-                  </svg>
+                  <img
+                    alt="User profile"
+                    className="profile-button__avatar-img"
+                    src="/profile-avatar.png"
+                  />
                 </div>
                 <Icon
                   name={isProfileOpen ? 'caretUp' : 'caretDown'}
@@ -392,7 +385,13 @@ export function NavigationShell({
                 <div className="netflix-profile-popover" role="dialog">
                   <div className="netflix-profile-popover__profiles">
                     <div className="netflix-profile-popover__item netflix-profile-popover__item--active">
-                      <div className="profile-button__avatar profile-button__avatar--red">☺</div>
+                      <div className="profile-button__avatar">
+                        <img
+                          alt="User"
+                          className="profile-button__avatar-img"
+                          src="/profile-avatar.png"
+                        />
+                      </div>
                       <span>User</span>
                     </div>
                     <div className="netflix-profile-popover__item">
@@ -472,7 +471,7 @@ export function NavigationShell({
           type="button"
         >
           <div className="profile-button__avatar" style={{ width: '1.25rem', height: '1.25rem' }}>
-            ☺
+            <img alt="Profile" className="profile-button__avatar-img" src="/profile-avatar.png" />
           </div>
           <span>Profile</span>
         </button>
