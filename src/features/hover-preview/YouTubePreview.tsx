@@ -12,7 +12,6 @@ interface YouTubePlayer {
   mute: () => void;
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-  stopVideo: () => void;
   unMute: () => void;
 }
 
@@ -52,6 +51,16 @@ declare global {
 }
 
 let youtubeApiPromise: Promise<YouTubeApi> | null = null;
+
+function destroyPlayer(player?: YouTubePlayer | null) {
+  if (!player) return;
+
+  try {
+    player.destroy?.();
+  } catch {
+    // A rapidly closed preview can dispose the YouTube object before it finishes initializing.
+  }
+}
 
 function loadYouTubeApi(): Promise<YouTubeApi> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
@@ -116,8 +125,7 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
     let startTimeout = window.setTimeout(() => {
       const player = playerRef.current;
       playerRef.current = null;
-      player?.stopVideo();
-      player?.destroy();
+      destroyPlayer(player);
       if (!disposed) setIsUnavailable(true);
     }, PLAYER_START_TIMEOUT_MS);
 
@@ -130,8 +138,7 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
       clearStartTimeout();
       const activePlayer = player ?? playerRef.current;
       playerRef.current = null;
-      activePlayer?.stopVideo();
-      activePlayer?.destroy();
+      destroyPlayer(activePlayer);
       if (!disposed) setIsUnavailable(true);
     };
 
@@ -164,7 +171,7 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
             onError: (event) => markUnavailable(event.target),
             onReady: (event) => {
               if (disposed) {
-                event.target.destroy();
+                destroyPlayer(event.target);
                 return;
               }
 
@@ -199,8 +206,7 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
       clearStartTimeout();
       const player = playerRef.current;
       playerRef.current = null;
-      player?.stopVideo();
-      player?.destroy();
+      destroyPlayer(player);
     };
   }, [title, video.key]);
 

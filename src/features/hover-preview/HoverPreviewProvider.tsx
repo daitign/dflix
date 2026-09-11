@@ -108,6 +108,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   const closeIntentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const announcementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerPreviewSuppressedRef = useRef(false);
 
   const commitActivePreview = useCallback((preview: ActivePreview | null) => {
     activePreviewRef.current = preview;
@@ -164,7 +165,8 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     clearTimer(closeIntentTimerRef);
     clearTimer(collapseTimerRef);
 
-    if (request.source === 'pointer' && !canUsePointerPreview()) return;
+    if (request.source === 'pointer'
+      && (pointerPreviewSuppressedRef.current || !canUsePointerPreview())) return;
     if (request.source === 'keyboard' && window.innerWidth < MIN_KEYBOARD_PREVIEW_WIDTH) return;
 
     const current = activePreviewRef.current;
@@ -225,6 +227,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
 
   useEffect(() => {
     const closeForViewportChange = (event: Event) => {
+      pointerPreviewSuppressedRef.current = true;
       const current = activePreviewRef.current;
       const isCarouselScroll = event.target instanceof Element
         && Boolean(event.target.closest('.carousel-shell__track'));
@@ -241,11 +244,18 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
 
       close({ immediate: true });
     };
+    const restorePointerPreview = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && (event.movementX !== 0 || event.movementY !== 0)) {
+        pointerPreviewSuppressedRef.current = false;
+      }
+    };
     window.addEventListener('scroll', closeForViewportChange, true);
     window.addEventListener('resize', closeForViewportChange);
+    window.addEventListener('pointermove', restorePointerPreview, true);
     return () => {
       window.removeEventListener('scroll', closeForViewportChange, true);
       window.removeEventListener('resize', closeForViewportChange);
+      window.removeEventListener('pointermove', restorePointerPreview, true);
     };
   }, [close, commitActivePreview]);
 
