@@ -9,7 +9,7 @@
   width: 100%;
   padding: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0;
   border-radius: 12px;
   background: var(--color-surface-1);
   box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
@@ -18,13 +18,11 @@
   -webkit-mask-image: -webkit-radial-gradient(white, black);
   isolation: isolate;
   transition:
-    border-color var(--duration-base) var(--ease-standard),
     box-shadow var(--duration-base) var(--ease-standard),
     transform var(--duration-base) var(--ease-standard);
 }
 
 .media-card__surface:hover {
-  border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 8px 24px rgb(0 0 0 / 70%);
   transform: scale(1.02);
 }
@@ -163,6 +161,14 @@
 
   .media-card__top10-rank {
     font-size: 0.72rem;
+  }
+
+  .media-card__title-overlay {
+    padding: 1.25rem 0.5rem 0.45rem;
+  }
+
+  .media-card__title-overlay h4 {
+    font-size: clamp(0.72rem, 2.5vw, 0.8rem);
   }
 
   .media-card--has-badge .media-card__title-overlay {

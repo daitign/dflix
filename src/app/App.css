@@ -229,6 +229,25 @@
 }
 
 @media (max-width: 47.999rem) {
+  .search-results-page {
+    padding-top: calc(var(--nav-height) + env(safe-area-inset-top, 0px) + 1.25rem);
+    padding-bottom: calc(var(--mobile-nav-height, 4.5rem) + env(safe-area-inset-bottom, 0px) + 2.5rem);
+  }
+
+  .search-results__header {
+    margin-bottom: 1.15rem;
+  }
+
+  .search-results__header h2 {
+    font-size: 1.1rem;
+  }
+
+  .search-results__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem 0.45rem;
+    margin-bottom: 3.5rem;
+  }
+
   .browse-catalog {
     margin-top: -2rem;
   }

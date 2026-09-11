@@ -24,15 +24,6 @@
   opacity: 1;
 }
 
-.responsive-image::after {
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgb(255 255 255 / 7%);
-  border-radius: inherit;
-  content: '';
-  pointer-events: none;
-}
-
 .responsive-image__fallback {
   position: absolute;
   inset: 0;

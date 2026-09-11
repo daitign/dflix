@@ -149,11 +149,6 @@
   overflow: hidden;
 }
 
-.ranked-card__art .responsive-image::after {
-  border-color: rgb(255 255 255 / 8%);
-  border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
-}
-
 .ranked-card__badge-container {
   position: absolute;
   bottom: 0;

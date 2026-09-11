@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../../components/primitives/Button';
 import { Icon } from '../../../components/icons/Icon';
 import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage';
@@ -7,6 +7,7 @@ import { useDetailsModal } from '../../details-modal';
 import { YouTubePreview } from '../../hover-preview/YouTubePreview';
 import { usePreviewAudio } from '../../preview-audio';
 import { useHeroPlaybackEligibility } from '../useHeroPlaybackEligibility';
+import { useHeroScrollPlayback } from '../useHeroScrollPlayback';
 import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { navigateToWatch } from '../../../lib/navigation/watchRoutes';
@@ -18,6 +19,8 @@ interface HeroBannerProps {
 }
 
 export function HeroBanner({ item }: HeroBannerProps) {
+  const heroRef = useRef<HTMLElement>(null);
+  const { isHeroInView, heroVolumeFactor } = useHeroScrollPlayback(heroRef);
   const { openDetails } = useDetailsModal();
   const { isAudible, toggleSound } = usePreviewAudio();
   const { isInList, toggleItem } = useMyList();
@@ -50,7 +53,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
   }, [canPlayVideo, item.playbackType, item.tmdbId, item.type]);
 
   return (
-    <section aria-labelledby="hero-title" className="hero-banner" id="home">
+    <section aria-labelledby="hero-title" className="hero-banner" id="home" ref={heroRef}>
       <ResponsiveImage
         alt=""
         className={`hero-banner__backdrop${isTrailerPlaying ? ' hero-banner__backdrop--under-trailer' : ''}`}
@@ -63,6 +66,8 @@ export function HeroBanner({ item }: HeroBannerProps) {
       />
       {heroVideo && (
         <YouTubePreview
+          heroVolumeFactor={heroVolumeFactor}
+          isHeroInView={isHeroInView}
           key={heroVideo.key}
           onPlaying={() => setIsTrailerPlaying(true)}
           title={item.title}

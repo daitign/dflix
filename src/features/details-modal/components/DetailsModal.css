@@ -652,12 +652,11 @@
   overflow: hidden;
   border-radius: 6px;
   background: #181818;
-  border: 1px solid rgb(255 255 255 / 8%);
-  transition: transform var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard);
+  border: 0;
+  transition: transform var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
 
 .trailer-card:hover {
-  border-color: rgb(255 255 255 / 20%);
   box-shadow: 0 14px 30px rgb(0 0 0 / 60%);
   transform: translateY(-3px);
 }
@@ -821,7 +820,7 @@
   overflow: hidden;
   border-radius: 4px;
   background: #2f2f2f;
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 0;
   transition: transform var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
 }
 

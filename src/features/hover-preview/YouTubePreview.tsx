@@ -16,6 +16,7 @@ interface YouTubePlayer {
   pauseVideo: () => void;
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  setVolume?: (volume: number) => void;
   unMute: () => void;
 }
 
@@ -115,6 +116,8 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
 
 export interface YouTubePreviewProps {
   className?: string;
+  heroVolumeFactor?: number;
+  isHeroInView?: boolean;
   onPlaying?: () => void;
   title: string;
   variant?: 'hover' | 'hero' | 'modal';
@@ -123,6 +126,8 @@ export interface YouTubePreviewProps {
 
 export function YouTubePreview({
   className = '',
+  heroVolumeFactor = 1,
+  isHeroInView = true,
   onPlaying,
   title,
   variant = 'hover',
@@ -131,6 +136,8 @@ export function YouTubePreview({
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const hasStartedRef = useRef(false);
+  const isPlayingRef = useRef(false);
+  const lastSetVolumeRef = useRef<number | null>(null);
   const loopIntervalRef = useRef<number>(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
@@ -152,49 +159,88 @@ export function YouTubePreview({
     isModalActive,
   });
 
-  // React to audio state changes and preview arbitration
+  // Playback state arbitration (Play / Pause when scrolled out of view or modal/hover opens)
   useEffect(() => {
     const player = playerRef.current;
     if (!player || !hasStarted) return;
 
     if (isHero) {
-      if (isHoverActive || isModalActive) {
-        // Pause and mute Hero while hover preview or Details modal is active
+      const shouldPlay = isHeroInView && !isHoverActive && !isModalActive;
+      if (!shouldPlay && isPlayingRef.current) {
+        isPlayingRef.current = false;
         try {
-          player.mute();
           player.pauseVideo();
         } catch {}
-      } else {
-        // Resume Hero when neither hover preview nor modal is active
+      } else if (shouldPlay && !isPlayingRef.current) {
+        isPlayingRef.current = true;
         try {
           player.playVideo();
-          if (shouldBeAudible) {
+        } catch {}
+      }
+    }
+  }, [hasStarted, isHero, isHeroInView, isHoverActive, isModalActive]);
+
+  // Audio state & volume fade arbitration
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !hasStarted) return;
+
+    if (isHero) {
+      const shouldPlay = isHeroInView && !isHoverActive && !isModalActive;
+      if (!shouldPlay) {
+        try {
+          player.mute();
+        } catch {}
+        lastSetVolumeRef.current = 0;
+        return;
+      }
+
+      const targetVol = shouldBeAudible
+        ? Math.max(0, Math.min(100, Math.round(heroVolumeFactor * 100)))
+        : 0;
+
+      if (lastSetVolumeRef.current !== targetVol) {
+        lastSetVolumeRef.current = targetVol;
+        try {
+          if (targetVol > 0) {
             player.unMute();
+            player.setVolume?.(targetVol);
           } else {
+            player.setVolume?.(0);
             player.mute();
           }
         } catch {}
       }
     } else if (isModal) {
-      // Modal trailer audio state
       try {
         if (shouldBeAudible) {
           player.unMute();
+          player.setVolume?.(100);
         } else {
           player.mute();
         }
       } catch {}
     } else {
-      // Hover preview audio update
+      // Hover preview
       try {
         if (shouldBeAudible) {
           player.unMute();
+          player.setVolume?.(100);
         } else {
           player.mute();
         }
       } catch {}
     }
-  }, [hasStarted, isHero, isHoverActive, isModal, isModalActive, shouldBeAudible]);
+  }, [
+    hasStarted,
+    heroVolumeFactor,
+    isHero,
+    isHeroInView,
+    isHoverActive,
+    isModal,
+    isModalActive,
+    shouldBeAudible,
+  ]);
 
   useEffect(() => {
     let disposed = false;
@@ -269,6 +315,7 @@ export function YouTubePreview({
                 clearStartTimeout();
                 if (!hasStartedRef.current) {
                   hasStartedRef.current = true;
+                  isPlayingRef.current = true;
                   setHasStarted(true);
                   onPlaying?.();
                 }
@@ -285,12 +332,36 @@ export function YouTubePreview({
                   } catch {}
                 }, 250);
 
-                // If sound should be on and browser permits it, attempt unmuting safely
-                if (shouldBeAudible) {
+                // Initial sound & volume setup for newly started player
+                if (isHero) {
+                  const targetVol = isHeroInView && shouldBeAudible
+                    ? Math.max(0, Math.min(100, Math.round(heroVolumeFactor * 100)))
+                    : 0;
+                  if (targetVol > 0) {
+                    try {
+                      event.target.unMute();
+                      event.target.setVolume?.(targetVol);
+                      lastSetVolumeRef.current = targetVol;
+                    } catch {
+                      event.target.mute();
+                      setAutoplaySoundAllowed(false);
+                    }
+                  } else {
+                    event.target.mute();
+                    lastSetVolumeRef.current = 0;
+                  }
+
+                  if (!isHeroInView) {
+                    try {
+                      event.target.pauseVideo();
+                      isPlayingRef.current = false;
+                    } catch {}
+                  }
+                } else if (shouldBeAudible) {
                   try {
                     event.target.unMute();
+                    event.target.setVolume?.(100);
                   } catch {
-                    // Browser policy blocked unmuting; fallback to muted
                     event.target.mute();
                     setAutoplaySoundAllowed(false);
                   }

@@ -255,6 +255,36 @@ test('16. BrowseSkeleton: renders full-screen edge-to-edge loading cards and aut
   assert.ok(cssContent.includes('border-radius: 12px'), 'Standard skeleton cards must have 12px rounded corners');
 });
 
+test('17. Movie cards: borderless presentation matching Netflix with no outline stroke', () => {
+  const mediaCardCss = fs.readFileSync(path.resolve('src/features/home/components/MediaCard.css'), 'utf8');
+  assert.ok(mediaCardCss.includes('border: 0;'), 'MediaCard surface must have border: 0');
+  assert.ok(!mediaCardCss.includes('border: 1px solid rgba(255, 255, 255'), 'MediaCard must not define white border');
+  assert.ok(!mediaCardCss.includes('border-color: rgba(255, 255, 255'), 'MediaCard hover must not highlight border');
+
+  const responsiveImgCss = fs.readFileSync(path.resolve('src/components/primitives/ResponsiveImage.css'), 'utf8');
+  assert.ok(!responsiveImgCss.includes('border: 1px solid rgb(255 255 255'), 'ResponsiveImage must not have inset white stroke');
+
+  const rankedCardCss = fs.readFileSync(path.resolve('src/features/home/components/RankedMediaCard.css'), 'utf8');
+  assert.ok(rankedCardCss.includes('border: 0;'), 'Ranked card must have border: 0');
+});
+
+test('18. Search Results & My List: 2-column horizontal grid on iPhone and small screens', () => {
+  const appCss = fs.readFileSync(path.resolve('src/app/App.css'), 'utf8');
+  assert.ok(appCss.includes('.search-results__grid'), 'App.css must define search-results__grid');
+  assert.ok(
+    appCss.includes('grid-template-columns: repeat(2, 1fr)'),
+    'Search results must enforce 2 columns on mobile/iPhone screen widths'
+  );
+
+  const myListCss = fs.readFileSync(path.resolve('src/features/my-list/MyListPage.css'), 'utf8');
+  assert.ok(
+    myListCss.includes('grid-template-columns: repeat(2, 1fr)'),
+    'My List must enforce 2 columns on mobile/iPhone screen widths'
+  );
+});
+
+
+
 
 
 

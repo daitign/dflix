@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SOUND_PREFERENCE_STORAGE_KEY, shouldTrailerBeAudible } from './types.ts';
 import { shouldAutoplayHeroTrailer } from '../home/useHeroPlaybackEligibility.ts';
+import { calculateHeroVolumeFade, isHeroElementInView } from '../home/useHeroScrollPlayback.ts';
+import fs from 'node:fs';
+import path from 'node:path';
 
 test('1. Default preview sound preference is SOUND ON', () => {
   // Key name constant check
@@ -80,4 +83,56 @@ test('10. Audio arbitration: Modal hero trailer is audible when isAudible is tru
   assert.equal(shouldTrailerBeAudible({ variant: 'modal', isAudible: true, isHoverActive: false, isModalActive: true }), true);
   assert.equal(shouldTrailerBeAudible({ variant: 'modal', isAudible: true, isHoverActive: true, isModalActive: true }), true);
 });
+
+test('11. Hero scroll volume fade: starts at 100% and smoothly fades to 0% as user scrolls down', () => {
+  // At scroll position 0 (top of hero banner): full volume
+  assert.equal(calculateHeroVolumeFade(0, 320), 1.0);
+  // Negative scroll (iOS rubber-banding / pull to refresh): clamped at 1.0
+  assert.equal(calculateHeroVolumeFade(-80, 320), 1.0);
+  // Halfway down fade distance (160px of 320px): 50% volume
+  assert.equal(calculateHeroVolumeFade(160, 320), 0.5);
+  // Quarter down fade distance (80px of 320px): 75% volume
+  assert.equal(calculateHeroVolumeFade(80, 320), 0.75);
+  // At or beyond fade distance (320px+): muted (0.0)
+  assert.equal(calculateHeroVolumeFade(320, 320), 0.0);
+  assert.equal(calculateHeroVolumeFade(500, 320), 0.0);
+});
+
+test('12. Hero viewport visibility: detects when hero is in view vs scrolled off screen', () => {
+  const windowHeight = 900;
+  // Hero fully in view at the top of the page
+  assert.equal(isHeroElementInView({ top: 0, bottom: 650 }, windowHeight), true);
+  // Hero partially scrolled down but still well in view
+  assert.equal(isHeroElementInView({ top: -200, bottom: 450 }, windowHeight), true);
+  // Hero scrolled past the top threshold (bottom <= 60px): not in view, must pause
+  assert.equal(isHeroElementInView({ top: -600, bottom: 50 }, windowHeight), false);
+  assert.equal(isHeroElementInView({ top: -750, bottom: -100 }, windowHeight), false);
+  // Hero below the viewport (e.g. if page scrolled far up or offscreen)
+  assert.equal(isHeroElementInView({ top: 950, bottom: 1600 }, windowHeight), false);
+  // Null element rect
+  assert.equal(isHeroElementInView(null, windowHeight), false);
+});
+
+test('13. HeroBanner: binds heroRef and passes scroll playback controls to YouTubePreview', () => {
+  const heroBannerSrc = fs.readFileSync(
+    path.resolve('src/features/home/components/HeroBanner.tsx'),
+    'utf8'
+  );
+  assert.ok(heroBannerSrc.includes('useHeroScrollPlayback(heroRef)'), 'HeroBanner must call useHeroScrollPlayback');
+  assert.ok(heroBannerSrc.includes('ref={heroRef}'), 'HeroBanner section must attach heroRef');
+  assert.ok(heroBannerSrc.includes('isHeroInView={isHeroInView}'), 'HeroBanner must pass isHeroInView to YouTubePreview');
+  assert.ok(heroBannerSrc.includes('heroVolumeFactor={heroVolumeFactor}'), 'HeroBanner must pass heroVolumeFactor to YouTubePreview');
+});
+
+test('14. YouTubePreview: pauses trailer when not in view and smoothly updates volume', () => {
+  const ytPreviewSrc = fs.readFileSync(
+    path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
+    'utf8'
+  );
+  assert.ok(ytPreviewSrc.includes('isHeroInView'), 'YouTubePreview must accept isHeroInView');
+  assert.ok(ytPreviewSrc.includes('heroVolumeFactor'), 'YouTubePreview must accept heroVolumeFactor');
+  assert.ok(ytPreviewSrc.includes('player.pauseVideo()'), 'YouTubePreview must call pauseVideo when not in view');
+  assert.ok(ytPreviewSrc.includes('player.setVolume?.(targetVol)'), 'YouTubePreview must set faded volume on scroll');
+});
+
 
