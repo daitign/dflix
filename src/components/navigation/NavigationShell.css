@@ -245,6 +245,11 @@
   font-weight: 700;
 }
 
+.top-navigation__vip-suffix {
+  display: inline;
+  font-weight: inherit;
+}
+
 .top-navigation__vip-icon {
   display: inline-block;
   font-size: 0.75rem;
@@ -303,17 +308,18 @@
 
 .netflix-search__input {
   width: 0;
-  height: 2.25rem;
+  height: 2.1rem;
   padding: 0;
   opacity: 0;
   border: 1px solid transparent;
-  border-radius: 2px;
+  border-radius: 9999px;
   color: #ffffff;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(22, 22, 22, 0.92);
   font-family: inherit;
   font-size: 0.85rem;
   outline: none;
   pointer-events: none;
+  backdrop-filter: blur(12px);
   transition:
     width 0.3s cubic-bezier(0.2, 0, 0, 1),
     opacity 0.25s ease,
@@ -325,7 +331,8 @@
   width: clamp(13rem, 18vw, 17.5rem);
   padding: 0 2rem 0 2.25rem;
   opacity: 1;
-  border-color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
   pointer-events: auto;
 }
 
@@ -334,7 +341,7 @@
   outline: none !important;
   outline-offset: 0 !important;
   box-shadow: none !important;
-  border-color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 .netflix-search--open .netflix-search__trigger {
@@ -589,12 +596,14 @@
   color: #c4c4c4;
   font-size: 0.8rem;
   font-weight: 500;
+  text-decoration: none;
   transition: color 0.2s ease, background 0.2s ease;
 }
 
 .netflix-profile-popover__links a:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
+  text-decoration: none;
 }
 
 .netflix-profile-popover__signout {
@@ -607,13 +616,15 @@
   font-size: 0.82rem;
   font-weight: 600;
   text-align: center;
+  text-decoration: none;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
 .netflix-profile-popover__signout:hover {
   color: #ffffff;
-  text-decoration: underline;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 @keyframes netflix-popover-in {
@@ -641,6 +652,22 @@
     padding: 0 0.7rem;
     font-size: 0.78rem;
     gap: 0.3rem;
+  }
+
+  .netflix-browse-popover {
+    min-width: 12rem;
+    padding: 0.3rem;
+    border-radius: 10px;
+  }
+
+  .netflix-browse-popover__item {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.86rem;
+  }
+
+  .netflix-profile-popover {
+    width: 12.5rem;
+    padding: 0.45rem 0;
   }
 }
 
@@ -682,8 +709,8 @@
     flex-shrink: 0;
   }
 
-  .top-navigation__vip-suffix {
-    display: none;
+  .top-navigation__vip-btn--hidden {
+    display: none !important;
   }
 
   .top-navigation__browse-btn {
@@ -715,8 +742,36 @@
     flex-shrink: 0;
   }
 
+  .netflix-search__trigger {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .netflix-search__input {
+    height: 1.85rem;
+    font-size: 0.78rem;
+    border-radius: 9999px;
+  }
+
   .netflix-search--open .netflix-search__input {
-    width: clamp(5.2rem, 20vw, 7.5rem);
+    width: clamp(6.5rem, 32vw, 11rem);
+    height: 1.85rem;
+    padding: 0 1.75rem 0 1.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 9999px;
+    background: rgba(24, 24, 24, 0.94);
+  }
+
+  .netflix-search--open .netflix-search__trigger {
+    width: 1.65rem;
+    height: 1.65rem;
+    left: 0.15rem;
+  }
+
+  .netflix-search__clear {
+    width: 1.35rem;
+    height: 1.35rem;
+    right: 0.3rem;
   }
 
   .netflix-notifications-popover {
@@ -726,7 +781,66 @@
 
   .netflix-profile-popover {
     right: 0;
-    width: min(14rem, calc(100vw - 1rem));
+    width: min(11rem, calc(100vw - 1rem));
+    top: calc(100% + 0.4rem);
+    padding: 0.35rem 0;
+    border-radius: 6px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+  }
+
+  .netflix-profile-popover__profiles {
+    gap: 0.15rem;
+    padding-inline: 0.35rem;
+  }
+
+  .netflix-profile-popover__item {
+    gap: 0.45rem;
+    padding: 0.22rem 0.35rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+  }
+
+  .netflix-profile-popover__item .profile-button__avatar {
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 0.72rem;
+    border-radius: 3px;
+  }
+
+  .netflix-profile-popover__divider {
+    margin: 0.25rem 0;
+  }
+
+  .netflix-profile-popover__links a {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.72rem;
+    line-height: 1.3;
+  }
+
+  .netflix-profile-popover__signout {
+    padding: 0.32rem 0.75rem 0.15rem;
+    font-size: 0.74rem;
+  }
+
+  .netflix-browse-popover {
+    min-width: 10.5rem;
+    width: max-content;
+    max-width: calc(100vw - 1.5rem);
+    padding: 0.25rem;
+    border-radius: 8px;
+    top: calc(100% + 6px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+  }
+
+  .netflix-browse-popover__items {
+    gap: 1px;
+  }
+
+  .netflix-browse-popover__item {
+    padding: 0.42rem 0.72rem;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    line-height: 1.3;
   }
 }
 
@@ -738,6 +852,44 @@
   .top-navigation__browse-btn {
     padding: 0 0.42rem;
     font-size: 0.72rem;
+  }
+
+  .netflix-browse-popover {
+    min-width: 9.5rem;
+    padding: 0.2rem;
+    border-radius: 7px;
+  }
+
+  .netflix-browse-popover__item {
+    padding: 0.36rem 0.6rem;
+    font-size: 0.74rem;
+  }
+
+  .netflix-profile-popover {
+    width: min(9.8rem, calc(100vw - 0.75rem));
+    padding: 0.28rem 0;
+  }
+
+  .netflix-profile-popover__item {
+    font-size: 0.72rem;
+    padding: 0.18rem 0.3rem;
+    gap: 0.35rem;
+  }
+
+  .netflix-profile-popover__item .profile-button__avatar {
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.68rem;
+  }
+
+  .netflix-profile-popover__links a {
+    padding: 0.22rem 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .netflix-profile-popover__signout {
+    padding: 0.28rem 0.65rem 0.12rem;
+    font-size: 0.7rem;
   }
 
   .top-navigation__vip-btn {

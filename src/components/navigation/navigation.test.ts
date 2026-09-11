@@ -353,8 +353,8 @@ test('20. VIP luxury button: always-visible green-white button outside nav links
   );
 
   assert.ok(
-    navShellContent.includes('netflix-browse-popover__item--vip'),
-    'NavigationShell browse popover must include VIP luxury item'
+    !navShellContent.includes('netflix-browse-popover__item--vip'),
+    'Shop button must be removed from the Browse nav menu popover'
   );
 
   const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
@@ -375,10 +375,6 @@ test('20. VIP luxury button: always-visible green-white button outside nav links
   assert.ok(
     navCssContent.includes('.top-navigation__vip-suffix'),
     'NavigationShell.css must handle responsive suffix for small devices'
-  );
-  assert.ok(
-    navCssContent.includes('.netflix-browse-popover__item--vip'),
-    'NavigationShell.css must define mobile popover VIP style'
   );
 });
 
@@ -457,18 +453,35 @@ test('21. Footer branding: green-white shop button, Telegram group @daitignvault
 });
 
 test('22. Mobile navbar layout: profile avatar is preserved without cutoff across small screens', () => {
+  const navShellPath = path.resolve('src/components/navigation/NavigationShell.tsx');
+  const navShellContent = fs.readFileSync(navShellPath, 'utf8');
+
+  assert.ok(
+    navShellContent.includes('DV<span className="top-navigation__vip-suffix"> Shop</span>'),
+    'NavigationShell must render DV Shop branding in the shop button'
+  );
+  assert.ok(
+    navShellContent.includes('isSearchOpen && \'top-navigation__vip-btn--hidden\''),
+    'Shop button must disappear when user clicks search to maximize search space'
+  );
+
   const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
   const navCssContent = fs.readFileSync(navCssPath, 'utf8');
 
   // Verify mobile media query rules
-  const mobileNavBlock = navCssContent.slice(
-    navCssContent.indexOf('@media (max-width: 47.999rem)')
-  );
+  const mobileQueryIndex = navCssContent.indexOf('@media (max-width: 47.999rem)');
+  const desktopBlock = navCssContent.slice(0, mobileQueryIndex);
+  const mobileNavBlock = navCssContent.slice(mobileQueryIndex);
 
   assert.ok(
-    mobileNavBlock.includes('.top-navigation__vip-suffix') && mobileNavBlock.includes('display: none;'),
-    'Mobile navbar must hide VIP suffix on mobile screens to save width'
+    mobileNavBlock.includes('.top-navigation__vip-btn--hidden') && mobileNavBlock.includes('display: none !important;'),
+    'NavigationShell.css must enforce display: none !important on hidden shop button in mobile media query'
   );
+  assert.ok(
+    !desktopBlock.includes('.top-navigation__vip-btn--hidden'),
+    'DV Shop button must NOT be hidden in desktop/laptop view when searching'
+  );
+
   assert.ok(
     mobileNavBlock.includes('.profile-button') && mobileNavBlock.includes('flex-shrink: 0;'),
     'Profile button must have flex-shrink: 0 on mobile to prevent clipping'
@@ -536,6 +549,158 @@ test('24. Movie details mobile modal: presents as an authentic rounded bottom sh
     'Details modal must render a sheet drag pull pill on mobile'
   );
 });
+
+test('25. Compact rounded search bar: sleek pill shape without harsh white border', () => {
+  const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const navCssContent = fs.readFileSync(navCssPath, 'utf8');
+
+  assert.ok(
+    !navCssContent.includes('border-color: #ffffff !important;'),
+    'Search input focus must not enforce harsh stark white border'
+  );
+  assert.ok(
+    navCssContent.includes('border-radius: 9999px;'),
+    'Search input must use sleek rounded corners'
+  );
+
+  const mobileNavBlock = navCssContent.slice(
+    navCssContent.indexOf('@media (max-width: 47.999rem)')
+  );
+  assert.ok(
+    mobileNavBlock.includes('height: 1.85rem;'),
+    'Mobile search input must use compact height on small screens'
+  );
+  assert.ok(
+    mobileNavBlock.includes('border-radius: 9999px;'),
+    'Mobile search input must use compact rounded corners on small screens'
+  );
+});
+
+test('26. Mobile footer: compact, minimal sizing on small screens', () => {
+  const appCssPath = path.resolve('src/app/App.css');
+  const appCssContent = fs.readFileSync(appCssPath, 'utf8');
+
+  const mobileBlock = appCssContent.slice(
+    appCssContent.indexOf('@media (max-width: 47.999rem)')
+  );
+
+  assert.ok(
+    mobileBlock.includes('.netflix-footer') && mobileBlock.includes('padding: 2rem 0'),
+    'Mobile footer padding must be compact on small screens'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-footer__questions') && mobileBlock.includes('font-size: 0.8rem;'),
+    'Mobile footer questions must use compact 0.8rem font size'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-footer__links a') && mobileBlock.includes('font-size: 0.72rem;'),
+    'Mobile footer links must use compact 0.72rem font size'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-footer__shop-btn') && mobileBlock.includes('font-size: 0.7rem;'),
+    'Mobile footer shop button must use compact minimal 0.7rem font size'
+  );
+});
+
+test('27. Mobile Browse dropdown menu: compact and minimal sizing', () => {
+  const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const navCssContent = fs.readFileSync(navCssPath, 'utf8');
+
+  const mobileBlock = navCssContent.slice(
+    navCssContent.indexOf('@media (max-width: 47.999rem)')
+  );
+
+  assert.ok(
+    mobileBlock.includes('.netflix-browse-popover') &&
+      mobileBlock.includes('min-width: 10.5rem;'),
+    'Mobile Browse popover must have compact min-width of 10.5rem'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-browse-popover__item') &&
+      mobileBlock.includes('font-size: 0.78rem;'),
+    'Mobile Browse items must use compact font-size of 0.78rem'
+  );
+  assert.ok(
+    mobileBlock.includes('padding: 0.42rem 0.72rem;'),
+    'Mobile Browse items must use compact padding'
+  );
+});
+
+test('28. Mobile Profile dropdown menu: compact and minimal sizing', () => {
+  const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const navCssContent = fs.readFileSync(navCssPath, 'utf8');
+
+  const mobileBlock = navCssContent.slice(
+    navCssContent.indexOf('@media (max-width: 47.999rem)')
+  );
+
+  assert.ok(
+    mobileBlock.includes('.netflix-profile-popover') &&
+      mobileBlock.includes('width: min(11rem, calc(100vw - 1rem));'),
+    'Mobile Profile popover must have compact width of 11rem'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-profile-popover__item') &&
+      mobileBlock.includes('font-size: 0.75rem;'),
+    'Mobile Profile items must use compact font-size of 0.75rem'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-profile-popover__links a') &&
+      mobileBlock.includes('font-size: 0.72rem;'),
+    'Mobile Profile links must use compact font-size of 0.72rem'
+  );
+  assert.ok(
+    mobileBlock.includes('.netflix-profile-popover__signout') &&
+      mobileBlock.includes('font-size: 0.74rem;'),
+    'Mobile Profile signout button must use compact font-size of 0.74rem'
+  );
+});
+
+test('29. DAITIGN Logo: authentic Netflix color (#E50914), flat top, and bottom smile curve', () => {
+  const wordmarkSvgPath = path.resolve('public/brand/daitign-wordmark.svg');
+  const wordmarkSvgContent = fs.readFileSync(wordmarkSvgPath, 'utf8');
+
+  const markSvgPath = path.resolve('public/brand/daitign-mark.svg');
+  const markSvgContent = fs.readFileSync(markSvgPath, 'utf8');
+
+  // Verify color is authentic Netflix red
+  assert.ok(
+    wordmarkSvgContent.includes('fill="#E50914"') || wordmarkSvgContent.includes('fill="#e50914"'),
+    'daitign-wordmark.svg must use authentic Netflix Red #E50914'
+  );
+  assert.ok(
+    markSvgContent.includes('fill="#E50914"') || markSvgContent.includes('fill="#e50914"'),
+    'daitign-mark.svg must use authentic Netflix Red #E50914'
+  );
+
+  // Verify curve on bottom part only (smile curve) and flat horizontal top
+  assert.ok(
+    wordmarkSvgContent.includes('daitign-bottom-curve'),
+    'daitign-wordmark.svg must define bottom curve clipping/path'
+  );
+  assert.ok(
+    wordmarkSvgContent.includes('Q 112') || wordmarkSvgContent.includes('Q 110'),
+    'daitign-wordmark.svg must define quadratic upward arch curve on the bottom'
+  );
+});
+
+test('30. Video Player Theme: authentic Netflix Red color (#e50914) instead of yellow', () => {
+  const buildPlayerUrlPath = path.resolve('src/lib/vidstuck/buildPlayerUrl.ts');
+  const buildPlayerUrlContent = fs.readFileSync(buildPlayerUrlPath, 'utf8');
+
+  assert.ok(
+    buildPlayerUrlContent.includes("DAITIGN_PLAYER_COLOR = 'e50914'"),
+    'DAITIGN_PLAYER_COLOR must be set to e50914 (Netflix Red)'
+  );
+  assert.ok(
+    !buildPlayerUrlContent.includes("DAITIGN_PLAYER_COLOR = 'd9b56d'"),
+    'Old yellow/gold player color d9b56d must be replaced'
+  );
+});
+
+
+
+
 
 
 

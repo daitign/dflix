@@ -211,17 +211,6 @@ export function NavigationShell({
                         {item.label}
                       </a>
                     ))}
-                    <a
-                      className="netflix-browse-popover__item netflix-browse-popover__item--vip"
-                      href="https://daitignvault.vercel.app/"
-                      onClick={() => setIsBrowseOpen(false)}
-                      rel="noopener noreferrer"
-                      role="menuitem"
-                      target="_blank"
-                    >
-                      <span className="netflix-browse-popover__vip-badge">✦ VIP</span>
-                      <span>DAITIGN Vault</span>
-                    </a>
                   </div>
                 </div>
               )}
@@ -251,26 +240,32 @@ export function NavigationShell({
 
           <div className="top-navigation__actions">
             <a
-              className="top-navigation__vip-btn"
+              className={cx(
+                'top-navigation__vip-btn',
+                isSearchOpen && 'top-navigation__vip-btn--hidden'
+              )}
               href="https://daitignvault.vercel.app/"
               rel="noopener noreferrer"
               target="_blank"
-              title="Visit DAITIGN Vault - VIP Shop"
+              title="Visit DAITIGN Vault - DV Shop"
             >
               <span className="top-navigation__vip-icon" aria-hidden="true">✦</span>
               <span className="top-navigation__vip-text">
-                VIP<span className="top-navigation__vip-suffix"> Shop</span>
+                DV<span className="top-navigation__vip-suffix"> Shop</span>
               </span>
             </a>
 
             {/* Netflix Expandable Search Bar */}
             <div className={cx('netflix-search', isSearchOpen && 'netflix-search--open')}>
               <button
-                aria-label="Search"
+                aria-label={isSearchOpen ? 'Close search' : 'Search'}
                 className="netflix-search__trigger"
                 onClick={() => {
-                  setIsSearchOpen((prev) => !prev);
-                  if (!isSearchOpen) {
+                  if (isSearchOpen) {
+                    setIsSearchOpen(false);
+                    if (searchQuery) onSearchChange?.('');
+                  } else {
+                    setIsSearchOpen(true);
                     setTimeout(() => searchInputRef.current?.focus(), 50);
                   }
                 }}
@@ -285,7 +280,7 @@ export function NavigationShell({
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     if (searchQuery) onSearchChange?.('');
-                    else setIsSearchOpen(false);
+                    setIsSearchOpen(false);
                   }
                 }}
                 placeholder="Titles, people, genres"
@@ -293,13 +288,17 @@ export function NavigationShell({
                 type="text"
                 value={searchQuery}
               />
-              {searchQuery && (
+              {isSearchOpen && (
                 <button
-                  aria-label="Clear search"
+                  aria-label={searchQuery ? 'Clear search' : 'Close search'}
                   className="netflix-search__clear"
                   onClick={() => {
-                    onSearchChange?.('');
-                    searchInputRef.current?.focus();
+                    if (searchQuery) {
+                      onSearchChange?.('');
+                      searchInputRef.current?.focus();
+                    } else {
+                      setIsSearchOpen(false);
+                    }
                   }}
                   type="button"
                 >

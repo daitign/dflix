@@ -5,6 +5,6 @@
     </radialGradient>
   </defs>
   <rect width="1000" height="1500" fill="url(#g)"/>
-  <path d="M130 1110h560M130 1140h360" stroke="#d9b56d" stroke-opacity=".42" stroke-width="4"/>
+  <path d="M130 1110h560M130 1140h360" stroke="#e50914" stroke-opacity=".42" stroke-width="4"/>
   <text x="130" y="1050" fill="#eef1f3" font-family="Arial,sans-serif" font-size="72" font-weight="700" letter-spacing="10">DAITIGN</text>
 </svg>

@@ -1,7 +1,7 @@
 import type { VidStuckPlayerOptions } from './types';
 
 export const VIDSTUCK_ORIGIN = 'https://vidstuck.xyz';
-export const DAITIGN_PLAYER_COLOR = 'd9b56d';
+export const DAITIGN_PLAYER_COLOR = 'e50914';
 
 export const DAITIGN_PLAYER_DEFAULTS = {
   autoplayNextEpisode: true,

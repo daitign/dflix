@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64" role="img" aria-labelledby="title">
   <title id="title">DAITIGN</title>
-  <path fill="#f0183d" fill-rule="evenodd" d="M6 4h14c15 0 23 10 23 28S35 60 20 60H6V4Zm12 11v34h2c7 0 11-5 11-17S27 15 20 15h-2Z"/>
+  <path fill="#E50914" fill-rule="evenodd" d="M6 4h14c15 0 23 10 23 28S35 60 20 60H6V4Zm12 11v34h2c7 0 11-5 11-17S27 15 20 15h-2Z"/>
   <path fill="#9c0926" d="M6 4h7v56H6z"/>
   <path fill="#ff4966" d="m13 4 5 11v34l-5 11V4Z" opacity=".82"/>
 </svg>
