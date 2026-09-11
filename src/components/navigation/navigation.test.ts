@@ -58,3 +58,47 @@ test('3. Season Selector: chevron is cleanly positioned and outline is suppresse
     'DetailsModal CSS should use appearance: none for custom chevron',
   );
 });
+
+test('4. Kids profile: removed from navigation header and profile list', () => {
+  const navFile = path.resolve('src/components/navigation/NavigationShell.tsx');
+  const navContent = fs.readFileSync(navFile, 'utf8');
+  assert.ok(
+    !navContent.includes('top-navigation__kids-btn'),
+    'NavigationShell should not contain Kids profile button',
+  );
+});
+
+test('5. Badges: responsive CTA hiding and container query rules in mobile & compact views', () => {
+  const badgeCssPath = path.resolve('src/features/home/components/StatusBadge.css');
+  const badgeCss = fs.readFileSync(badgeCssPath, 'utf8');
+  assert.ok(
+    badgeCss.includes('.netflix-badge--inline .netflix-badge__segment--inline-right {\n    display: none;'),
+    'StatusBadge should hide Watch Now segment on mobile to prevent overflow',
+  );
+  assert.ok(
+    badgeCss.includes('@container (max-width: 185px)'),
+    'StatusBadge should support container query for compact card widths',
+  );
+
+  const cardCssPath = path.resolve('src/features/home/components/MediaCard.css');
+  const cardCss = fs.readFileSync(cardCssPath, 'utf8');
+  assert.ok(
+    cardCss.includes('container-type: inline-size'),
+    'MediaCard should have container-type: inline-size for responsive badges',
+  );
+});
+
+test('6. Top 10 row: flex track and in-flow poster margin prevents iPhone WebKit collapse', () => {
+  const rankedCssPath = path.resolve('src/features/home/components/RankedMediaCard.css');
+  const rankedCss = fs.readFileSync(rankedCssPath, 'utf8');
+  assert.ok(
+    rankedCss.includes('.carousel-shell--ranked .carousel-shell__track {\n  display: flex;'),
+    'Ranked track must use display: flex to prevent WebKit grid column collapse',
+  );
+  assert.ok(
+    rankedCss.includes('margin-left: var(--rank-poster-left);'),
+    'Ranked card art must use in-flow margin-left so its intrinsic width matches full card',
+  );
+});
+
+

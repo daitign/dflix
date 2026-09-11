@@ -13,6 +13,8 @@
   user-select: none;
   pointer-events: none;
   box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.35);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 1. Solid Red Badges: Recently Added, New Season, New */
@@ -28,6 +30,8 @@
   justify-content: center;
   border-radius: 3px 3px 0 0;
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 2. Split Badges: New Episode + Watch Now CTA */
@@ -39,6 +43,8 @@
   height: clamp(1.28rem, 1.5vw, 1.45rem);
   border-radius: 3px 3px 0 0;
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 2b. Stacked Vertical Layout (Top 10 Ranked Cards) */
@@ -50,6 +56,7 @@
   height: auto;
   border-radius: 3px 3px 0 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Shared Segment Styles */
@@ -60,6 +67,10 @@
   letter-spacing: 0.015em;
   user-select: none;
   box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .netflix-badge__segment--red {
@@ -133,62 +144,90 @@
 /* Single badge portrait / Top 10 adaptation */
 .netflix-badge--portrait.netflix-badge--solid-red {
   height: clamp(1.24rem, 1.45vw, 1.40rem);
-  padding: 0 clamp(0.5rem, 0.7vw, 0.72rem);
-  font-size: clamp(0.64rem, 0.76vw, 0.73rem);
+  padding: 0 clamp(0.45rem, 0.7vw, 0.72rem);
+  font-size: clamp(0.62rem, 0.76vw, 0.73rem);
   border-radius: 3px 3px 0 0;
   max-width: 90%;
 }
 
-/* Mobile Responsiveness across all devices */
-@media (max-width: 47.999rem) {
+/* Container Query for compact cards (grid / responsive cards <= 185px) */
+@container (max-width: 185px) {
+  .netflix-badge--inline .netflix-badge__segment--inline-right {
+    display: none;
+  }
+
   .netflix-badge--inline {
-    height: 1.18rem;
+    height: 1.15rem;
+  }
+
+  .netflix-badge--inline .netflix-badge__segment--inline-left {
     border-radius: 3px 3px 0 0;
+    padding: 0 clamp(0.30rem, 2.5cqi, 0.45rem);
+    font-size: clamp(0.50rem, 4.2cqi, 0.62rem);
+    height: 100%;
+    letter-spacing: 0.02em;
   }
 
-  .netflix-badge__segment--inline-left {
-    padding: 0 0.38rem;
-    font-size: 0.58rem;
-    border-radius: 3px 0 0 0;
+  .netflix-badge--solid-red {
+    padding: 0 clamp(0.28rem, 2.2cqi, 0.42rem);
+    font-size: clamp(0.48rem, 4cqi, 0.60rem);
+    height: 1.15rem;
+  }
+}
+
+/* Mobile Responsiveness across all devices (<= 768px) */
+@media (max-width: 47.999rem) {
+  /* Hide the Watch Now segment on mobile so it renders as a unified solid red New Episode badge */
+  .netflix-badge--inline .netflix-badge__segment--inline-right {
+    display: none;
   }
 
-  .netflix-badge__segment--inline-right {
-    padding: 0 0.38rem;
-    font-size: 0.58rem;
-    border-radius: 0 3px 0 0;
+  .netflix-badge--inline {
+    height: 1.15rem;
+    border-radius: 3px 3px 0 0;
+    max-width: 100%;
+  }
+
+  .netflix-badge--inline .netflix-badge__segment--inline-left {
+    height: 100%;
+    padding: 0 clamp(0.34rem, 1.4vw, 0.46rem);
+    font-size: clamp(0.50rem, 1.8vw, 0.60rem);
+    border-radius: 3px 3px 0 0;
+    letter-spacing: 0.02em;
   }
 
   .netflix-badge--stacked {
-    width: 90%;
-    max-width: 104px;
+    width: 88%;
+    max-width: 86px;
     border-radius: 3px 3px 0 0;
   }
 
   .netflix-badge__segment--stacked-top {
-    height: 1.10rem;
-    padding: 0 0.25rem;
-    font-size: 0.55rem;
+    height: 1.05rem;
+    padding: 0 0.2rem;
+    font-size: clamp(0.48rem, 1.6vw, 0.55rem);
     border-radius: 3px 3px 0 0;
   }
 
   .netflix-badge__segment--stacked-bottom {
-    height: 1.10rem;
-    padding: 0 0.25rem;
-    font-size: 0.55rem;
+    height: 1.05rem;
+    padding: 0 0.2rem;
+    font-size: clamp(0.48rem, 1.6vw, 0.55rem);
     border-radius: 0;
   }
 
   .netflix-badge--solid-red {
-    height: 1.18rem;
-    padding: 0 0.44rem;
-    font-size: 0.60rem;
+    height: 1.15rem;
+    padding: 0 clamp(0.30rem, 1.4vw, 0.44rem);
+    font-size: clamp(0.50rem, 1.8vw, 0.60rem);
     border-radius: 3px 3px 0 0;
+    max-width: 100%;
   }
 
   .netflix-badge--portrait.netflix-badge--solid-red {
-    height: 1.15rem;
-    padding: 0 0.42rem;
-    font-size: 0.58rem;
+    height: 1.12rem;
+    padding: 0 clamp(0.28rem, 1.3vw, 0.40rem);
+    font-size: clamp(0.48rem, 1.7vw, 0.56rem);
     max-width: 92%;
   }
 }

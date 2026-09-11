@@ -342,53 +342,6 @@ export function NavigationShell({
               )}
             </div>
 
-            {/* Netflix Kids Profile Button */}
-            <button
-              aria-label="Kids experience"
-              className="top-navigation__kids-btn"
-              onClick={() => {
-                const target = document.querySelector('#anime') || document.querySelector('#trending');
-                target?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              type="button"
-            >
-              <div className="top-navigation__kids-icon">
-                <svg
-                  aria-hidden="true"
-                  className="top-navigation__kids-svg"
-                  fill="none"
-                  height="100%"
-                  viewBox="0 0 32 32"
-                  width="100%"
-                >
-                  <defs>
-                    <linearGradient id="netflix-kids-grad" x1="0" x2="0" y1="0" y2="32" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#0071eb" />
-                      <stop offset="100%" stopColor="#004db3" />
-                    </linearGradient>
-                  </defs>
-                  <rect fill="url(#netflix-kids-grad)" height="32" rx="4" width="32" />
-                  <circle cx="10" cy="12" fill="#ffffff" r="2" />
-                  <circle cx="22" cy="12" fill="#ffffff" r="2" />
-                  <path d="M10 18.5C12 22 20 22 22 18.5" stroke="#ffffff" strokeLinecap="round" strokeWidth="2.2" />
-                  <rect fill="#e50914" height="8" rx="3" width="14" x="16" y="22" />
-                  <text
-                    dominantBaseline="middle"
-                    fill="#ffffff"
-                    fontFamily="system-ui, -apple-system, sans-serif"
-                    fontSize="5.5"
-                    fontWeight="900"
-                    textAnchor="middle"
-                    x="23"
-                    y="26.5"
-                  >
-                    kids
-                  </text>
-                </svg>
-              </div>
-              <span className="top-navigation__kids-label">Kids</span>
-            </button>
-
             {/* Netflix Profile Avatar & Menu */}
             <div className="top-navigation__popover-anchor">
               <button
@@ -426,10 +379,6 @@ export function NavigationShell({
                     <div className="netflix-profile-popover__item netflix-profile-popover__item--active">
                       <div className="profile-button__avatar profile-button__avatar--red">☺</div>
                       <span>User</span>
-                    </div>
-                    <div className="netflix-profile-popover__item">
-                      <div className="profile-button__avatar profile-button__avatar--green">★</div>
-                      <span>Kids</span>
                     </div>
                     <div className="netflix-profile-popover__item">
                       <div className="profile-button__avatar profile-button__avatar--yellow">+</div>

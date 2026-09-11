@@ -1,5 +1,6 @@
 .media-card {
   min-width: 0;
+  container-type: inline-size;
 }
 
 .media-card__surface {
@@ -137,13 +138,18 @@
   justify-content: center;
   align-items: flex-end;
   pointer-events: none;
-  max-width: 92%;
+  max-width: calc(100% - 10px);
+  width: max-content;
 }
 
 @media (max-width: 47.999rem) {
   .media-card__surface,
   .media-card__surface .responsive-image {
     border-radius: 10px;
+  }
+
+  .media-card__badge-container {
+    max-width: calc(100% - 6px);
   }
 
   .media-card__top10-badge {
@@ -160,7 +166,7 @@
   }
 
   .media-card--has-badge .media-card__title-overlay {
-    padding-bottom: 1.42rem;
+    padding-bottom: 1.35rem;
   }
 }
 

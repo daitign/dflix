@@ -26,13 +26,20 @@
     --carousel-gap: 6px;
     --rank-poster-radius: 2px 7px 7px 2px;
     --rank-card-height: clamp(8.75rem, 30vw, 11.5rem);
+    --rank-poster-width: calc(var(--rank-card-height) * 2 / 3);
+    --rank-poster-left: calc(var(--rank-card-height) * 0.44);
+    --rank-card-width: calc(var(--rank-poster-left) + var(--rank-poster-width));
+    --rank-poster-left-double: calc(var(--rank-card-height) * 0.58);
+    --rank-card-width-double: calc(var(--rank-poster-left-double) + var(--rank-poster-width));
   }
 }
 
 /* 1. Relatively positioned container for number + poster */
 .ranked-card {
   position: relative;
+  display: block;
   width: var(--rank-card-width);
+  min-width: var(--rank-card-width);
   height: var(--rank-card-height);
   flex-shrink: 0;
   overflow: visible;
@@ -43,10 +50,12 @@
 .ranked-card--rank-1 {
   --rank-poster-left: calc(var(--rank-card-height) * 0.38);
   width: calc(var(--rank-poster-left) + var(--rank-poster-width));
+  min-width: calc(var(--rank-poster-left) + var(--rank-poster-width));
 }
 
 .ranked-card--double-digit {
   width: var(--rank-card-width-double);
+  min-width: var(--rank-card-width-double);
 }
 
 /* 2. Rank Number: clean, flat heavy sans-serif typography matching poster height */
@@ -103,18 +112,19 @@
 
 /* 3. Poster: foreground layer (z-index: 2), rounded corners & left-cast depth shadow */
 .ranked-card__art {
-  position: absolute;
+  position: relative;
+  display: block;
   z-index: 2;
-  left: var(--rank-poster-left);
-  top: 0;
-  bottom: 0;
+  margin-left: var(--rank-poster-left);
   width: var(--rank-poster-width);
+  min-width: var(--rank-poster-width);
   height: var(--rank-card-height);
   aspect-ratio: 2 / 3;
   padding: 0;
   overflow: hidden;
   border: 0;
   border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   background: var(--color-surface-1);
   box-shadow:
     -8px 0 18px rgba(0, 0, 0, 0.35),
@@ -128,7 +138,7 @@
 }
 
 .ranked-card--double-digit .ranked-card__art {
-  left: var(--rank-poster-left-double);
+  margin-left: var(--rank-poster-left-double);
 }
 
 .ranked-card__art .responsive-image {
@@ -193,14 +203,25 @@
 
 /* 4. Carousel track spacing specifically for ranked row */
 .carousel-shell--ranked .carousel-shell__track {
+  display: flex;
+  flex-direction: row;
+  grid-auto-columns: unset;
+  grid-auto-flow: unset;
   gap: var(--carousel-gap, 8px);
   padding: 0.25rem var(--container-gutter) 0.5rem;
+  overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-inline: contain;
   overscroll-behavior-block: none;
+  scroll-padding-inline: var(--container-gutter);
+  scroll-snap-type: inline mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .carousel-shell--ranked .carousel-shell__item {
+  flex: 0 0 auto;
   width: max-content;
+  min-width: max-content;
   overflow: visible;
   scroll-snap-stop: always;
 }

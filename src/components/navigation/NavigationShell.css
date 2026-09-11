@@ -343,47 +343,6 @@
   font-size: 0.65rem;
 }
 
-/* Netflix Kids Button */
-.top-navigation__kids-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: transparent;
-  border: 0;
-  padding: 0.25rem 0.35rem;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #e5e5e5;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: opacity 0.2s ease, transform 0.15s ease;
-}
-
-.top-navigation__kids-btn:hover {
-  opacity: 0.85;
-}
-
-.top-navigation__kids-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.top-navigation__kids-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: 4px;
-}
-
-.top-navigation__kids-label {
-  color: #e5e5e5;
-}
-
 /* Netflix Profile Button & Popover */
 .profile-button {
   display: inline-flex;
@@ -565,16 +524,6 @@
     gap: 0.25rem;
   }
 
-  .top-navigation__kids-btn {
-    padding: 0.15rem 0.2rem;
-    gap: 0.35rem;
-  }
-
-  .top-navigation__kids-icon {
-    width: 1.55rem;
-    height: 1.55rem;
-    font-size: 0.85rem;
-  }
 
   .profile-button {
     min-width: 0;
