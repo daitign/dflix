@@ -24,6 +24,40 @@
   border: 0;
 }
 
+.vidstuck-frame__fullscreen-toggle {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0;
+  display: none;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  padding: 0;
+  border-radius: 0.5rem 0 0;
+  color: #fff;
+  background: linear-gradient(135deg, transparent, rgb(0 0 0 / 36%));
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 78%));
+  touch-action: manipulation;
+}
+
+.vidstuck-frame__fullscreen-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -4px;
+}
+
+.vidstuck-frame--viewport-fullscreen {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
 .vidstuck-frame__loading,
 .vidstuck-frame__error {
   position: absolute;
@@ -69,4 +103,21 @@
 .vidstuck-frame[data-player-status='loading'] iframe,
 .vidstuck-frame[data-player-status='error'] iframe {
   visibility: hidden;
+}
+
+@media (max-width: 64rem) {
+  .vidstuck-frame__fullscreen-toggle {
+    display: grid;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 64rem) {
+  .vidstuck-frame--viewport-fullscreen {
+    top: 50%;
+    left: 50%;
+    width: 100dvh;
+    height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
+  }
 }

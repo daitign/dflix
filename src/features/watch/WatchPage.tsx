@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BrandMark } from '../../components/brand/BrandMark';
 import { Icon } from '../../components/icons/Icon';
-import { VidStuckPlayer, type VidStuckPlayerHandle } from '../../components/player';
+import { VidStuckPlayer } from '../../components/player';
 import { IconButton } from '../../components/primitives/IconButton';
 import { Skeleton } from '../../components/primitives/Skeleton';
 import { navigateHome, type WatchNavigationState, type WatchRoute } from '../../lib/navigation/watchRoutes';
@@ -15,12 +15,10 @@ interface WatchPageProps {
 }
 
 export function WatchPage({ navigationState, route }: WatchPageProps) {
-  const playerRef = useRef<VidStuckPlayerHandle>(null);
   const [resolvedTitle, setResolvedTitle] = useState(navigationState?.title ?? '');
   const [titleLoading, setTitleLoading] = useState(!navigationState?.title);
   const [isRouteValid, setIsRouteValid] = useState(Boolean(navigationState?.title));
   const [validationComplete, setValidationComplete] = useState(Boolean(navigationState?.title));
-  const [canUseCustomFullscreen, setCanUseCustomFullscreen] = useState(false);
 
   useEffect(() => {
     if (navigationState?.title) {
@@ -56,19 +54,6 @@ export function WatchPage({ navigationState, route }: WatchPageProps) {
     return () => { active = false; };
   }, [navigationState?.title, route.tmdbId, route.type]);
 
-  useEffect(() => {
-    const updateCapability = () => setCanUseCustomFullscreen(
-      window.matchMedia('(max-width: 64rem)').matches
-      && Boolean(playerRef.current?.canRequestFullscreen()),
-    );
-    const frame = window.requestAnimationFrame(updateCapability);
-    window.addEventListener('resize', updateCapability);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener('resize', updateCapability);
-    };
-  }, [isRouteValid, validationComplete]);
-
   const playerOptions = useMemo<VidStuckPlayerOptions>(() => (
     route.type === 'movie'
       ? { tmdbId: route.tmdbId, type: 'movie' }
@@ -100,27 +85,12 @@ export function WatchPage({ navigationState, route }: WatchPageProps) {
           {titleLoading ? <Skeleton height="1.2rem" width="12rem" /> : <h1>{resolvedTitle}</h1>}
           <p>{episodeLabel}</p>
         </div>
-        {canUseCustomFullscreen && (
-          <IconButton
-            aria-label="Enter fullscreen"
-            className="watch-page__fullscreen"
-            onClick={async () => {
-              const succeeded = await playerRef.current?.requestFullscreen();
-              if (!succeeded) setCanUseCustomFullscreen(false);
-            }}
-            size="md"
-            tone="glass"
-            tooltip="Fullscreen"
-          >
-            <Icon name="fullscreen" size={21} />
-          </IconButton>
-        )}
       </header>
       <section aria-label="Video playback" className="watch-page__stage">
         {!validationComplete ? (
           <Skeleton className="watch-page__player-skeleton" radius="lg" />
         ) : isRouteValid ? (
-          <VidStuckPlayer ref={playerRef} options={playerOptions} title={resolvedTitle || 'DAITIGN title'} />
+          <VidStuckPlayer options={playerOptions} title={resolvedTitle || 'DAITIGN title'} />
         ) : (
           <div className="watch-page__invalid" role="alert">
             <span>Playback unavailable</span>

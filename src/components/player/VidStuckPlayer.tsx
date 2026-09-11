@@ -1,9 +1,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Button } from '../primitives/Button';
+import { Icon } from '../icons/Icon';
 import { Skeleton } from '../primitives/Skeleton';
 import { buildVidStuckUrl, type VidStuckPlayerOptions, type VidStuckProgressEvent } from '../../lib/vidstuck';
 import { useVidStuckProgress } from './useVidStuckProgress';
-import { canRequestElementFullscreen, requestElementFullscreen } from './fullscreen';
+import {
+  canRequestElementFullscreen,
+  exitElementFullscreen,
+  isElementFullscreen,
+  lockLandscapeOrientation,
+  requestElementFullscreen,
+  unlockOrientation,
+} from './fullscreen';
 import './VidStuckPlayer.css';
 
 interface VidStuckPlayerProps {
@@ -25,6 +33,8 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+  const [isViewportFullscreen, setIsViewportFullscreen] = useState(false);
   const source = useMemo(() => {
     try {
       return buildVidStuckUrl(options);
@@ -47,8 +57,59 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
     return () => window.clearTimeout(timeout);
   }, [attempt, source]);
 
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      const isFullscreen = isElementFullscreen(playerRef.current);
+      setIsNativeFullscreen(isFullscreen);
+      if (!isFullscreen) unlockOrientation();
+    };
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreenState);
+      document.removeEventListener('webkitfullscreenchange', syncFullscreenState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isViewportFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsViewportFullscreen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    void lockLandscapeOrientation();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+      unlockOrientation();
+    };
+  }, [isViewportFullscreen]);
+
+  const toggleFullscreen = async () => {
+    if (isViewportFullscreen) {
+      setIsViewportFullscreen(false);
+      return;
+    }
+
+    if (isNativeFullscreen) {
+      await exitElementFullscreen();
+      return;
+    }
+
+    const enteredNativeFullscreen = await requestElementFullscreen(playerRef.current);
+    if (!enteredNativeFullscreen) setIsViewportFullscreen(true);
+  };
+
   return (
-    <div className="vidstuck-frame" data-player-status={status} ref={playerRef}>
+    <div
+      className={`vidstuck-frame${isViewportFullscreen ? ' vidstuck-frame--viewport-fullscreen' : ''}`}
+      data-player-status={status}
+      ref={playerRef}
+    >
       {status === 'loading' && (
         <div className="vidstuck-frame__loading" role="status">
           <Skeleton height="100%" radius="lg" width="100%" />
@@ -74,6 +135,16 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
           src={source}
           title={`${title} video player`}
         />
+      )}
+      {source && status === 'ready' && (
+        <button
+          aria-label={isNativeFullscreen || isViewportFullscreen ? 'Exit fullscreen' : 'Enter fullscreen in landscape'}
+          className="vidstuck-frame__fullscreen-toggle"
+          onClick={() => { void toggleFullscreen(); }}
+          type="button"
+        >
+          <Icon name="fullscreen" size={24} />
+        </button>
       )}
     </div>
   );
