@@ -108,7 +108,7 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: var(--space-2);
     margin: 0;
     padding:
@@ -167,7 +167,7 @@
 
   .watch-page__header {
     position: relative;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     padding-top: max(0.45rem, env(safe-area-inset-top));
     padding-bottom: 0.45rem;
     background: #030506;
@@ -193,8 +193,7 @@
   }
 
   .watch-page__stage .vidstuck-frame:fullscreen,
-  .watch-page__stage .vidstuck-frame:-webkit-full-screen,
-  .watch-page__stage .vidstuck-frame--viewport-fullscreen {
+  .watch-page__stage .vidstuck-frame:-webkit-full-screen {
     width: 100vw;
     max-width: none;
     height: 100dvh;

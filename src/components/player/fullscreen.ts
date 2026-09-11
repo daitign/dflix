@@ -1,7 +1,6 @@
 interface WebKitFullscreenDocument extends Document {
   webkitFullscreenEnabled?: boolean;
   webkitFullscreenElement?: Element | null;
-  webkitExitFullscreen?: () => Promise<void> | void;
 }
 
 interface WebKitFullscreenElement extends HTMLElement {
@@ -21,7 +20,8 @@ export function canRequestElementFullscreen(element: HTMLElement | null) {
 export function isElementFullscreen(element: HTMLElement | null) {
   if (!element) return false;
   const fullscreenDocument = document as WebKitFullscreenDocument;
-  return document.fullscreenElement === element || fullscreenDocument.webkitFullscreenElement === element;
+  const fullscreenElement = document.fullscreenElement ?? fullscreenDocument.webkitFullscreenElement;
+  return fullscreenElement === element || Boolean(fullscreenElement && element.contains(fullscreenElement));
 }
 
 export async function lockLandscapeOrientation() {
@@ -52,19 +52,6 @@ export async function requestElementFullscreen(element: HTMLElement | null) {
     if (typeof element.requestFullscreen === 'function') await element.requestFullscreen();
     else await fullscreenElement.webkitRequestFullscreen?.();
     await lockLandscapeOrientation();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function exitElementFullscreen() {
-  const fullscreenDocument = document as WebKitFullscreenDocument;
-
-  try {
-    if (typeof document.exitFullscreen === 'function') await document.exitFullscreen();
-    else await fullscreenDocument.webkitExitFullscreen?.();
-    unlockOrientation();
     return true;
   } catch {
     return false;
