@@ -13,13 +13,11 @@ export function shouldAutoplayHeroTrailer({
   isLowBandwidth,
   prefersReducedMotion,
   saveData,
-  viewportWidth,
+  viewportWidth: _viewportWidth,
 }: HeroPlaybackConditions): boolean {
   if (prefersReducedMotion) return false;
   if (saveData) return false;
   if (isLowBandwidth) return false;
-  // Preserve mobile data & battery on ultra-compact mobile screens (< 480px)
-  if (viewportWidth < 480) return false;
   return true;
 }
 

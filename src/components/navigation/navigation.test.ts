@@ -456,6 +456,87 @@ test('21. Footer branding: green-white shop button, Telegram group @daitignvault
   );
 });
 
+test('22. Mobile navbar layout: profile avatar is preserved without cutoff across small screens', () => {
+  const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const navCssContent = fs.readFileSync(navCssPath, 'utf8');
+
+  // Verify mobile media query rules
+  const mobileNavBlock = navCssContent.slice(
+    navCssContent.indexOf('@media (max-width: 47.999rem)')
+  );
+
+  assert.ok(
+    mobileNavBlock.includes('.top-navigation__vip-suffix') && mobileNavBlock.includes('display: none;'),
+    'Mobile navbar must hide VIP suffix on mobile screens to save width'
+  );
+  assert.ok(
+    mobileNavBlock.includes('.profile-button') && mobileNavBlock.includes('flex-shrink: 0;'),
+    'Profile button must have flex-shrink: 0 on mobile to prevent clipping'
+  );
+  assert.ok(
+    mobileNavBlock.includes('.profile-button__avatar') && mobileNavBlock.includes('flex-shrink: 0;'),
+    'Profile avatar must have flex-shrink: 0 on mobile'
+  );
+
+  const brandCssPath = path.resolve('src/components/brand/BrandMark.css');
+  const brandCssContent = fs.readFileSync(brandCssPath, 'utf8');
+  assert.ok(
+    brandCssContent.includes('clamp(4.4rem'),
+    'BrandMark wordmark must compact on mobile screens to keep layout within bounds'
+  );
+});
+
+test('23. Minimal footer shop button: sleek, compact design matching Netflix aesthetic', () => {
+  const appCssPath = path.resolve('src/app/App.css');
+  const appCssContent = fs.readFileSync(appCssPath, 'utf8');
+
+  const shopBtnMatch = appCssContent.match(/\.netflix-footer__shop-btn\s*\{([^}]+)\}/);
+  assert.ok(shopBtnMatch, 'netflix-footer__shop-btn must be defined in App.css');
+  const rules = shopBtnMatch[1];
+
+  assert.ok(rules.includes('padding: 0.32rem 0.65rem;'), 'Shop button must use minimal compact padding');
+  assert.ok(rules.includes('font-size: 0.74rem;'), 'Shop button must use understated font-size');
+  assert.ok(rules.includes('border-radius: 3px;'), 'Shop button must use sleek border-radius');
+
+  const hoverMatch = appCssContent.match(/\.netflix-footer__shop-btn:hover\s*\{([^}]+)\}/);
+  assert.ok(hoverMatch, 'netflix-footer__shop-btn:hover must be defined in App.css');
+  assert.ok(hoverMatch[1].includes('transform: none;'), 'Shop button hover must avoid bulky movement');
+});
+
+test('24. Movie details mobile modal: presents as an authentic rounded bottom sheet, not a full-screen takeover', () => {
+  const modalShellCss = fs.readFileSync(path.resolve('src/components/primitives/ModalShell.css'), 'utf8');
+  const mobileModalBlock = modalShellCss.slice(
+    modalShellCss.indexOf('@media (max-width: 48rem)')
+  );
+
+  assert.ok(
+    !mobileModalBlock.includes('height: 100dvh;'),
+    'Cinematic modal must not take 100dvh full-screen height on mobile'
+  );
+  assert.ok(
+    mobileModalBlock.includes('border-radius: 20px 20px 0 0;'),
+    'Cinematic modal panel must feature rounded top corners on mobile'
+  );
+  assert.ok(
+    mobileModalBlock.includes('align-items: flex-end;'),
+    'Cinematic modal must align to the bottom as an authentic sheet'
+  );
+
+  const detailsModalCss = fs.readFileSync(path.resolve('src/features/details-modal/components/DetailsModal.css'), 'utf8');
+  const mobileDetailsBlock = detailsModalCss.slice(
+    detailsModalCss.indexOf('@media (max-width: 48rem)')
+  );
+
+  assert.ok(
+    mobileDetailsBlock.includes('border-radius: 20px 20px 0 0;'),
+    'Details modal content and hero must inherit rounded top corners on mobile'
+  );
+  assert.ok(
+    mobileDetailsBlock.includes('.details-modal::before'),
+    'Details modal must render a sheet drag pull pill on mobile'
+  );
+});
+
 
 
 

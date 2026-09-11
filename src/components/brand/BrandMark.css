@@ -33,7 +33,11 @@
 }
 
 @media (max-width: 47.999rem) {
+  .brand-mark {
+    padding-inline: 0;
+  }
+
   .brand-mark__wordmark {
-    width: 6.4rem;
+    width: clamp(4.4rem, 13vw, 5.4rem);
   }
 }

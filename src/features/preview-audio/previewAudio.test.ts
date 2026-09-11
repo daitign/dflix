@@ -41,14 +41,14 @@ test('4. Hero trailer eligibility: disabled on low-bandwidth (2g/slow-2g)', () =
   assert.equal(eligible, false);
 });
 
-test('5. Hero trailer eligibility: disabled on ultra-compact mobile (< 480px)', () => {
+test('5. Hero trailer eligibility: enabled on mobile devices (e.g. 390px)', () => {
   const eligible = shouldAutoplayHeroTrailer({
     isLowBandwidth: false,
     prefersReducedMotion: false,
     saveData: false,
     viewportWidth: 390,
   });
-  assert.equal(eligible, false);
+  assert.equal(eligible, true);
 });
 
 test('6. Hero trailer eligibility: enabled on capable devices (desktop / tablet)', () => {

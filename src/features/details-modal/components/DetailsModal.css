@@ -1159,10 +1159,29 @@
 
 @media (max-width: 48rem) {
   .details-modal {
-    width: 100vw;
-    max-width: 100vw;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
     margin: 0;
+    border-radius: 20px 20px 0 0;
     transform: none;
+  }
+
+  .details-modal::before {
+    content: '';
+    position: sticky;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 9999px;
+    z-index: 10;
+    display: block;
+    margin: 8px auto -12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
   }
 
   .details-loading__cards {
@@ -1174,12 +1193,21 @@
   }
 
   .details-hero {
-    width: 100vw;
-    max-width: 100vw;
-    min-height: clamp(25rem, 105vw, 34rem);
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    min-height: clamp(23rem, 95vw, 32rem);
+  }
+
+  .details-hero__trailer,
+  .details-hero__backdrop {
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
   }
 
   .details-hero__shade {
+    border-radius: 20px 20px 0 0;
     background:
       linear-gradient(0deg, #0c0f12 0%, rgb(12 15 18 / 78%) 20%, transparent 60%),
       linear-gradient(180deg, rgb(0 0 0 / 25%), transparent 30%);
@@ -1232,8 +1260,9 @@
   }
 
   .details-modal__content {
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 0 clamp(1rem, 3.5vw, 1.5rem) var(--space-10);
   }
 
