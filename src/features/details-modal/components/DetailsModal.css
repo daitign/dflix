@@ -1,5 +1,9 @@
 .details-modal {
   position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   color: var(--color-text);
   background: #0c0f12;
 }
@@ -93,6 +97,10 @@
 
 .details-hero {
   position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   min-height: clamp(24rem, 49vw, 31.5rem);
   isolation: isolate;
 }
@@ -184,6 +192,9 @@
 }
 
 .details-modal__content {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 0 clamp(1.5rem, 4vw, 3.25rem) clamp(3rem, 7vw, 5rem);
 }
 
@@ -192,6 +203,31 @@
   grid-template-columns: minmax(0, 1.62fr) minmax(14rem, 0.82fr);
   gap: clamp(2rem, 5vw, 4rem);
   padding: var(--space-3) 0 clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.details-metadata,
+.details-metadata__primary,
+.details-metadata__credits,
+.details-section,
+.episode-list,
+.episode-row,
+.episode-row > button,
+.details-trailers > div,
+.similar-grid,
+.about-title,
+.about-title dl,
+.about-title dl div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.details-metadata__synopsis,
+.details-metadata__credits dd,
+.episode-row__heading,
+.episode-row__heading > span,
+.episode-row__overview,
+.about-title dd {
+  overflow-wrap: anywhere;
 }
 
 .details-metadata__facts {
@@ -419,6 +455,9 @@
 
 .episode-row__heading {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   justify-content: space-between;
   gap: var(--space-4);
 }
@@ -638,7 +677,14 @@
   }
 }
 
-@media (max-width: 47.999rem) {
+@media (max-width: 48rem) {
+  .details-modal {
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    transform: none;
+  }
+
   .details-loading__cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -648,6 +694,8 @@
   }
 
   .details-hero {
+    width: 100vw;
+    max-width: 100vw;
     min-height: clamp(25rem, 105vw, 34rem);
   }
 
@@ -669,7 +717,9 @@
   }
 
   .details-modal__content {
-    padding: 0 var(--space-5) var(--space-9);
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0 var(--space-5) var(--space-10);
   }
 
   .details-metadata {
@@ -685,9 +735,13 @@
 
   .season-selector select {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .episode-row > button {
+    min-width: 0;
+    max-width: 100%;
     grid-template-columns: 1.3rem minmax(7.5rem, 36vw) minmax(0, 1fr);
     gap: var(--space-3);
     padding-inline: 0;
@@ -699,6 +753,12 @@
 
   .about-title dl {
     grid-template-columns: 1fr;
+  }
+
+  .details-metadata__credits dd,
+  .about-title dd {
+    white-space: normal;
+    word-break: break-word;
   }
 }
 
@@ -713,7 +773,7 @@
   }
 
   .episode-row > button {
-    grid-template-columns: 1.2rem minmax(7rem, 39vw) minmax(0, 1fr);
+    grid-template-columns: 1.2rem minmax(6.5rem, 35vw) minmax(0, 1fr);
   }
 
   .episode-row__overview {

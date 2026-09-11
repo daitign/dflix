@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Button } from '../primitives/Button';
 import { Skeleton } from '../primitives/Skeleton';
 import { buildVidStuckUrl, type VidStuckPlayerOptions, type VidStuckProgressEvent } from '../../lib/vidstuck';
 import { useVidStuckProgress } from './useVidStuckProgress';
+import { canRequestElementFullscreen, requestElementFullscreen } from './fullscreen';
 import './VidStuckPlayer.css';
 
 interface VidStuckPlayerProps {
@@ -11,7 +12,16 @@ interface VidStuckPlayerProps {
   title: string;
 }
 
-export function VidStuckPlayer({ onProgress, options, title }: VidStuckPlayerProps) {
+export interface VidStuckPlayerHandle {
+  canRequestFullscreen: () => boolean;
+  requestFullscreen: () => Promise<boolean>;
+}
+
+export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerProps>(function VidStuckPlayer(
+  { onProgress, options, title },
+  forwardedRef,
+) {
+  const playerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -25,6 +35,11 @@ export function VidStuckPlayer({ onProgress, options, title }: VidStuckPlayerPro
 
   useVidStuckProgress({ expectedTmdbId: options.tmdbId, frameRef, onProgress });
 
+  useImperativeHandle(forwardedRef, () => ({
+    canRequestFullscreen: () => canRequestElementFullscreen(playerRef.current),
+    requestFullscreen: () => requestElementFullscreen(playerRef.current),
+  }), []);
+
   useEffect(() => {
     setStatus(source ? 'loading' : 'error');
     if (!source) return;
@@ -33,7 +48,7 @@ export function VidStuckPlayer({ onProgress, options, title }: VidStuckPlayerPro
   }, [attempt, source]);
 
   return (
-    <div className="vidstuck-frame" data-player-status={status}>
+    <div className="vidstuck-frame" data-player-status={status} ref={playerRef}>
       {status === 'loading' && (
         <div className="vidstuck-frame__loading" role="status">
           <Skeleton height="100%" radius="lg" width="100%" />
@@ -49,7 +64,7 @@ export function VidStuckPlayer({ onProgress, options, title }: VidStuckPlayerPro
       )}
       {source && (
         <iframe
-          allow="encrypted-media; fullscreen; autoplay; picture-in-picture"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
           key={attempt}
           onError={() => setStatus('error')}
@@ -62,4 +77,4 @@ export function VidStuckPlayer({ onProgress, options, title }: VidStuckPlayerPro
       )}
     </div>
   );
-}
+});

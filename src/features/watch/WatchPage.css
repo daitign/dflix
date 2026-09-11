@@ -1,5 +1,8 @@
 .watch-page {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 100dvh;
   grid-template-rows: auto 1fr;
   overflow-x: hidden;
@@ -12,7 +15,7 @@
 .watch-page__header {
   display: grid;
   width: min(100%, 100rem);
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-4);
   margin: 0 auto;
@@ -26,6 +29,7 @@
 
 .watch-page__title {
   min-width: 0;
+  max-width: 100%;
 }
 
 .watch-page__title h1,
@@ -51,6 +55,8 @@
 .watch-page__stage {
   display: grid;
   width: min(100%, 100rem);
+  min-width: 0;
+  max-width: 100%;
   align-content: center;
   margin: 0 auto;
   padding: 0 var(--container-gutter) clamp(1.25rem, 4vh, 3rem);
@@ -89,13 +95,80 @@
   font-size: var(--font-size-sm);
 }
 
-@media (max-width: 47.999rem) {
+@media (max-width: 48rem) {
   .watch-page {
-    grid-template-rows: auto auto 1fr;
+    width: 100vw;
+    min-height: 0;
+    grid-template-rows: auto auto;
+    overflow-x: clip;
   }
 
   .watch-page__header {
-    gap: var(--space-3);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    margin: 0;
+    padding:
+      max(0.65rem, env(safe-area-inset-top))
+      max(0.75rem, env(safe-area-inset-right))
+      0.65rem
+      max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .watch-page__header .brand-mark {
+    display: none;
+  }
+
+  .watch-page__header .icon-button {
+    flex: 0 0 auto;
+  }
+
+  .watch-page__title h1 {
+    font-size: 1rem;
+  }
+
+  .watch-page__title p {
+    margin-top: 0.1rem;
+    font-size: 0.72rem;
+  }
+
+  .watch-page__stage {
+    width: 100vw;
+    min-width: 0;
+    max-width: 100%;
+    align-content: start;
+    margin: 0;
+    padding: 0;
+  }
+
+  .watch-page__stage .vidstuck-frame,
+  .watch-page__player-skeleton,
+  .watch-page__invalid {
+    width: 100vw;
+    min-width: 0;
+    max-width: 100%;
+    max-height: none;
+    margin-inline: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 34rem) {
+  .watch-page {
+    min-height: 0;
+    grid-template-rows: auto auto;
+  }
+
+  .watch-page__header {
+    position: relative;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding-top: max(0.45rem, env(safe-area-inset-top));
+    padding-bottom: 0.45rem;
+    background: #030506;
   }
 
   .watch-page__header .brand-mark {
@@ -103,35 +176,16 @@
   }
 
   .watch-page__stage {
-    align-content: start;
+    width: 100vw;
+    max-width: 100%;
     padding: 0;
   }
 
   .watch-page__stage .vidstuck-frame {
-    width: 100%;
+    width: 100vw;
+    max-width: 100%;
     max-height: none;
     border-radius: 0;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 34rem) {
-  .watch-page__header {
-    position: absolute;
-    z-index: 3;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(rgb(0 0 0 / 72%), transparent);
-  }
-
-  .watch-page__stage {
-    width: 100%;
-    padding: 0;
-  }
-
-  .watch-page__stage .vidstuck-frame {
-    width: min(100vw, calc(100dvh * 16 / 9));
-    max-height: 100dvh;
-    border-radius: 0;
+    transform: none;
   }
 }

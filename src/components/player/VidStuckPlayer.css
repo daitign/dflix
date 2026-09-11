@@ -7,6 +7,16 @@
   background: #020304;
 }
 
+.vidstuck-frame:fullscreen,
+.vidstuck-frame:-webkit-full-screen {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+
 .vidstuck-frame iframe {
   display: block;
   width: 100%;

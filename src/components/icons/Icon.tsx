@@ -9,6 +9,7 @@ export type IconName =
   | 'chevronRight'
   | 'close'
   | 'grid'
+  | 'fullscreen'
   | 'heart'
   | 'home'
   | 'info'
@@ -36,6 +37,7 @@ const paths: Record<IconName, ReactNode> = {
   chevronRight: <path d="m9 18 6-6-6-6" />,
   close: <path d="M18 6 6 18M6 6l12 12" />,
   grid: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />,
+  fullscreen: <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" />,
   heart: <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z" />,
   home: <path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" />,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.1" /></>,
