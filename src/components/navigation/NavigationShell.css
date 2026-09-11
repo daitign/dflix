@@ -135,28 +135,33 @@
 
 .top-navigation__links {
   display: flex;
-  height: 100%;
   align-items: center;
-  gap: clamp(1rem, 1.8vw, 1.5rem);
+  gap: clamp(0.35rem, 0.9vw, 0.85rem);
 }
 
 .top-navigation__link {
   position: relative;
-  display: flex;
-  height: 100%;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
   color: #e5e5e5;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: color 0.25s ease;
+  text-decoration: none;
   white-space: nowrap;
+  background: transparent;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .top-navigation__link:hover {
   color: #ffffff;
 }
 
-.top-navigation__link[aria-current='page'] {
+.top-navigation__link[aria-current='page'],
+.top-navigation__link--active {
+  background: rgba(60, 60, 60, 0.85);
   color: #ffffff;
   font-weight: 700;
 }

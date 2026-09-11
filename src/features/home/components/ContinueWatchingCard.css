@@ -5,7 +5,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-surface-2);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -106,8 +106,9 @@
 }
 
 @media (max-width: 47.999rem) {
-  .continue-card__surface {
-    border-radius: 6px;
+  .continue-card__surface,
+  .continue-card__surface .responsive-image {
+    border-radius: 10px;
   }
 }
 

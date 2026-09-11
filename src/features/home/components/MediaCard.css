@@ -9,7 +9,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-surface-1);
   box-shadow: 0 4px 14px rgb(0 0 0 / 45%);
   cursor: pointer;
@@ -143,7 +143,7 @@
 @media (max-width: 47.999rem) {
   .media-card__surface,
   .media-card__surface .responsive-image {
-    border-radius: 6px;
+    border-radius: 10px;
   }
 
   .media-card__top10-badge {

@@ -100,7 +100,7 @@
   /* Layout - Netflix Full-Bleed Environment */
   --container-max: 100%;
   --container-gutter: clamp(1rem, 3.8vw, 3.75rem);
-  --carousel-gap: 4px;
+  --carousel-gap: 8px;
   --items-per-page: 6;
   --items-per-page-ranked: 6;
   --nav-height: 4.25rem;
@@ -136,7 +136,7 @@
     --nav-height: 4rem;
     --items-per-page: 4;
     --items-per-page-ranked: 4;
-    --carousel-gap: 3px;
+    --carousel-gap: 6px;
     --container-gutter: clamp(0.75rem, 3vw, 1.5rem);
   }
 }
@@ -153,6 +153,7 @@
   :root {
     --items-per-page: 2;
     --items-per-page-ranked: 2;
+    --carousel-gap: 5px;
   }
 }
 

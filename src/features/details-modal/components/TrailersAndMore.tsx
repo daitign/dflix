@@ -46,7 +46,7 @@ function TrailerCard({ defaultBackdrop, isActive, onPlay, onStop, video }: Trail
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               className="trailer-card__iframe"
-              src={`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/${video.key}?autoplay=1&rel=0&modestbranding=1&controls=1&iv_load_policy=3&playsinline=1`}
               title={video.name}
             />
             <IconButton

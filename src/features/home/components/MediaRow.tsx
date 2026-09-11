@@ -35,12 +35,12 @@ export function MediaRow({ items, mode = 'standard', row, title }: MediaRowProps
           itemWidth={
             isRanked
               ? 'max-content'
-              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6))'
+              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 8px))) / var(--items-per-page, 6))'
           }
           mobileItemWidth={
             isRanked
               ? 'max-content'
-              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6))'
+              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 8px))) / var(--items-per-page, 6))'
           }
           navigationMode="page"
         >

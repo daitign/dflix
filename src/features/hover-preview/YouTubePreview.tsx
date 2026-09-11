@@ -9,6 +9,8 @@ const PLAYER_START_TIMEOUT_MS = 12_000;
 
 interface YouTubePlayer {
   destroy: () => void;
+  getCurrentTime?: () => number;
+  getDuration?: () => number;
   getIframe: () => HTMLIFrameElement;
   mute: () => void;
   pauseVideo: () => void;
@@ -129,6 +131,7 @@ export function YouTubePreview({
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const hasStartedRef = useRef(false);
+  const loopIntervalRef = useRef<number>(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
 
@@ -235,6 +238,7 @@ export function YouTubePreview({
             fs: 0,
             iv_load_policy: 3,
             loop: 1,
+            modestbranding: 1,
             origin: window.location.origin,
             playlist: video.key,
             playsinline: 1,
@@ -269,6 +273,18 @@ export function YouTubePreview({
                   onPlaying?.();
                 }
 
+                // Seamless loop monitor: loop 0.6s before end to prevent YouTube "More videos" / related videos screen
+                window.clearInterval(loopIntervalRef.current);
+                loopIntervalRef.current = window.setInterval(() => {
+                  try {
+                    const current = event.target.getCurrentTime?.() ?? 0;
+                    const duration = event.target.getDuration?.() ?? 0;
+                    if (duration > 2 && duration - current < 0.6) {
+                      event.target.seekTo(0.1, true);
+                    }
+                  } catch {}
+                }, 250);
+
                 // If sound should be on and browser permits it, attempt unmuting safely
                 if (shouldBeAudible) {
                   try {
@@ -294,6 +310,10 @@ export function YouTubePreview({
                 return;
               }
 
+              if (event.data === api.PlayerState.PAUSED || event.data === api.PlayerState.ENDED) {
+                window.clearInterval(loopIntervalRef.current);
+              }
+
               if (event.data === api.PlayerState.ENDED) {
                 event.target.seekTo(0, true);
                 event.target.playVideo();
@@ -308,6 +328,7 @@ export function YouTubePreview({
     return () => {
       disposed = true;
       clearStartTimeout();
+      window.clearInterval(loopIntervalRef.current);
       const player = playerRef.current;
       playerRef.current = null;
       destroyPlayer(player);

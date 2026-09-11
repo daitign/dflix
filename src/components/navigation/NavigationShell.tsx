@@ -14,6 +14,7 @@ interface NavigationShellProps {
 interface NavigationItem {
   href: string;
   icon: IconName;
+  id: string;
   label: string;
 }
 
@@ -24,14 +25,17 @@ interface BrowseItem {
 }
 
 const navigationItems: NavigationItem[] = [
-  { href: '#home', icon: 'home', label: 'Home' },
-  { href: '#series', icon: 'sparkles', label: 'TV Shows' },
-  { href: '#movies', icon: 'grid', label: 'Movies' },
-  { href: '#trending', icon: 'sparkles', label: 'New & Popular' },
-  { href: '#my-list', icon: 'bookmark', label: 'My List' },
+  { href: '#home', icon: 'home', id: 'home', label: 'Home' },
+  { href: '#series', icon: 'sparkles', id: 'series', label: 'Shows' },
+  { href: '#movies', icon: 'grid', id: 'movies', label: 'Movies' },
+  { href: '#anime', icon: 'sparkles', id: 'anime', label: 'Games' },
+  { href: '#trending', icon: 'sparkles', id: 'trending', label: 'New & Popular' },
+  { href: '#my-list', icon: 'bookmark', id: 'my-list', label: 'My List' },
+  { href: '#top-rated-movies', icon: 'sparkles', id: 'top-rated-movies', label: 'Browse by Languages' },
 ];
 
 const browseItems: BrowseItem[] = [
+  { href: '#home', id: 'home', label: 'Home' },
   { href: '#series', id: 'series', label: 'Shows' },
   { href: '#movies', id: 'movies', label: 'Movies' },
   { href: '#anime', id: 'anime', label: 'Games' },
@@ -78,7 +82,12 @@ export function NavigationShell({
   const browseRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+      if (window.scrollY < 180) {
+        setActiveSection('home');
+      }
+    };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -120,15 +129,27 @@ export function NavigationShell({
 
   useEffect(() => {
     const sections = navigationItems
-      .map((item) => document.querySelector(item.href))
+      .map((item) => (item.href === '#home' ? document.querySelector('#main-content') : document.querySelector(item.href)))
       .filter((section): section is Element => section !== null);
 
     const observer = new IntersectionObserver(
       (entries) => {
+        if (window.scrollY < 180) {
+          setActiveSection('home');
+          return;
+        }
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-        if (visible[0]?.target.id) setActiveSection(visible[0].target.id);
+        if (visible[0]?.target.id) {
+          const targetId = visible[0].target.id;
+          const matchedItem = navigationItems.find(
+            (i) => i.id === targetId || (i.id === 'home' && targetId === 'main-content'),
+          );
+          if (matchedItem) {
+            setActiveSection(matchedItem.id);
+          }
+        }
       },
       { rootMargin: '-18% 0px -68%', threshold: 0 },
     );
@@ -181,6 +202,13 @@ export function NavigationShell({
                         key={item.label}
                         onClick={(e) => {
                           setIsBrowseOpen(false);
+                          if (item.href === '#home') {
+                            e.preventDefault();
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.history.pushState(null, '', '#home');
+                            setActiveSection('home');
+                            return;
+                          }
                           const target = document.querySelector(item.href);
                           if (target) {
                             e.preventDefault();
@@ -201,16 +229,35 @@ export function NavigationShell({
           </div>
 
           <nav aria-label="Primary" className="top-navigation__links">
-            {navigationItems.map((item) => (
-              <a
-                aria-current={activeSection === item.href.slice(1) ? 'page' : undefined}
-                className="top-navigation__link"
-                href={item.href}
-                key={item.label}
-              >
-                {item.label}
-              </a>
-            ))}
+            {navigationItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <a
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cx('top-navigation__link', isActive && 'top-navigation__link--active')}
+                  href={item.href}
+                  key={item.label}
+                  onClick={(e) => {
+                    if (item.href === '#home') {
+                      e.preventDefault();
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.history.pushState(null, '', '#home');
+                      setActiveSection('home');
+                      return;
+                    }
+                    const target = document.querySelector(item.href);
+                    if (target) {
+                      e.preventDefault();
+                      target.scrollIntoView({ behavior: 'smooth' });
+                      window.history.pushState(null, '', item.href);
+                      setActiveSection(item.id);
+                    }
+                  }}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </nav>
 
           <div className="top-navigation__actions">

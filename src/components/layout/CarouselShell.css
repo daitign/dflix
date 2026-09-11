@@ -81,9 +81,9 @@
 
 .carousel-shell__track {
   display: grid;
-  grid-auto-columns: var(--carousel-item-width, calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6)));
+  grid-auto-columns: var(--carousel-item-width, calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 8px))) / var(--items-per-page, 6)));
   grid-auto-flow: column;
-  gap: var(--carousel-gap, 4px);
+  gap: var(--carousel-gap, 8px);
   margin-inline: calc(var(--container-gutter) * -1);
   padding: 0.25rem var(--container-gutter) 0.5rem;
   overflow-x: auto;
