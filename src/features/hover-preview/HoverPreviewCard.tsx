@@ -14,6 +14,7 @@ import type {
 import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
 import { YouTubePreview } from './YouTubePreview';
 import { usePreviewAudio } from '../preview-audio';
+import { useMyList } from '../my-list';
 
 interface HoverPreviewCardProps {
   anchorElement: HTMLElement;
@@ -24,7 +25,7 @@ interface HoverPreviewCardProps {
   onScheduleClose: () => void;
   phase: 'open' | 'closing';
   placement: HoverPreviewPlacement;
-  style: React.CSSProperties;
+  style: { left: number; top: number; width: number };
 }
 
 function getLengthLabel(data: MediaPreviewData) {
@@ -48,7 +49,8 @@ export function HoverPreviewCard({
   style,
 }: HoverPreviewCardProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [isListed, setIsListed] = useState(false);
+  const { isInList, toggleItem } = useMyList();
+  const isListed = isInList(data.tmdbId ?? data.id);
   const [previewVideo, setPreviewVideo] = useState<TmdbVideo | null>(null);
   const canPlayPreview = usePreviewPlaybackEligibility();
   const { setHoverActive } = usePreviewAudio();
@@ -158,7 +160,7 @@ export function HoverPreviewCard({
             aria-pressed={isListed}
             className={isListed ? 'hover-preview-card__toggle--active' : undefined}
             onClick={() => {
-              setIsListed((current) => !current);
+              toggleItem(data);
               onAction('add-to-list', data);
             }}
             size="md"

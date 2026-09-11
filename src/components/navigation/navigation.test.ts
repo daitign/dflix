@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 test('1. Desktop navigation: contains all 7 Netflix items in correct order', () => {
-  const filePath = path.resolve('src/components/navigation/NavigationShell.tsx');
-  const content = fs.readFileSync(filePath, 'utf8');
+  const routesPath = path.resolve('src/lib/navigation/routes.ts');
+  const routesContent = fs.readFileSync(routesPath, 'utf8');
 
   const expectedLabels = [
     'Home',
@@ -19,10 +19,17 @@ test('1. Desktop navigation: contains all 7 Netflix items in correct order', () 
 
   expectedLabels.forEach((label) => {
     assert.ok(
-      content.includes(`label: '${label}'`),
-      `Navigation should include item with label: '${label}'`,
+      routesContent.includes(`label: '${label}'`),
+      `Routes should include item with label: '${label}'`,
     );
   });
+
+  const shellPath = path.resolve('src/components/navigation/NavigationShell.tsx');
+  const shellContent = fs.readFileSync(shellPath, 'utf8');
+  assert.ok(
+    shellContent.includes('NAV_ITEMS'),
+    'NavigationShell should import and render NAV_ITEMS',
+  );
 });
 
 test('2. Navigation styling: active link renders as a rounded pill with no thick border', () => {
@@ -107,6 +114,81 @@ test('7. Favicon: has transparent background with no background rect like Netfli
   assert.ok(faviconSvg.includes('viewBox="0 0 64 64"'), 'Favicon must define a clean square viewBox');
   assert.ok(faviconSvg.includes('#f0183d'), 'Favicon must contain the DAITIGN crimson path');
 });
+
+test('8. Search input: harsh outer focus outline is suppressed', () => {
+  const cssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const cssContent = fs.readFileSync(cssPath, 'utf8');
+
+  assert.ok(
+    cssContent.includes('.netflix-search__input:focus') &&
+    cssContent.includes('.netflix-search__input:focus-visible') &&
+    cssContent.includes('outline: none !important') &&
+    cssContent.includes('box-shadow: none !important'),
+    'Search input must suppress thick white outer focus outline with outline: none !important',
+  );
+});
+
+test('9. Catalog Notifications: backed by real TMDB items with artwork and unread counter', () => {
+  const shellPath = path.resolve('src/components/navigation/NavigationShell.tsx');
+  const shellContent = fs.readFileSync(shellPath, 'utf8');
+
+  assert.ok(
+    shellContent.includes('tmdbClient.getTrending'),
+    'NavigationShell should fetch catalog items for notifications',
+  );
+  assert.ok(
+    shellContent.includes('netflix-notifications__img'),
+    'Notifications should render real media thumbnail artwork',
+  );
+  assert.ok(
+    shellContent.includes('top-navigation__notification-badge'),
+    'Navigation bell should render unread count badge',
+  );
+});
+
+test('10. My List: storage key is daitign-my-list and supports reactive add/remove', () => {
+  const providerPath = path.resolve('src/features/my-list/MyListProvider.tsx');
+  const providerContent = fs.readFileSync(providerPath, 'utf8');
+
+  assert.ok(
+    providerContent.includes("'daitign-my-list'"),
+    'MyListProvider must use localStorage key daitign-my-list',
+  );
+  assert.ok(
+    providerContent.includes('toggleItem'),
+    'MyListProvider must expose toggleItem function',
+  );
+  assert.ok(
+    providerContent.includes('isInList'),
+    'MyListProvider must expose isInList function',
+  );
+});
+
+test('11. Routing: App.tsx handles all 7 navigation views and watch route', () => {
+  const appPath = path.resolve('src/app/App.tsx');
+  const appContent = fs.readFileSync(appPath, 'utf8');
+
+  assert.ok(appContent.includes('<ShowsPage'), 'App should render ShowsPage');
+  assert.ok(appContent.includes('<MoviesPage'), 'App should render MoviesPage');
+  assert.ok(appContent.includes('<GamesPage'), 'App should render GamesPage');
+  assert.ok(appContent.includes('<NewPopularPage'), 'App should render NewPopularPage');
+  assert.ok(appContent.includes('<MyListPage'), 'App should render MyListPage');
+  assert.ok(appContent.includes('<LanguagesPage'), 'App should render LanguagesPage');
+  assert.ok(appContent.includes('MyListProvider'), 'App should be wrapped in MyListProvider');
+});
+
+test('12. Vercel SPA rewrites: configure all routes to serve index.html', () => {
+  const vercelPath = path.resolve('vercel.json');
+  const vercelContent = JSON.parse(fs.readFileSync(vercelPath, 'utf8'));
+
+  const routes = ['/shows', '/movies', '/games', '/new-popular', '/my-list', '/languages'];
+  routes.forEach((route) => {
+    const rewrite = vercelContent.rewrites.find((r: { source: string; destination: string }) => r.source === route);
+    assert.ok(rewrite, `vercel.json should have rewrite for ${route}`);
+    assert.equal(rewrite.destination, '/index.html');
+  });
+});
+
 
 
 

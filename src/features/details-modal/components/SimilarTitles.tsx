@@ -3,6 +3,7 @@ import { Icon } from '../../../components/icons/Icon';
 import { SpatialAudioBadge } from '../../../components/primitives/SpatialAudioBadge';
 import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage';
 import type { MediaItem } from '../../catalog';
+import { useMyList } from '../../my-list';
 import {
   getDurationLabel,
   getMaturityLabel,
@@ -16,7 +17,8 @@ interface SimilarTitlesProps {
 }
 
 function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item: MediaItem) => void }) {
-  const [isListed, setIsListed] = useState(false);
+  const { isInList, toggleItem } = useMyList();
+  const isListed = isInList(item.tmdbId ?? item.id);
   const duration = getDurationLabel(item);
   const maturity = getMaturityLabel(item);
   const spatialAudio = hasSpatialAudio(item);
@@ -56,7 +58,7 @@ function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item
             className={`similar-card__list-btn ${isListed ? 'similar-card__list-btn--active' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
-              setIsListed((current) => !current);
+              toggleItem(item);
             }}
             title={isListed ? 'In My List' : 'Add to My List'}
             type="button"

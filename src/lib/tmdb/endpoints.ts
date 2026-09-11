@@ -1,6 +1,8 @@
 export const tmdbEndpoints = {
   airingTodayTv: '/tv/airing_today',
   animeTv: '/discover/tv',
+  discoverMovie: '/discover/movie',
+  discoverTv: '/discover/tv',
   movieDetails: (tmdbId: number) => `/movie/${tmdbId}`,
   movieVideos: (tmdbId: number) => `/movie/${tmdbId}/videos`,
   nowPlayingMovies: '/movie/now_playing',
@@ -12,6 +14,8 @@ export const tmdbEndpoints = {
   topRatedMovies: '/movie/top_rated',
   topRatedTv: '/tv/top_rated',
   trending: '/trending/all/day',
+  trendingMovies: '/trending/movie/day',
+  trendingTv: '/trending/tv/day',
   tvDetails: (tmdbId: number) => `/tv/${tmdbId}`,
   tvVideos: (tmdbId: number) => `/tv/${tmdbId}/videos`,
   upcomingMovies: '/movie/upcoming',

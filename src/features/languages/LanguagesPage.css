@@ -1,0 +1,52 @@
+.languages-page {
+  min-height: 80vh;
+  padding-top: calc(var(--nav-height) + 1.5rem);
+  padding-bottom: 6rem;
+  background: #141414;
+}
+
+.languages-page__header {
+  margin-bottom: 2rem;
+}
+
+.languages-page__header h1 {
+  font-size: clamp(1.8rem, 3.5vw, 2.75rem);
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.languages-page__selector {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.5rem;
+}
+
+.languages-page__pill {
+  padding: 0.5rem 1.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cccccc;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.languages-page__pill:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.languages-page__pill--active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  font-weight: 700;
+}

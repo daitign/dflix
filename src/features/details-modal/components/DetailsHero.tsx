@@ -9,6 +9,7 @@ import { usePreviewAudio } from '../../preview-audio';
 import { useHeroPlaybackEligibility } from '../../home/useHeroPlaybackEligibility';
 import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
+import { useMyList } from '../../my-list';
 
 interface DetailsHeroProps {
   details: MediaDetails;
@@ -18,7 +19,8 @@ interface DetailsHeroProps {
 
 export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [isListed, setIsListed] = useState(false);
+  const { isInList, toggleItem } = useMyList();
+  const isListed = isInList(details.tmdbId);
   const [modalVideo, setModalVideo] = useState<TmdbVideo | null>(null);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
 
@@ -83,14 +85,14 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
               aria-pressed={isListed}
               className={isListed ? 'details-action--active' : undefined}
               onClick={() => {
-                setIsListed((current) => !current);
-                onAction(`${details.title} list preference updated for this session.`);
+                const added = toggleItem(details);
+                onAction(added ? `Added ${details.title} to My List.` : `Removed ${details.title} from My List.`);
               }}
               size="lg"
               tone="glass"
               tooltip={isListed ? 'In My List' : 'My List'}
             >
-              <Icon name={isListed ? 'bookmark' : 'plus'} size={22} />
+              <Icon name={isListed ? 'check' : 'plus'} size={22} />
             </IconButton>
             <IconButton
               aria-label={isLiked ? `Unlike ${details.title}` : `Like ${details.title}`}

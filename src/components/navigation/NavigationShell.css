@@ -219,6 +219,14 @@
   pointer-events: auto;
 }
 
+.netflix-search__input:focus,
+.netflix-search__input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border-color: #ffffff !important;
+}
+
 .netflix-search--open .netflix-search__trigger {
   position: absolute;
   left: 0.15rem;
@@ -341,6 +349,22 @@
 .netflix-notifications__text span {
   color: #737373;
   font-size: 0.65rem;
+}
+
+.netflix-notifications__img {
+  width: 4rem;
+  height: 2.35rem;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #222;
+}
+
+.netflix-notifications__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #888888;
+  font-size: 0.85rem;
 }
 
 /* Netflix Profile Button & Popover */
@@ -563,3 +587,53 @@
     font-size: 0.75rem;
   }
 }
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 47.999rem) {
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-nav, 100);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 3.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    background: rgba(18, 18, 18, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-bottom-nav__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    color: #8c8c8c;
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .mobile-bottom-nav__item:hover,
+  .mobile-bottom-nav__item--active {
+    color: #ffffff;
+  }
+
+  .navigation-shell {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0));
+  }
+}
+

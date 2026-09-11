@@ -80,6 +80,14 @@ export const tmdbClient = {
     with_genres: 16,
     with_original_language: 'ja',
   }),
+  discoverMovies: (params: Record<string, QueryValue> = {}) => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(
+    tmdbEndpoints.discoverMovie,
+    { sort_by: 'popularity.desc', 'vote_count.gte': 50, ...params },
+  ),
+  discoverTv: (params: Record<string, QueryValue> = {}) => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(
+    tmdbEndpoints.discoverTv,
+    { sort_by: 'popularity.desc', 'vote_count.gte': 40, ...params },
+  ),
   getMovieDetails: (tmdbId: number) => requestTmdb<TmdbMovieDetails>(
     tmdbEndpoints.movieDetails(tmdbId),
     { append_to_response: detailsAppend, include_image_language: imageLanguages() },
@@ -103,6 +111,8 @@ export const tmdbClient = {
   getTopRatedMovies: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.topRatedMovies),
   getTopRatedTv: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.topRatedTv),
   getTrending: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.trending),
+  getTrendingMovies: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.trendingMovies),
+  getTrendingTv: () => requestTmdb<TmdbPagedResponse<TmdbMediaSummary>>(tmdbEndpoints.trendingTv),
   getTvDetails: (tmdbId: number) => requestTmdb<TmdbTvDetails>(
     tmdbEndpoints.tvDetails(tmdbId),
     { append_to_response: tvDetailsAppend, include_image_language: imageLanguages() },

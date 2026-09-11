@@ -1,11 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Button, Container, NavigationShell } from '../components';
 import { getTmdbHomeCatalog, type HomeCatalog, type MediaItem } from '../features/catalog';
 import { DetailsModalProvider } from '../features/details-modal';
 import { BrowseSkeleton, HeroBanner, MediaCard, MediaRow } from '../features/home';
 import { HoverPreviewProvider } from '../features/hover-preview';
 import { PreviewAudioProvider } from '../features/preview-audio';
+import { MyListPage, MyListProvider } from '../features/my-list';
+import { ShowsPage } from '../features/shows';
+import { MoviesPage } from '../features/movies';
+import { GamesPage } from '../features/games';
+import { NewPopularPage } from '../features/new-popular';
+import { LanguagesPage } from '../features/languages';
 import { WatchPage } from '../features/watch';
+import { useCurrentRoute } from '../lib/navigation/routes';
 import { parseWatchPath, type WatchNavigationState } from '../lib/navigation/watchRoutes';
 import { searchMulti } from '../lib/tmdb';
 import './App.css';
@@ -89,12 +96,13 @@ function SearchResultsView({
           </div>
         ) : null}
       </Container>
-      <NetflixFooter />
     </main>
   );
 }
 
 function BrowseExperience() {
+  const { activeId } = useCurrentRoute();
+
   const [catalog, setCatalog] = useState<HomeCatalog | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -108,22 +116,30 @@ function BrowseExperience() {
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
-    setError('');
-    getTmdbHomeCatalog()
-      .then((nextCatalog) => {
-        if (active) setCatalog(nextCatalog);
-      })
-      .catch((reason) => {
-        if (!active) return;
-        setCatalog(null);
-        setError(reason instanceof Error ? reason.message : 'The catalog service is temporarily unavailable.');
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-    return () => { active = false; };
-  }, [attempt]);
+    if (activeId === 'home' || searchQuery) {
+      if (!catalog) {
+        setIsLoading(true);
+        setError('');
+        getTmdbHomeCatalog()
+          .then((nextCatalog) => {
+            if (active) setCatalog(nextCatalog);
+          })
+          .catch((reason) => {
+            if (!active) return;
+            setCatalog(null);
+            setError(reason instanceof Error ? reason.message : 'The catalog service is temporarily unavailable.');
+          })
+          .finally(() => {
+            if (active) setIsLoading(false);
+          });
+      }
+    } else {
+      setIsLoading(false);
+    }
+    return () => {
+      active = false;
+    };
+  }, [attempt, activeId, searchQuery, catalog]);
 
   useEffect(() => {
     const trimmed = searchQuery.trim();
@@ -162,26 +178,61 @@ function BrowseExperience() {
 
   const hasSearch = Boolean(searchQuery.trim());
 
-  const content = isLoading ? (
-    <BrowseSkeleton />
-  ) : error || !catalog ? (
-    <CatalogError message={error || 'No titles are available right now.'} onRetry={retry} />
-  ) : hasSearch ? (
-    <SearchResultsView isSearching={isSearching} query={searchQuery} results={searchResults} />
-  ) : (
-    <BrowseCatalog catalog={catalog} />
-  );
+  let pageContent: ReactNode;
+  if (hasSearch) {
+    pageContent = (
+      <SearchResultsView
+        isSearching={isSearching}
+        query={searchQuery}
+        results={searchResults}
+      />
+    );
+  } else {
+    switch (activeId) {
+      case 'shows':
+        pageContent = <ShowsPage />;
+        break;
+      case 'movies':
+        pageContent = <MoviesPage />;
+        break;
+      case 'games':
+        pageContent = <GamesPage />;
+        break;
+      case 'new-popular':
+        pageContent = <NewPopularPage />;
+        break;
+      case 'my-list':
+        pageContent = <MyListPage />;
+        break;
+      case 'languages':
+        pageContent = <LanguagesPage />;
+        break;
+      case 'home':
+      default:
+        if (isLoading) {
+          pageContent = <BrowseSkeleton />;
+        } else if (error || !catalog) {
+          pageContent = <CatalogError message={error || 'No titles are available right now.'} onRetry={retry} />;
+        } else {
+          pageContent = <BrowseCatalog catalog={catalog} />;
+        }
+        break;
+    }
+  }
 
   return (
-    <PreviewAudioProvider>
-      <DetailsModalProvider>
-        <HoverPreviewProvider>
-          <NavigationShell onSearchChange={setSearchQuery} searchQuery={searchQuery}>
-            {content}
-          </NavigationShell>
-        </HoverPreviewProvider>
-      </DetailsModalProvider>
-    </PreviewAudioProvider>
+    <MyListProvider>
+      <PreviewAudioProvider>
+        <DetailsModalProvider>
+          <HoverPreviewProvider>
+            <NavigationShell onSearchChange={setSearchQuery} searchQuery={searchQuery}>
+              {pageContent}
+              <NetflixFooter />
+            </NavigationShell>
+          </HoverPreviewProvider>
+        </DetailsModalProvider>
+      </PreviewAudioProvider>
+    </MyListProvider>
   );
 }
 
@@ -190,33 +241,28 @@ function BrowseCatalog({ catalog }: { catalog: HomeCatalog }) {
   const discoveryRows = catalog.rows.slice(5);
 
   return (
-    <>
-      <main className="browse-page" id="main-content">
-        <HeroBanner item={catalog.hero} />
+    <main className="browse-page" id="main-content">
+      <HeroBanner item={catalog.hero} />
 
-        <div className="browse-catalog">
-          <div className="top-ten-feature">
-            <MediaRow items={catalog.topTen} mode="ranked" title="Top 10 Today" />
-          </div>
-
-          {curatedRows.map((row) => <MediaRow key={row.id} row={row} />)}
-
-          {discoveryRows.length > 0 && (
-            <Container>
-              <div className="discovery-divider">
-                <span>Explore the collection</span>
-                <p>Stories for every kind of night.</p>
-              </div>
-            </Container>
-          )}
-
-          {discoveryRows.map((row) => <MediaRow key={row.id} row={row} />)}
-          <div aria-hidden="true" id="my-list" />
+      <div className="browse-catalog">
+        <div className="top-ten-feature">
+          <MediaRow items={catalog.topTen} mode="ranked" title="Top 10 Today" />
         </div>
-      </main>
 
-      <NetflixFooter />
-    </>
+        {curatedRows.map((row) => <MediaRow key={row.id} row={row} />)}
+
+        {discoveryRows.length > 0 && (
+          <Container>
+            <div className="discovery-divider">
+              <span>Explore the collection</span>
+              <p>Stories for every kind of night.</p>
+            </div>
+          </Container>
+        )}
+
+        {discoveryRows.map((row) => <MediaRow key={row.id} row={row} />)}
+      </div>
+    </main>
   );
 }
 

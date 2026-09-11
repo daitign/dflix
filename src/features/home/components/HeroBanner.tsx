@@ -10,6 +10,7 @@ import { useHeroPlaybackEligibility } from '../useHeroPlaybackEligibility';
 import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { navigateToWatch } from '../../../lib/navigation/watchRoutes';
+import { useMyList } from '../../my-list';
 import './HeroBanner.css';
 
 interface HeroBannerProps {
@@ -19,6 +20,8 @@ interface HeroBannerProps {
 export function HeroBanner({ item }: HeroBannerProps) {
   const { openDetails } = useDetailsModal();
   const { isAudible, toggleSound } = usePreviewAudio();
+  const { isInList, toggleItem } = useMyList();
+  const isListed = isInList(item.tmdbId ?? item.id);
   const [heroVideo, setHeroVideo] = useState<TmdbVideo | null>(null);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
   const canPlayVideo = useHeroPlaybackEligibility();
@@ -118,6 +121,16 @@ export function HeroBanner({ item }: HeroBannerProps) {
               variant="secondary"
             >
               More Info
+            </Button>
+            <Button
+              aria-label={isListed ? `Remove ${item.title} from My List` : `Add ${item.title} to My List`}
+              className="hero-banner__list-button"
+              onClick={() => toggleItem(item)}
+              size="lg"
+              startIcon={<Icon name={isListed ? 'check' : 'plus'} size={22} />}
+              variant="secondary"
+            >
+              {isListed ? 'In My List' : 'My List'}
             </Button>
           </div>
         </div>

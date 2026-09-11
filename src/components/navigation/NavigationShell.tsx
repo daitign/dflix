@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cx } from '../../lib/cx';
 import { BrandMark } from '../brand/BrandMark';
-import { Icon, type IconName } from '../icons/Icon';
+import { Icon } from '../icons/Icon';
 import { IconButton } from '../primitives/IconButton';
+import { NAV_ITEMS, navigateTo, useCurrentRoute } from '../../lib/navigation/routes';
+import { useDetailsModal } from '../../features/details-modal';
+import { tmdbClient } from '../../lib/tmdb/client';
+import { normalizeTmdbMixed } from '../../lib/tmdb/adapters';
+import type { MediaItem } from '../../features/catalog/types';
 import './NavigationShell.css';
 
 interface NavigationShellProps {
@@ -11,71 +16,31 @@ interface NavigationShellProps {
   searchQuery?: string;
 }
 
-interface NavigationItem {
-  href: string;
-  icon: IconName;
+export interface AppNotification {
   id: string;
-  label: string;
+  item?: MediaItem;
+  message: string;
+  thumbnailUrl?: string;
+  time: string;
+  title: string;
 }
-
-interface BrowseItem {
-  href: string;
-  id: string;
-  label: string;
-}
-
-const navigationItems: NavigationItem[] = [
-  { href: '#home', icon: 'home', id: 'home', label: 'Home' },
-  { href: '#series', icon: 'sparkles', id: 'series', label: 'Shows' },
-  { href: '#movies', icon: 'grid', id: 'movies', label: 'Movies' },
-  { href: '#anime', icon: 'sparkles', id: 'anime', label: 'Games' },
-  { href: '#trending', icon: 'sparkles', id: 'trending', label: 'New & Popular' },
-  { href: '#my-list', icon: 'bookmark', id: 'my-list', label: 'My List' },
-  { href: '#top-rated-movies', icon: 'sparkles', id: 'top-rated-movies', label: 'Browse by Languages' },
-];
-
-const browseItems: BrowseItem[] = [
-  { href: '#home', id: 'home', label: 'Home' },
-  { href: '#series', id: 'series', label: 'Shows' },
-  { href: '#movies', id: 'movies', label: 'Movies' },
-  { href: '#anime', id: 'anime', label: 'Games' },
-  { href: '#trending', id: 'trending', label: 'New & Popular' },
-  { href: '#my-list', id: 'my-list', label: 'My List' },
-  { href: '#top-rated-movies', id: 'top-rated-movies', label: 'Browse by Languages' },
-];
-
-const mockNotifications = [
-  {
-    id: 1,
-    title: 'New Arrival',
-    message: 'Watch the critically acclaimed blockbuster now trending globally.',
-    time: '2 hours ago',
-  },
-  {
-    id: 2,
-    title: 'Top 10 Today',
-    message: 'Explore the top trending movies and series in your region.',
-    time: '1 day ago',
-  },
-  {
-    id: 3,
-    title: 'Season Premiere',
-    message: 'Brand new episodes have just landed in your queue.',
-    time: '3 days ago',
-  },
-];
 
 export function NavigationShell({
   children,
   onSearchChange,
   searchQuery = '',
 }: NavigationShellProps) {
-  const [activeSection, setActiveSection] = useState('home');
+  const { activeId } = useCurrentRoute();
+  const { openDetails } = useDetailsModal();
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isBrowseOpen, setIsBrowseOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(Boolean(searchQuery));
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -84,13 +49,77 @@ export function NavigationShell({
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
-      if (window.scrollY < 180) {
-        setActiveSection('home');
-      }
     };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fetch real notifications from TMDB catalog
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      tmdbClient.getTrending(),
+      tmdbClient.getNowPlayingMovies(),
+      tmdbClient.getAiringTodayTv(),
+    ]).then(([trendingRes, nowPlayingRes, airingTodayRes]) => {
+      if (!active) return;
+
+      const notifs: AppNotification[] = [];
+
+      if (nowPlayingRes.status === 'fulfilled' && nowPlayingRes.value?.results?.length) {
+        const item = normalizeTmdbMixed(nowPlayingRes.value.results[0]);
+        if (item) {
+          notifs.push({
+            id: `notif-movie-${item.id}`,
+            item,
+            message: `${item.title} is now streaming in cinema audio and HD.`,
+            thumbnailUrl: item.backdropUrl ?? item.posterUrl,
+            time: '2 hours ago',
+            title: 'New Arrival',
+          });
+        }
+      }
+
+      if (airingTodayRes.status === 'fulfilled' && airingTodayRes.value?.results?.length) {
+        const item = normalizeTmdbMixed(airingTodayRes.value.results[0]);
+        if (item) {
+          notifs.push({
+            id: `notif-tv-${item.id}`,
+            item,
+            message: `A brand-new episode of ${item.title} just dropped.`,
+            thumbnailUrl: item.backdropUrl ?? item.posterUrl,
+            time: '5 hours ago',
+            title: 'New Episode',
+          });
+        }
+      }
+
+      if (trendingRes.status === 'fulfilled' && trendingRes.value?.results?.length) {
+        const candidates = trendingRes.value.results.slice(0, 3);
+        candidates.forEach((raw, idx) => {
+          const item = normalizeTmdbMixed(raw);
+          if (item && notifs.length < 5) {
+            notifs.push({
+              id: `notif-trending-${item.id}-${idx}`,
+              item,
+              message: `${item.title} is trending in your top recommendations.`,
+              thumbnailUrl: item.backdropUrl ?? item.posterUrl,
+              time: idx === 0 ? '1 day ago' : '2 days ago',
+              title: idx === 0 ? 'Top 10 Today' : 'Trending Now',
+            });
+          }
+        });
+      }
+
+      if (notifs.length > 0) {
+        setNotifications(notifs);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -127,36 +156,7 @@ export function NavigationShell({
     }
   }, [isSearchOpen]);
 
-  useEffect(() => {
-    const sections = navigationItems
-      .map((item) => (item.href === '#home' ? document.querySelector('#main-content') : document.querySelector(item.href)))
-      .filter((section): section is Element => section !== null);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (window.scrollY < 180) {
-          setActiveSection('home');
-          return;
-        }
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
-        if (visible[0]?.target.id) {
-          const targetId = visible[0].target.id;
-          const matchedItem = navigationItems.find(
-            (i) => i.id === targetId || (i.id === 'home' && targetId === 'main-content'),
-          );
-          if (matchedItem) {
-            setActiveSection(matchedItem.id);
-          }
-        }
-      },
-      { rootMargin: '-18% 0px -68%', threshold: 0 },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
+  const unreadCount = notifications.filter((n) => !readNotificationIds.has(n.id)).length;
 
   return (
     <div className="navigation-shell">
@@ -192,30 +192,19 @@ export function NavigationShell({
               {isBrowseOpen && (
                 <div className="netflix-browse-popover" role="menu">
                   <div className="netflix-browse-popover__items">
-                    {browseItems.map((item) => (
+                    {NAV_ITEMS.map((item) => (
                       <a
                         className={cx(
                           'netflix-browse-popover__item',
-                          activeSection === item.id && 'netflix-browse-popover__item--active'
+                          activeId === item.id && 'netflix-browse-popover__item--active'
                         )}
                         href={item.href}
-                        key={item.label}
+                        key={item.id}
                         onClick={(e) => {
+                          e.preventDefault();
                           setIsBrowseOpen(false);
-                          if (item.href === '#home') {
-                            e.preventDefault();
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            window.history.pushState(null, '', '#home');
-                            setActiveSection('home');
-                            return;
-                          }
-                          const target = document.querySelector(item.href);
-                          if (target) {
-                            e.preventDefault();
-                            target.scrollIntoView({ behavior: 'smooth' });
-                            window.history.pushState(null, '', item.href);
-                            setActiveSection(item.id);
-                          }
+                          navigateTo(item.href);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         role="menuitem"
                       >
@@ -229,29 +218,18 @@ export function NavigationShell({
           </div>
 
           <nav aria-label="Primary" className="top-navigation__links">
-            {navigationItems.map((item) => {
-              const isActive = activeSection === item.id;
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeId === item.id;
               return (
                 <a
                   aria-current={isActive ? 'page' : undefined}
                   className={cx('top-navigation__link', isActive && 'top-navigation__link--active')}
                   href={item.href}
-                  key={item.label}
+                  key={item.id}
                   onClick={(e) => {
-                    if (item.href === '#home') {
-                      e.preventDefault();
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      window.history.pushState(null, '', '#home');
-                      setActiveSection('home');
-                      return;
-                    }
-                    const target = document.querySelector(item.href);
-                    if (target) {
-                      e.preventDefault();
-                      target.scrollIntoView({ behavior: 'smooth' });
-                      window.history.pushState(null, '', item.href);
-                      setActiveSection(item.id);
-                    }
+                    e.preventDefault();
+                    navigateTo(item.href);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
                   {item.label}
@@ -306,20 +284,34 @@ export function NavigationShell({
               )}
             </div>
 
-            {/* Notifications Dropdown with Netflix 6 Counter Badge */}
+            {/* Notifications Dropdown with Real Catalog Notifications & Badge */}
             <div className="top-navigation__popover-anchor">
               <IconButton
                 aria-expanded={isNotificationsOpen}
                 aria-label="Notifications"
                 className={cx(isNotificationsOpen && 'top-navigation__action--active')}
                 onClick={() => {
-                  setIsNotificationsOpen((prev) => !prev);
+                  setIsNotificationsOpen((prev) => {
+                    const next = !prev;
+                    if (next && notifications.length > 0) {
+                      setReadNotificationIds((prevIds) => {
+                        const nextIds = new Set(prevIds);
+                        notifications.forEach((n) => nextIds.add(n.id));
+                        return nextIds;
+                      });
+                    }
+                    return next;
+                  });
                   setIsProfileOpen(false);
                 }}
                 tooltip="Notifications"
               >
                 <Icon name="bell" />
-                <span aria-hidden="true" className="top-navigation__notification-badge">6</span>
+                {unreadCount > 0 && (
+                  <span aria-hidden="true" className="top-navigation__notification-badge">
+                    {unreadCount}
+                  </span>
+                )}
               </IconButton>
               {isNotificationsOpen && (
                 <div className="netflix-notifications-popover" role="dialog">
@@ -327,16 +319,39 @@ export function NavigationShell({
                     <h4>Notifications</h4>
                   </div>
                   <div className="netflix-notifications__list">
-                    {mockNotifications.map((notif) => (
-                      <div className="netflix-notifications__item" key={notif.id}>
-                        <div className="netflix-notifications__badge" />
-                        <div className="netflix-notifications__text">
-                          <strong>{notif.title}</strong>
-                          <p>{notif.message}</p>
-                          <span>{notif.time}</span>
+                    {notifications.length > 0 ? (
+                      notifications.map((notif) => (
+                        <div
+                          className="netflix-notifications__item"
+                          key={notif.id}
+                          onClick={() => {
+                            if (notif.item) {
+                              openDetails(notif.item);
+                            }
+                            setIsNotificationsOpen(false);
+                          }}
+                        >
+                          {notif.thumbnailUrl ? (
+                            <img
+                              alt=""
+                              className="netflix-notifications__img"
+                              src={notif.thumbnailUrl}
+                            />
+                          ) : (
+                            <div className="netflix-notifications__badge" />
+                          )}
+                          <div className="netflix-notifications__text">
+                            <strong>{notif.title}</strong>
+                            <p>{notif.message}</p>
+                            <span>{notif.time}</span>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="netflix-notifications__empty">
+                        No new notifications right now.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}
@@ -408,6 +423,60 @@ export function NavigationShell({
       </header>
 
       {children}
+
+      {/* Mobile Bottom Navigation */}
+      <nav aria-label="Mobile Bottom Navigation" className="mobile-bottom-nav">
+        <button
+          className={cx('mobile-bottom-nav__item', activeId === 'home' && 'mobile-bottom-nav__item--active')}
+          onClick={() => {
+            navigateTo('/');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          type="button"
+        >
+          <Icon name="home" size={20} />
+          <span>Home</span>
+        </button>
+
+        <button
+          className={cx('mobile-bottom-nav__item', isSearchOpen && 'mobile-bottom-nav__item--active')}
+          onClick={() => {
+            setIsSearchOpen(true);
+            setTimeout(() => searchInputRef.current?.focus(), 100);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          type="button"
+        >
+          <Icon name="search" size={20} />
+          <span>Search</span>
+        </button>
+
+        <button
+          className={cx('mobile-bottom-nav__item', activeId === 'my-list' && 'mobile-bottom-nav__item--active')}
+          onClick={() => {
+            navigateTo('/my-list');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          type="button"
+        >
+          <Icon name="bookmark" size={20} />
+          <span>My List</span>
+        </button>
+
+        <button
+          className={cx('mobile-bottom-nav__item', isProfileOpen && 'mobile-bottom-nav__item--active')}
+          onClick={() => {
+            setIsProfileOpen((prev) => !prev);
+            setIsNotificationsOpen(false);
+          }}
+          type="button"
+        >
+          <div className="profile-button__avatar" style={{ width: '1.25rem', height: '1.25rem' }}>
+            ☺
+          </div>
+          <span>Profile</span>
+        </button>
+      </nav>
     </div>
   );
 }

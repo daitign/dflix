@@ -9,6 +9,30 @@
     {
       "source": "/watch/tv/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/shows",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/movies",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/games",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/new-popular",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/my-list",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/languages",
+      "destination": "/index.html"
     }
   ]
 }
