@@ -101,4 +101,13 @@ test('6. Top 10 row: flex track and in-flow poster margin prevents iPhone WebKit
   );
 });
 
+test('7. Favicon: has transparent background with no background rect like Netflix', () => {
+  const faviconSvg = fs.readFileSync(path.resolve('public/favicon.svg'), 'utf-8');
+  assert.ok(!faviconSvg.includes('<rect'), 'Favicon must not have a solid background rect element');
+  assert.ok(faviconSvg.includes('viewBox="0 0 64 64"'), 'Favicon must define a clean square viewBox');
+  assert.ok(faviconSvg.includes('#f0183d'), 'Favicon must contain the DAITIGN crimson path');
+});
+
+
+
 
