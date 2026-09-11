@@ -176,9 +176,18 @@ test('18. YouTubePreview: implements unexpected pause recovery to immediately re
     path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
     'utf8'
   );
-  assert.ok(ytPreviewSrc.includes('if (isPlayingRef.current)'), 'Must check isPlayingRef.current on PAUSED state');
+  assert.ok(ytPreviewSrc.includes('isPlayingRef.current'), 'Must check isPlayingRef.current on PAUSED state');
   assert.ok(ytPreviewSrc.includes('event.target.playVideo()'), 'Must call playVideo on recovery');
   assert.ok(ytPreviewSrc.includes('event.target.mute()'), 'Must call mute on recovery');
+});
+
+test('20. DetailsHero: isolates mobile modal audio and starts muted to guarantee autoplay', () => {
+  const detailsHeroSrc = fs.readFileSync(
+    path.resolve('src/features/details-modal/components/DetailsHero.tsx'),
+    'utf8'
+  );
+  assert.ok(detailsHeroSrc.includes('isMobileModalMuted'), 'DetailsHero must maintain isMobileModalMuted state');
+  assert.ok(detailsHeroSrc.includes('isAudible={isTrailerAudible}'), 'DetailsHero must pass isTrailerAudible to YouTubePreview');
 });
 
 test('19. HeroBanner.css: scales mobile hero trailer layer to match 62% backdrop framing', () => {

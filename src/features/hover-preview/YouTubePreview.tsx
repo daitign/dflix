@@ -117,6 +117,7 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
 export interface YouTubePreviewProps {
   className?: string;
   heroVolumeFactor?: number;
+  isAudible?: boolean;
   isHeroInView?: boolean;
   onPlaying?: () => void;
   title: string;
@@ -127,6 +128,7 @@ export interface YouTubePreviewProps {
 export function YouTubePreview({
   className = '',
   heroVolumeFactor = 1,
+  isAudible: isAudibleProp,
   isHeroInView = true,
   onPlaying,
   title,
@@ -145,12 +147,14 @@ export function YouTubePreview({
   const [isUnavailable, setIsUnavailable] = useState(false);
 
   const {
-    isAudible,
+    isAudible: contextIsAudible,
     isHoverActive,
     isModalActive,
     setAutoplaySoundAllowed,
     toggleSound,
   } = usePreviewAudio();
+
+  const isAudible = isAudibleProp !== undefined ? isAudibleProp : contextIsAudible;
 
   const isHero = variant === 'hero';
   const isModal = variant === 'modal';
@@ -188,8 +192,15 @@ export function YouTubePreview({
           player.playVideo();
         } catch {}
       }
+    } else if (isModal) {
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        try {
+          player.playVideo();
+        } catch {}
+      }
     }
-  }, [hasStarted, isHero, isHeroInView, isHoverActive, isModalActive]);
+  }, [hasStarted, isHero, isHeroInView, isHoverActive, isModal, isModalActive]);
 
   // Audio state & volume fade arbitration (smooth gradual fade on scroll / mute toggle)
   useEffect(() => {
@@ -289,8 +300,9 @@ export function YouTubePreview({
       }, 35);
     } else if (isModal) {
       stopFade();
+      const isMobile = isMobileTouchDevice();
       try {
-        if (shouldBeAudible) {
+        if (shouldBeAudible && (!isMobile || isAudibleProp)) {
           player.unMute();
           player.setVolume?.(100);
           currentVolumeRef.current = 100;
@@ -502,7 +514,7 @@ export function YouTubePreview({
               // immediately re-mute and resume playback so the video never stays paused with overlay controls.
               if (event.data === api.PlayerState.PAUSED) {
                 window.clearInterval(loopIntervalRef.current);
-                if (isPlayingRef.current) {
+                if (isPlayingRef.current || !hasStartedRef.current) {
                   try {
                     event.target.mute();
                     event.target.playVideo();
@@ -511,6 +523,16 @@ export function YouTubePreview({
                     setAutoplaySoundAllowed(false);
                   } catch {}
                 }
+                return;
+              }
+
+              // Autoplay queuing recovery: if YouTube API cued the video instead of auto-starting,
+              // force playVideo() so it starts without requiring a tap on the video.
+              if (event.data === 5 /* CUED */) {
+                try {
+                  event.target.mute();
+                  event.target.playVideo();
+                } catch {}
                 return;
               }
 

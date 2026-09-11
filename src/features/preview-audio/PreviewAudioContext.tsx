@@ -16,6 +16,8 @@ export function isMobileTouchDevice(): boolean {
 
 function getInitialSoundPreference(): boolean {
   if (typeof window === 'undefined') return true;
+  // Mobile touch devices default to muted to ensure reliable autoplay across iOS & Android
+  if (isMobileTouchDevice()) return false;
   try {
     const stored = window.localStorage.getItem(SOUND_PREFERENCE_STORAGE_KEY);
     if (stored === 'off') return false;
@@ -23,8 +25,6 @@ function getInitialSoundPreference(): boolean {
   } catch {
     // LocalStorage unavailable
   }
-  // Mobile touch devices default to muted to ensure reliable autoplay across iOS & Android
-  if (isMobileTouchDevice()) return false;
   // DAITIGN desktop default preference is SOUND ON
   return true;
 }

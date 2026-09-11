@@ -5,7 +5,7 @@ import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage'
 import { Icon } from '../../../components/icons/Icon';
 import type { MediaDetails } from '../types';
 import { YouTubePreview } from '../../hover-preview/YouTubePreview';
-import { usePreviewAudio } from '../../preview-audio';
+import { isMobileTouchDevice, usePreviewAudio } from '../../preview-audio';
 import { useHeroPlaybackEligibility } from '../../home/useHeroPlaybackEligibility';
 import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
@@ -26,6 +26,27 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
 
   const { isAudible, toggleSound } = usePreviewAudio();
   const canPlayVideo = useHeroPlaybackEligibility();
+
+  // On mobile touch devices (e.g. iPhone), modal previews must always start muted
+  // to comply with iOS WebKit autoplay policy. User can tap the audio button to unmute.
+  const isMobile = isMobileTouchDevice();
+  const [isMobileModalMuted, setIsMobileModalMuted] = useState(isMobile);
+
+  const isTrailerAudible = isMobile ? (!isMobileModalMuted && isAudible) : isAudible;
+
+  const handleAudioToggle = () => {
+    if (isMobile) {
+      if (isMobileModalMuted) {
+        setIsMobileModalMuted(false);
+        if (!isAudible) toggleSound();
+      } else {
+        setIsMobileModalMuted(true);
+        if (isAudible) toggleSound();
+      }
+    } else {
+      toggleSound();
+    }
+  };
 
   useEffect(() => {
     setModalVideo(null);
@@ -61,6 +82,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
       />
       {modalVideo && (
         <YouTubePreview
+          isAudible={isTrailerAudible}
           key={modalVideo.key}
           onPlaying={() => setIsTrailerPlaying(true)}
           title={details.title}
@@ -110,15 +132,15 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
             </IconButton>
           </div>
           <IconButton
-            aria-label={isAudible ? `Mute trailer for ${details.title}` : `Unmute trailer for ${details.title}`}
-            aria-pressed={isAudible}
+            aria-label={isTrailerAudible ? `Mute trailer for ${details.title}` : `Unmute trailer for ${details.title}`}
+            aria-pressed={isTrailerAudible}
             className="details-hero__audio-toggle"
-            onClick={toggleSound}
+            onClick={handleAudioToggle}
             size="lg"
             tone="glass"
-            tooltip={isAudible ? 'Mute' : 'Unmute'}
+            tooltip={isTrailerAudible ? 'Mute' : 'Unmute'}
           >
-            <Icon name={isAudible ? 'volume' : 'volumeOff'} size={22} />
+            <Icon name={isTrailerAudible ? 'volume' : 'volumeOff'} size={22} />
           </IconButton>
         </div>
       </div>
