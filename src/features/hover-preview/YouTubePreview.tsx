@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import type { TmdbVideo } from '../../lib/tmdb/types';
-import { shouldTrailerBeAudible, usePreviewAudio } from '../preview-audio';
+import { isMobileTouchDevice, shouldTrailerBeAudible, usePreviewAudio } from '../preview-audio';
 
 const YOUTUBE_API_SCRIPT_ID = 'daitign-youtube-iframe-api';
 const PLAYER_START_TIMEOUT_MS = 12_000;
@@ -377,6 +377,7 @@ export function YouTubePreview({
             iv_load_policy: 3,
             loop: 1,
             modestbranding: 1,
+            mute: 1,
             origin: window.location.origin,
             playlist: video.key,
             playsinline: 1,
@@ -391,7 +392,8 @@ export function YouTubePreview({
               }
 
               const iframe = event.target.getIframe();
-              iframe.allow = 'autoplay; encrypted-media';
+              iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+              iframe.setAttribute('playsinline', '1');
               iframe.referrerPolicy = 'strict-origin-when-cross-origin';
               iframe.tabIndex = -1;
               iframe.title = `${title} trailer preview`;
@@ -424,9 +426,12 @@ export function YouTubePreview({
                   } catch {}
                 }, 250);
 
+                const isMobile = isMobileTouchDevice();
+
                 // Initial sound & volume setup for newly started player
                 if (isHero) {
-                  const targetVol = isHeroInViewRef.current && shouldBeAudibleRef.current
+                  // On mobile touch devices, never auto-unmute on initial load to avoid iOS WebKit pausing the video
+                  const targetVol = isHeroInViewRef.current && shouldBeAudibleRef.current && !isMobile
                     ? Math.max(0, Math.min(100, Math.round(heroVolumeFactorRef.current * 100)))
                     : 0;
                   if (targetVol > 0) {
@@ -453,6 +458,25 @@ export function YouTubePreview({
                       isPlayingRef.current = false;
                     } catch {}
                   }
+                } else if (isModal) {
+                  // On mobile touch devices, never auto-unmute on initial load to avoid iOS WebKit pausing the video
+                  if (shouldBeAudibleRef.current && !isMobile) {
+                    try {
+                      event.target.unMute();
+                      event.target.setVolume?.(100);
+                      currentVolumeRef.current = 100;
+                      isMutedRef.current = false;
+                    } catch {
+                      event.target.mute();
+                      currentVolumeRef.current = 0;
+                      isMutedRef.current = true;
+                      setAutoplaySoundAllowed(false);
+                    }
+                  } else {
+                    event.target.mute();
+                    currentVolumeRef.current = 0;
+                    isMutedRef.current = true;
+                  }
                 } else if (shouldBeAudibleRef.current) {
                   try {
                     event.target.unMute();
@@ -473,21 +497,25 @@ export function YouTubePreview({
                 return;
               }
 
-              // Autoplay rejection recovery: If browser paused player because of sound, mute and resume immediately
-              if (event.data === api.PlayerState.PAUSED && !hasStartedRef.current) {
-                try {
-                  event.target.mute();
-                  event.target.playVideo();
-                  setAutoplaySoundAllowed(false);
-                } catch {}
+              // Autoplay rejection / unexpected pause recovery:
+              // If browser or iOS WebKit paused player unexpectedly while it was intended to play,
+              // immediately re-mute and resume playback so the video never stays paused with overlay controls.
+              if (event.data === api.PlayerState.PAUSED) {
+                window.clearInterval(loopIntervalRef.current);
+                if (isPlayingRef.current) {
+                  try {
+                    event.target.mute();
+                    event.target.playVideo();
+                    currentVolumeRef.current = 0;
+                    isMutedRef.current = true;
+                    setAutoplaySoundAllowed(false);
+                  } catch {}
+                }
                 return;
               }
 
-              if (event.data === api.PlayerState.PAUSED || event.data === api.PlayerState.ENDED) {
-                window.clearInterval(loopIntervalRef.current);
-              }
-
               if (event.data === api.PlayerState.ENDED) {
+                window.clearInterval(loopIntervalRef.current);
                 event.target.seekTo(0, true);
                 event.target.playVideo();
               }

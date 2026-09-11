@@ -148,6 +148,48 @@ test('15. PreviewAudioContext: initializes sound to ON by default and supports w
   assert.ok(audioContextSrc.includes('useState<boolean>(true)'), 'autoplaySoundAllowed must initialize to true for default sound ON');
   assert.ok(audioContextSrc.includes("'wheel'"), 'audioContext must listen for wheel events');
   assert.ok(audioContextSrc.includes("'scroll'"), 'audioContext must listen for scroll events');
+  assert.ok(audioContextSrc.includes('isMobileTouchDevice'), 'PreviewAudioContext must export isMobileTouchDevice');
 });
+
+test('16. YouTubePreview: sets mute: 1 and playsinline: 1 in playerVars for iOS WebKit autoplay', () => {
+  const ytPreviewSrc = fs.readFileSync(
+    path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
+    'utf8'
+  );
+  assert.ok(ytPreviewSrc.includes('mute: 1'), 'playerVars must include mute: 1 for iOS WebKit autoplay');
+  assert.ok(ytPreviewSrc.includes('playsinline: 1'), 'playerVars must include playsinline: 1');
+  assert.ok(ytPreviewSrc.includes("iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'"), 'iframe must have full permissions policy');
+  assert.ok(ytPreviewSrc.includes("iframe.setAttribute('playsinline', '1')"), 'iframe must have playsinline attribute');
+});
+
+test('17. YouTubePreview: prevents automatic unmuting on mobile touch devices to avoid WebKit pause', () => {
+  const ytPreviewSrc = fs.readFileSync(
+    path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
+    'utf8'
+  );
+  assert.ok(ytPreviewSrc.includes('const isMobile = isMobileTouchDevice()'), 'YouTubePreview must check isMobileTouchDevice on play');
+  assert.ok(ytPreviewSrc.includes('!isMobile'), 'YouTubePreview must guard unmute with !isMobile');
+});
+
+test('18. YouTubePreview: implements unexpected pause recovery to immediately resume playback muted', () => {
+  const ytPreviewSrc = fs.readFileSync(
+    path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
+    'utf8'
+  );
+  assert.ok(ytPreviewSrc.includes('if (isPlayingRef.current)'), 'Must check isPlayingRef.current on PAUSED state');
+  assert.ok(ytPreviewSrc.includes('event.target.playVideo()'), 'Must call playVideo on recovery');
+  assert.ok(ytPreviewSrc.includes('event.target.mute()'), 'Must call mute on recovery');
+});
+
+test('19. HeroBanner.css: scales mobile hero trailer layer to match 62% backdrop framing', () => {
+  const heroCss = fs.readFileSync(
+    path.resolve('src/features/home/components/HeroBanner.css'),
+    'utf8'
+  );
+  assert.ok(heroCss.includes('.hero-banner__trailer {\n    inset: 0 0 auto;\n    height: 62%;') ||
+            heroCss.includes('.hero-banner__trailer'), 'HeroBanner.css must frame trailer on mobile');
+  assert.ok(heroCss.includes('scale(1.35)'), 'HeroBanner.css must scale trailer mount on mobile');
+});
+
 
 

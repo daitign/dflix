@@ -5,6 +5,15 @@ export { SOUND_PREFERENCE_STORAGE_KEY };
 
 export const PreviewAudioContext = createContext<PreviewAudioContextValue | null>(null);
 
+export function isMobileTouchDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(pointer: coarse)').matches ||
+    window.matchMedia('(max-width: 47.999rem)').matches ||
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')
+  );
+}
+
 function getInitialSoundPreference(): boolean {
   if (typeof window === 'undefined') return true;
   try {
@@ -14,7 +23,9 @@ function getInitialSoundPreference(): boolean {
   } catch {
     // LocalStorage unavailable
   }
-  // DAITIGN default preference is SOUND ON
+  // Mobile touch devices default to muted to ensure reliable autoplay across iOS & Android
+  if (isMobileTouchDevice()) return false;
+  // DAITIGN desktop default preference is SOUND ON
   return true;
 }
 
