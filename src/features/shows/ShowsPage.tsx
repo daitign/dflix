@@ -7,6 +7,24 @@ import type { MediaItem, MediaRowModel } from '../catalog/types';
 import { BrowseSkeleton } from '../home/components/BrowseSkeleton';
 import { HeroBanner } from '../home/components/HeroBanner';
 import { MediaRow } from '../home/components/MediaRow';
+import { CategoryHeader, type GenreOption } from '../../components/navigation/CategoryHeader';
+
+export const TV_GENRES: GenreOption[] = [
+  { id: 'all', name: 'All TV Shows' },
+  { id: 'action-adventure', name: 'Action & Adventure', tmdbGenreId: 10759 },
+  { id: 'anime', name: 'Anime Series', tmdbGenreId: 16 },
+  { id: 'comedy', name: 'Comedies', tmdbGenreId: 35 },
+  { id: 'crime', name: 'Crime & Thriller', tmdbGenreId: 80 },
+  { id: 'documentary', name: 'Documentaries', tmdbGenreId: 99 },
+  { id: 'drama', name: 'Drama', tmdbGenreId: 18 },
+  { id: 'kids', name: 'Kids & Family', tmdbGenreId: 10762 },
+  { id: 'korean', name: 'Korean Series', languageCode: 'ko' },
+  { id: 'mystery', name: 'Mystery', tmdbGenreId: 9648 },
+  { id: 'reality', name: 'Reality TV', tmdbGenreId: 10764 },
+  { id: 'scifi-fantasy', name: 'Sci-Fi & Fantasy', tmdbGenreId: 10765 },
+  { id: 'soap', name: 'Soap Operas', tmdbGenreId: 10766 },
+  { id: 'war-politics', name: 'War & Politics', tmdbGenreId: 10768 },
+];
 
 function uniqueTv(items: TmdbMediaSummary[], category: 'tv' | 'anime' = 'tv', limit = 18): MediaItem[] {
   const unique = new Map<string, MediaItem>();
@@ -52,11 +70,14 @@ function enrichTv(item: MediaItem, detailsMap: Map<number, TmdbTvDetails>, topTe
 }
 
 export function ShowsPage() {
+  const [selectedGenreId, setSelectedGenreId] = useState('all');
   const [hero, setHero] = useState<MediaItem | null>(null);
   const [topTen, setTopTen] = useState<MediaItem[]>([]);
   const [rows, setRows] = useState<MediaRowModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const currentGenre = TV_GENRES.find((g) => g.id === selectedGenreId);
 
   useEffect(() => {
     let active = true;
@@ -67,148 +88,219 @@ export function ShowsPage() {
       try { return await p; } catch { return null; }
     };
 
-    Promise.all([
-      safely(tmdbClient.getTrendingTv()),
-      safely(tmdbClient.getPopularTv()),
-      safely(tmdbClient.getOnTheAirTv()),
-      safely(tmdbClient.getTopRatedTv()),
-      safely(tmdbClient.discoverTv({ with_original_language: 'ko' })),
-      safely(tmdbClient.getAnimeTv()),
-      safely(tmdbClient.discoverTv({ with_genres: 80 })),
-      safely(tmdbClient.discoverTv({ with_genres: 18 })),
-      safely(tmdbClient.discoverTv({ with_genres: 35 })),
-      safely(tmdbClient.discoverTv({ with_genres: 10765 })),
-    ])
-      .then(async ([
-        trending,
-        popular,
-        onTheAir,
-        topRated,
-        korean,
-        anime,
-        crime,
-        drama,
-        comedy,
-        sciFi,
-      ]) => {
-        if (!active) return;
+    if (selectedGenreId === 'all') {
+      // Full rich TV catalog
+      Promise.all([
+        safely(tmdbClient.getTrendingTv()),
+        safely(tmdbClient.getPopularTv()),
+        safely(tmdbClient.getOnTheAirTv()),
+        safely(tmdbClient.getTopRatedTv()),
+        safely(tmdbClient.discoverTv({ with_original_language: 'ko' })),
+        safely(tmdbClient.getAnimeTv()),
+        safely(tmdbClient.discoverTv({ with_genres: 80 })),
+        safely(tmdbClient.discoverTv({ with_genres: 18 })),
+        safely(tmdbClient.discoverTv({ with_genres: 35 })),
+        safely(tmdbClient.discoverTv({ with_genres: 10765 })),
+      ])
+        .then(async ([
+          trending,
+          popular,
+          onTheAir,
+          topRated,
+          korean,
+          anime,
+          crime,
+          drama,
+          comedy,
+          sciFi,
+        ]) => {
+          if (!active) return;
 
-        const trendingItems = uniqueTv(trending?.results ?? []);
-        const popularItems = uniqueTv(popular?.results ?? []);
-        const onTheAirItems = uniqueTv(onTheAir?.results ?? []);
-        const topRatedItems = uniqueTv(topRated?.results ?? []);
-        const koreanItems = uniqueTv(korean?.results ?? []);
-        const animeItems = uniqueTv(anime?.results ?? [], 'anime');
-        const crimeItems = uniqueTv(crime?.results ?? []);
-        const dramaItems = uniqueTv(drama?.results ?? []);
-        const comedyItems = uniqueTv(comedy?.results ?? []);
-        const sciFiItems = uniqueTv(sciFi?.results ?? []);
+          const trendingItems = uniqueTv(trending?.results ?? []);
+          const popularItems = uniqueTv(popular?.results ?? []);
+          const onTheAirItems = uniqueTv(onTheAir?.results ?? []);
+          const topRatedItems = uniqueTv(topRated?.results ?? []);
+          const koreanItems = uniqueTv(korean?.results ?? []);
+          const animeItems = uniqueTv(anime?.results ?? [], 'anime');
+          const crimeItems = uniqueTv(crime?.results ?? []);
+          const dramaItems = uniqueTv(drama?.results ?? []);
+          const comedyItems = uniqueTv(comedy?.results ?? []);
+          const sciFiItems = uniqueTv(sciFi?.results ?? []);
 
-        const rankedPool = dedupeMedia([...trendingItems, ...popularItems], 10);
-        const topTenIds = new Set(rankedPool.map((i) => String(i.id)));
+          const rankedPool = dedupeMedia([...trendingItems, ...popularItems], 10);
+          const topTenIds = new Set(rankedPool.map((i) => String(i.id)));
 
-        // Candidate enrichment for badges
-        const candidateIds = new Set<number>();
-        [...rankedPool, ...onTheAirItems.slice(0, 8), ...popularItems.slice(0, 8)].forEach((item) => {
-          if (item.tmdbId) candidateIds.add(item.tmdbId);
+          // Candidate enrichment for badges
+          const candidateIds = new Set<number>();
+          [...rankedPool, ...onTheAirItems.slice(0, 8), ...popularItems.slice(0, 8)].forEach((item) => {
+            if (item.tmdbId) candidateIds.add(item.tmdbId);
+          });
+
+          const detailsMap = new Map<number, TmdbTvDetails>();
+          await Promise.allSettled(
+            Array.from(candidateIds).map(async (id) => {
+              try {
+                const d = await tmdbClient.getTvDetails(id);
+                detailsMap.set(id, d);
+              } catch {
+                // Ignore failure
+              }
+            }),
+          );
+
+          if (!active) return;
+
+          const heroCandidate =
+            trendingItems.find((i) => i.backdropUrl) ??
+            popularItems.find((i) => i.backdropUrl) ??
+            trendingItems[0];
+
+          const enrichedHero = heroCandidate
+            ? enrichTv(heroCandidate, detailsMap, topTenIds)
+            : null;
+
+          const enrichedTopTen = rankedPool.map((i) => enrichTv(i, detailsMap, topTenIds));
+
+          const nextRows: MediaRowModel[] = [
+            { id: 'trending-tv', title: 'Trending Series', items: trendingItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'featured' as const },
+            { id: 'popular-tv', title: 'Popular on DAITIGN', items: popularItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'on-the-air', title: 'On The Air', items: onTheAirItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'top-rated-tv', title: 'Critically Acclaimed TV', items: topRatedItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'compact' as const },
+            { id: 'korean-series', title: 'Korean Series', items: koreanItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'anime', title: 'Anime Series', items: animeItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'crime-tv', title: 'Crime & Thriller', items: crimeItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'drama-tv', title: 'TV Dramas', items: dramaItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'comedy-tv', title: 'TV Comedies', items: comedyItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'scifi-tv', title: 'Sci-Fi & Fantasy', items: sciFiItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+          ].filter((r) => r.items.length > 0);
+
+          setHero(enrichedHero);
+          setTopTen(enrichedTopTen);
+          setRows(nextRows);
+        })
+        .catch((err) => {
+          if (!active) return;
+          setError(err instanceof Error ? err.message : 'Unable to load Shows catalog.');
+        })
+        .finally(() => {
+          if (active) setIsLoading(false);
         });
+    } else {
+      // Specific genre query
+      const genreParam = currentGenre?.languageCode
+        ? { with_original_language: currentGenre.languageCode }
+        : currentGenre?.tmdbGenreId
+          ? { with_genres: currentGenre.tmdbGenreId }
+          : {};
 
-        const detailsMap = new Map<number, TmdbTvDetails>();
-        await Promise.allSettled(
-          Array.from(candidateIds).map(async (id) => {
-            try {
-              const d = await tmdbClient.getTvDetails(id);
-              if (d) detailsMap.set(id, d);
-            } catch {
-              // ignore
-            }
-          }),
-        );
+      Promise.all([
+        safely(tmdbClient.discoverTv({ ...genreParam, sort_by: 'popularity.desc' })),
+        safely(tmdbClient.discoverTv({ ...genreParam, sort_by: 'vote_average.desc', 'vote_count.gte': 50 })),
+        safely(tmdbClient.discoverTv({ ...genreParam, sort_by: 'first_air_date.desc', 'vote_count.gte': 15 })),
+      ])
+        .then(async ([popRes, topRes, recentRes]) => {
+          if (!active) return;
 
-        if (!active) return;
+          const category = currentGenre?.id === 'anime' ? 'anime' : 'tv';
+          const popularItems = uniqueTv(popRes?.results ?? [], category);
+          const topItems = uniqueTv(topRes?.results ?? [], category);
+          const recentItems = uniqueTv(recentRes?.results ?? [], category);
 
-        const heroCandidate = rankedPool.find((i) => i.backdropUrl) ?? rankedPool[0] ?? trendingItems[0];
-        const enrichedHero = heroCandidate ? enrichTv(heroCandidate, detailsMap, topTenIds) : null;
-        const enrichedTopTen = rankedPool.map((i) => enrichTv(i, detailsMap, topTenIds));
+          const rankedPool = dedupeMedia([...popularItems, ...topItems], 10);
+          const topTenIds = new Set(rankedPool.map((i) => String(i.id)));
 
-        const allEnriched = [
-          ...trendingItems,
-          ...popularItems,
-          ...onTheAirItems,
-          ...topRatedItems,
-          ...koreanItems,
-          ...animeItems,
-          ...crimeItems,
-          ...dramaItems,
-          ...comedyItems,
-          ...sciFiItems,
-        ].map((i) => enrichTv(i, detailsMap, topTenIds));
+          const candidateIds = new Set<number>();
+          [...rankedPool, ...recentItems.slice(0, 6)].forEach((item) => {
+            if (item.tmdbId) candidateIds.add(item.tmdbId);
+          });
 
-        // Filter new episodes and new seasons
-        const newEpisodes = allEnriched.filter((i) => i.badge === 'new-episode');
-        const newSeasons = allEnriched.filter((i) => i.badge === 'new-season');
+          const detailsMap = new Map<number, TmdbTvDetails>();
+          await Promise.allSettled(
+            Array.from(candidateIds).map(async (id) => {
+              try {
+                const d = await tmdbClient.getTvDetails(id);
+                detailsMap.set(id, d);
+              } catch {
+                // Ignore failure
+              }
+            }),
+          );
 
-        const nextRows: MediaRowModel[] = [
-          ...(newEpisodes.length > 0
-            ? [{ id: 'new-episodes', title: 'New Episodes', items: newEpisodes, emphasis: 'featured' as const }]
-            : []),
-          ...(newSeasons.length > 0
-            ? [{ id: 'new-seasons', title: 'New Seasons', items: newSeasons, emphasis: 'standard' as const }]
-            : []),
-          { id: 'trending-tv', title: 'Trending Series', items: trendingItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'featured' as const },
-          { id: 'popular-tv', title: 'Popular TV Shows', items: popularItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'on-the-air', title: 'On The Air', items: onTheAirItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'top-rated-tv', title: 'Critically Acclaimed TV', items: topRatedItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'compact' as const },
-          { id: 'korean-series', title: 'Korean Series', items: koreanItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'anime', title: 'Anime Series', items: animeItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'crime-tv', title: 'Crime & Thriller', items: crimeItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'drama-tv', title: 'TV Dramas', items: dramaItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'comedy-tv', title: 'TV Comedies', items: comedyItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-          { id: 'scifi-tv', title: 'Sci-Fi & Fantasy', items: sciFiItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
-        ].filter((r) => r.items.length > 0);
+          if (!active) return;
 
-        setHero(enrichedHero);
-        setTopTen(enrichedTopTen);
-        setRows(nextRows);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : 'Unable to load Shows catalog.');
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
+          const heroCandidate =
+            popularItems.find((i) => i.backdropUrl) ??
+            rankedPool.find((i) => i.backdropUrl) ??
+            popularItems[0];
+
+          const enrichedHero = heroCandidate
+            ? enrichTv(heroCandidate, detailsMap, topTenIds)
+            : null;
+
+          const enrichedTopTen = rankedPool.map((i) => enrichTv(i, detailsMap, topTenIds));
+
+          const genreTitle = currentGenre?.name ?? 'Shows';
+          const nextRows: MediaRowModel[] = [
+            { id: 'genre-popular', title: `Popular in ${genreTitle}`, items: popularItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'featured' as const },
+            { id: 'genre-top-rated', title: `Critically Acclaimed ${genreTitle}`, items: topItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
+            { id: 'genre-recent', title: `Fresh & New in ${genreTitle}`, items: recentItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'compact' as const },
+          ].filter((r) => r.items.length > 0);
+
+          setHero(enrichedHero);
+          setTopTen(enrichedTopTen);
+          setRows(nextRows);
+        })
+        .catch((err) => {
+          if (!active) return;
+          setError(err instanceof Error ? err.message : `Unable to load ${currentGenre?.name ?? 'Shows'}.`);
+        })
+        .finally(() => {
+          if (active) setIsLoading(false);
+        });
+    }
 
     return () => {
       active = false;
     };
-  }, []);
-
-  if (isLoading) return <BrowseSkeleton />;
-  if (error || !hero) {
-    return (
-      <main className="catalog-error" id="main-content">
-        <div>
-          <h1>Shows Unavailable</h1>
-          <p>{error || 'Could not load TV series right now.'}</p>
-        </div>
-      </main>
-    );
-  }
+  }, [selectedGenreId, currentGenre]);
 
   return (
     <main className="browse-page" id="main-content">
-      <HeroBanner item={hero} />
-      <div className="browse-catalog">
-        {topTen.length > 0 && (
-          <div className="top-ten-feature">
-            <MediaRow items={topTen} mode="ranked" title="Top 10 TV Shows Today" />
+      <CategoryHeader
+        genres={TV_GENRES}
+        onSelectGenre={(genre) => setSelectedGenreId(genre.id)}
+        selectedGenreId={selectedGenreId}
+        title="TV Shows"
+      />
+
+      {isLoading ? (
+        <BrowseSkeleton />
+      ) : error || !hero ? (
+        <div className="catalog-error">
+          <div>
+            <h1>Shows Unavailable</h1>
+            <p>{error || 'Could not load TV series right now.'}</p>
           </div>
-        )}
-        {rows.map((row) => (
-          <MediaRow key={row.id} row={row} />
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          <HeroBanner item={hero} />
+          <div className="browse-catalog">
+            {topTen.length > 0 && (
+              <div className="top-ten-feature">
+                <MediaRow
+                  items={topTen}
+                  mode="ranked"
+                  title={selectedGenreId === 'all' ? 'Top 10 TV Shows Today' : `Top 10 in ${currentGenre?.name ?? 'TV Shows'} Today`}
+                />
+              </div>
+            )}
+            {rows.map((row) => (
+              <MediaRow key={row.id} row={row} />
+            ))}
+          </div>
+        </>
+      )}
     </main>
   );
 }

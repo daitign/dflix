@@ -189,6 +189,50 @@ test('12. Vercel SPA rewrites: configure all routes to serve index.html', () => 
   });
 });
 
+test('13. CategoryHeader: renders page heading and Netflix-style Genres dropdown button', () => {
+  const compPath = path.resolve('src/components/navigation/CategoryHeader.tsx');
+  const compContent = fs.readFileSync(compPath, 'utf8');
+
+  assert.ok(compContent.includes('category-header__title'), 'CategoryHeader should render category title');
+  assert.ok(compContent.includes('category-header__button'), 'CategoryHeader should render Genres button');
+  assert.ok(compContent.includes('category-header__popover'), 'CategoryHeader should render dropdown popover');
+  assert.ok(compContent.includes('category-header__caret'), 'CategoryHeader should render downward caret');
+
+  const cssPath = path.resolve('src/components/navigation/CategoryHeader.css');
+  const cssContent = fs.readFileSync(cssPath, 'utf8');
+
+  assert.ok(cssContent.includes('position: sticky'), 'CategoryHeader must be sticky below top nav');
+  assert.ok(cssContent.includes('border: 1px solid rgba(255, 255, 255, 0.85)'), 'Genres button must have crisp 1px border');
+  assert.ok(cssContent.includes('grid-template-columns: repeat(3'), 'Popover must use 3-column layout on desktop');
+});
+
+test('14. ShowsPage: defines TV_GENRES and mounts CategoryHeader with TV Shows title', () => {
+  const showsPath = path.resolve('src/features/shows/ShowsPage.tsx');
+  const showsContent = fs.readFileSync(showsPath, 'utf8');
+
+  assert.ok(showsContent.includes('CategoryHeader'), 'ShowsPage must mount CategoryHeader');
+  assert.ok(showsContent.includes('title="TV Shows"'), 'ShowsPage must have title TV Shows matching Netflix');
+  assert.ok(showsContent.includes('TV_GENRES'), 'ShowsPage must define TV_GENRES');
+  assert.ok(showsContent.includes("name: 'Action & Adventure'"), 'TV_GENRES should include Action & Adventure');
+  assert.ok(showsContent.includes("name: 'Korean Series'"), 'TV_GENRES should include Korean Series');
+  assert.ok(showsContent.includes("name: 'Comedies'"), 'TV_GENRES should include Comedies');
+  assert.ok(showsContent.includes("name: 'Anime Series'"), 'TV_GENRES should include Anime Series');
+});
+
+test('15. MoviesPage: defines MOVIE_GENRES and mounts CategoryHeader with Movies title', () => {
+  const moviesPath = path.resolve('src/features/movies/MoviesPage.tsx');
+  const moviesContent = fs.readFileSync(moviesPath, 'utf8');
+
+  assert.ok(moviesContent.includes('CategoryHeader'), 'MoviesPage must mount CategoryHeader');
+  assert.ok(moviesContent.includes('title="Movies"'), 'MoviesPage must have title Movies matching Netflix');
+  assert.ok(moviesContent.includes('MOVIE_GENRES'), 'MoviesPage must define MOVIE_GENRES');
+  assert.ok(moviesContent.includes("name: 'Action'"), 'MOVIE_GENRES should include Action');
+  assert.ok(moviesContent.includes("name: 'Horror'"), 'MOVIE_GENRES should include Horror');
+  assert.ok(moviesContent.includes("name: 'Thrillers'"), 'MOVIE_GENRES should include Thrillers');
+  assert.ok(moviesContent.includes("name: 'Romantic Movies'"), 'MOVIE_GENRES should include Romantic Movies');
+});
+
+
 
 
 
