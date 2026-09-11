@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Button, Container, NavigationShell } from '../components';
+import { Button, Container, Icon, NavigationShell } from '../components';
 import { getTmdbHomeCatalog, type HomeCatalog, type MediaItem } from '../features/catalog';
 import { DetailsModalProvider } from '../features/details-modal';
 import { BrowseSkeleton, HeroBanner, MediaCard, MediaRow } from '../features/home';
@@ -32,10 +32,23 @@ function CatalogError({ message, onRetry }: { message: string; onRetry: () => vo
 }
 
 function NetflixFooter() {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="netflix-footer">
       <Container className="netflix-footer__inner">
-        <p className="netflix-footer__questions">Questions? Call 1-800-012-3456</p>
+        <p className="netflix-footer__questions">
+          Questions? Telegram Group:{' '}
+          <a
+            className="netflix-footer__telegram-group"
+            href="https://t.me/daitignvault"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <Icon name="telegram" size={13} />
+            <span>@daitignvault</span>
+          </a>
+        </p>
         <div className="netflix-footer__links">
           <a href="#faq">FAQ</a>
           <a href="#help">Help Center</a>
@@ -48,15 +61,31 @@ function NetflixFooter() {
           <a href="#privacy">Privacy</a>
           <a href="#cookie-preferences">Cookie Preferences</a>
           <a href="#corporate-information">Corporate Information</a>
-          <a href="#contact-us">Contact Us</a>
+          <a
+            className="netflix-footer__link--highlight"
+            href="https://t.me/stxngn"
+            rel="noopener noreferrer"
+            target="_blank"
+            title="Chat with owner on Telegram (@stxngn)"
+          >
+            <Icon name="telegram" size={14} />
+            <span>Contact Me (@stxngn)</span>
+          </a>
           <a href="#speed-test">Speed Test</a>
           <a href="#legal-notices">Legal Notices</a>
-          <a href="#only-on-netflix">Only on Netflix</a>
+          <a href="#only-on-daitign">Only on DAITIGN</a>
         </div>
-        <button className="netflix-footer__service-code" type="button">
-          Service Code
-        </button>
-        <p className="netflix-footer__copyright">© 1997-2026 Netflix, Inc. · DAITIGN Stream</p>
+        <a
+          className="netflix-footer__shop-btn"
+          href="https://daitignvault.vercel.app/"
+          rel="noopener noreferrer"
+          target="_blank"
+          title="Visit DAITIGN Vault Shop"
+        >
+          <span className="netflix-footer__shop-sparkle" aria-hidden="true">✦</span>
+          <span>Visit DAITIGN Vault Shop</span>
+        </a>
+        <p className="netflix-footer__copyright">© 2026-{currentYear} DAITIGN, Inc.</p>
       </Container>
     </footer>
   );

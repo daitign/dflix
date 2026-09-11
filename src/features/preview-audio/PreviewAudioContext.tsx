@@ -18,17 +18,9 @@ function getInitialSoundPreference(): boolean {
   return true;
 }
 
-function hasBrowserUserGesture(): boolean {
-  if (typeof navigator !== 'undefined' && 'userActivation' in navigator) {
-    const activation = (navigator as unknown as { userActivation?: { hasBeenActive?: boolean } }).userActivation;
-    if (activation?.hasBeenActive) return true;
-  }
-  return false;
-}
-
 export function PreviewAudioProvider({ children }: { children: React.ReactNode }) {
   const [soundEnabled, setSoundEnabledState] = useState<boolean>(getInitialSoundPreference);
-  const [autoplaySoundAllowed, setAutoplaySoundAllowed] = useState<boolean>(hasBrowserUserGesture);
+  const [autoplaySoundAllowed, setAutoplaySoundAllowed] = useState<boolean>(true);
   const [isHoverActive, setHoverActive] = useState<boolean>(false);
   const [isModalActive, setModalActive] = useState<boolean>(false);
 
@@ -49,7 +41,7 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
     setSoundEnabled(!soundEnabled);
   }, [setSoundEnabled, soundEnabled]);
 
-  // Listen for user interactions (click, pointerdown, keydown, touchstart)
+  // Listen for user interactions (click, pointerdown, keydown, touchstart, wheel, scroll)
   useEffect(() => {
     if (autoplaySoundAllowed) return;
 
@@ -64,12 +56,16 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
       window.removeEventListener('keydown', handleUserInteraction, options);
       window.removeEventListener('click', handleUserInteraction, options);
       window.removeEventListener('touchstart', handleUserInteraction, options);
+      window.removeEventListener('wheel', handleUserInteraction, options);
+      window.removeEventListener('scroll', handleUserInteraction, options);
     };
 
     window.addEventListener('pointerdown', handleUserInteraction, options);
     window.addEventListener('keydown', handleUserInteraction, options);
     window.addEventListener('click', handleUserInteraction, options);
     window.addEventListener('touchstart', handleUserInteraction, options);
+    window.addEventListener('wheel', handleUserInteraction, options);
+    window.addEventListener('scroll', handleUserInteraction, options);
 
     return removeListeners;
   }, [autoplaySoundAllowed]);

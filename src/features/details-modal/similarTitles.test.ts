@@ -6,7 +6,9 @@ import {
   hasSpatialAudio,
   getStatusBadgeLabel,
 } from './similarTitlesUtils.ts';
+import { MAX_TRAILERS_COUNT, filterAndRankTrailers } from './trailersUtils.ts';
 import type { MediaItem } from '../catalog/types.ts';
+import type { TmdbVideo } from '../../lib/tmdb/types.ts';
 
 test('1. Duration label: TV show with seasons returns "X Seasons"', () => {
   const item: MediaItem = {
@@ -116,4 +118,38 @@ test('11. Status badge: maps known badges to human-readable strings', () => {
   assert.equal(getStatusBadgeLabel('recently-added'), 'Recently Added');
   assert.equal(getStatusBadgeLabel('new'), 'New');
   assert.equal(getStatusBadgeLabel(undefined), null);
+});
+
+test('12. Trailers & More: enforces a maximum of 3 trailers displayed in movie details', () => {
+  assert.equal(MAX_TRAILERS_COUNT, 3, 'MAX_TRAILERS_COUNT must be 3');
+
+  const mockVideos: TmdbVideo[] = [
+    { id: '1', key: 'key_trailer_1', name: 'Final Trailer', site: 'YouTube', type: 'Trailer', official: true },
+    { id: '2', key: 'key_trailer_2', name: 'New Trailer', site: 'YouTube', type: 'Trailer', official: true },
+    { id: '3', key: 'key_trailer_3', name: 'Official Trailer', site: 'YouTube', type: 'Trailer', official: true },
+    { id: '4', key: 'key_teaser_1', name: 'Teaser 1', site: 'YouTube', type: 'Teaser', official: true },
+    { id: '5', key: 'key_teaser_2', name: 'Teaser 2', site: 'YouTube', type: 'Teaser', official: true },
+    { id: '6', key: 'key_teaser_3', name: 'Teaser 3', site: 'YouTube', type: 'Teaser', official: true },
+  ];
+
+  const result = filterAndRankTrailers(mockVideos);
+  assert.equal(result.length, 3, 'Must cap results to exactly 3 trailers maximum');
+  assert.equal(result[0].name, 'Final Trailer');
+  assert.equal(result[1].name, 'New Trailer');
+  assert.equal(result[2].name, 'Official Trailer');
+});
+
+test('13. Trailers & More: deduplicates by YouTube key and preserves top official videos', () => {
+  const mockVideosWithDuplicates: TmdbVideo[] = [
+    { id: '1', key: 'duplicate_key_1', name: 'Trailer A', site: 'YouTube', type: 'Trailer', official: true },
+    { id: '2', key: 'duplicate_key_1', name: 'Trailer A Duplicate', site: 'YouTube', type: 'Trailer', official: true },
+    { id: '3', key: 'key_teaser_b', name: 'Teaser B', site: 'YouTube', type: 'Teaser', official: false },
+    { id: '4', key: 'key_clip_c', name: 'Clip C', site: 'YouTube', type: 'Clip', official: false },
+  ];
+
+  const result = filterAndRankTrailers(mockVideosWithDuplicates);
+  assert.equal(result.length, 3);
+  assert.equal(result[0].key, 'duplicate_key_1');
+  assert.equal(result[1].key, 'key_teaser_b');
+  assert.equal(result[2].key, 'key_clip_c');
 });

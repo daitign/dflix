@@ -137,8 +137,10 @@ export function YouTubePreview({
   const playerRef = useRef<YouTubePlayer | null>(null);
   const hasStartedRef = useRef(false);
   const isPlayingRef = useRef(false);
-  const lastSetVolumeRef = useRef<number | null>(null);
   const loopIntervalRef = useRef<number>(0);
+  const currentVolumeRef = useRef<number>(100);
+  const isMutedRef = useRef<boolean>(false);
+  const fadeIntervalRef = useRef<number | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
 
@@ -158,6 +160,15 @@ export function YouTubePreview({
     isHoverActive,
     isModalActive,
   });
+
+  const shouldBeAudibleRef = useRef(shouldBeAudible);
+  shouldBeAudibleRef.current = shouldBeAudible;
+
+  const heroVolumeFactorRef = useRef(heroVolumeFactor);
+  heroVolumeFactorRef.current = heroVolumeFactor;
+
+  const isHeroInViewRef = useRef(isHeroInView);
+  isHeroInViewRef.current = isHeroInView;
 
   // Playback state arbitration (Play / Pause when scrolled out of view or modal/hover opens)
   useEffect(() => {
@@ -180,57 +191,138 @@ export function YouTubePreview({
     }
   }, [hasStarted, isHero, isHeroInView, isHoverActive, isModalActive]);
 
-  // Audio state & volume fade arbitration
+  // Audio state & volume fade arbitration (smooth gradual fade on scroll / mute toggle)
   useEffect(() => {
     const player = playerRef.current;
     if (!player || !hasStarted) return;
 
+    const stopFade = () => {
+      if (fadeIntervalRef.current !== null) {
+        window.clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+      }
+    };
+
     if (isHero) {
-      const shouldPlay = isHeroInView && !isHoverActive && !isModalActive;
-      if (!shouldPlay) {
+      // If modal or hover is active, immediately silence hero so audio streams never collide
+      const isOverridden = isHoverActive || isModalActive;
+      if (isOverridden) {
+        stopFade();
         try {
           player.mute();
+          player.setVolume?.(0);
         } catch {}
-        lastSetVolumeRef.current = 0;
+        currentVolumeRef.current = 0;
+        isMutedRef.current = true;
         return;
       }
 
-      const targetVol = shouldBeAudible
+      // Target volume: 0 if not in view or muted; otherwise scaled by heroVolumeFactor (0..100)
+      const targetVol = isHeroInView && shouldBeAudible
         ? Math.max(0, Math.min(100, Math.round(heroVolumeFactor * 100)))
         : 0;
 
-      if (lastSetVolumeRef.current !== targetVol) {
-        lastSetVolumeRef.current = targetVol;
-        try {
-          if (targetVol > 0) {
+      // If already at target, settle immediately
+      if (Math.round(currentVolumeRef.current) === targetVol) {
+        stopFade();
+        if (targetVol === 0 && !isMutedRef.current) {
+          try {
+            player.setVolume?.(0);
+            player.mute();
+          } catch {}
+          isMutedRef.current = true;
+        } else if (targetVol > 0 && isMutedRef.current) {
+          try {
             player.unMute();
             player.setVolume?.(targetVol);
+          } catch {}
+          isMutedRef.current = false;
+        }
+        return;
+      }
+
+      // Smooth volume ramp: gradually interpolate current volume towards targetVol over ~400ms
+      stopFade();
+      fadeIntervalRef.current = window.setInterval(() => {
+        const current = currentVolumeRef.current;
+        const diff = targetVol - current;
+
+        // Reached target
+        if (Math.abs(diff) <= 2) {
+          currentVolumeRef.current = targetVol;
+          stopFade();
+          try {
+            if (targetVol > 0) {
+              if (isMutedRef.current) {
+                player.unMute();
+                isMutedRef.current = false;
+              }
+              player.setVolume?.(targetVol);
+            } else {
+              player.setVolume?.(0);
+              player.mute();
+              isMutedRef.current = true;
+            }
+          } catch {}
+          return;
+        }
+
+        // Adaptive natural fade step: larger at top, smooth taper near silence
+        const step = Math.sign(diff) * Math.max(2.5, Math.min(10, Math.abs(diff) * 0.22));
+        const nextVol = Math.max(0, Math.min(100, current + step));
+        currentVolumeRef.current = nextVol;
+        const rounded = Math.round(nextVol);
+
+        try {
+          if (rounded > 0) {
+            if (isMutedRef.current) {
+              player.unMute();
+              isMutedRef.current = false;
+            }
+            player.setVolume?.(rounded);
           } else {
             player.setVolume?.(0);
             player.mute();
+            isMutedRef.current = true;
           }
         } catch {}
-      }
+      }, 35);
     } else if (isModal) {
+      stopFade();
       try {
         if (shouldBeAudible) {
           player.unMute();
           player.setVolume?.(100);
+          currentVolumeRef.current = 100;
+          isMutedRef.current = false;
         } else {
+          player.setVolume?.(0);
           player.mute();
+          currentVolumeRef.current = 0;
+          isMutedRef.current = true;
         }
       } catch {}
     } else {
       // Hover preview
+      stopFade();
       try {
         if (shouldBeAudible) {
           player.unMute();
           player.setVolume?.(100);
+          currentVolumeRef.current = 100;
+          isMutedRef.current = false;
         } else {
+          player.setVolume?.(0);
           player.mute();
+          currentVolumeRef.current = 0;
+          isMutedRef.current = true;
         }
       } catch {}
     }
+
+    return () => {
+      stopFade();
+    };
   }, [
     hasStarted,
     heroVolumeFactor,
@@ -334,39 +426,49 @@ export function YouTubePreview({
 
                 // Initial sound & volume setup for newly started player
                 if (isHero) {
-                  const targetVol = isHeroInView && shouldBeAudible
-                    ? Math.max(0, Math.min(100, Math.round(heroVolumeFactor * 100)))
+                  const targetVol = isHeroInViewRef.current && shouldBeAudibleRef.current
+                    ? Math.max(0, Math.min(100, Math.round(heroVolumeFactorRef.current * 100)))
                     : 0;
                   if (targetVol > 0) {
                     try {
                       event.target.unMute();
                       event.target.setVolume?.(targetVol);
-                      lastSetVolumeRef.current = targetVol;
+                      currentVolumeRef.current = targetVol;
+                      isMutedRef.current = false;
                     } catch {
                       event.target.mute();
+                      currentVolumeRef.current = 0;
+                      isMutedRef.current = true;
                       setAutoplaySoundAllowed(false);
                     }
                   } else {
                     event.target.mute();
-                    lastSetVolumeRef.current = 0;
+                    currentVolumeRef.current = 0;
+                    isMutedRef.current = true;
                   }
 
-                  if (!isHeroInView) {
+                  if (!isHeroInViewRef.current) {
                     try {
                       event.target.pauseVideo();
                       isPlayingRef.current = false;
                     } catch {}
                   }
-                } else if (shouldBeAudible) {
+                } else if (shouldBeAudibleRef.current) {
                   try {
                     event.target.unMute();
                     event.target.setVolume?.(100);
+                    currentVolumeRef.current = 100;
+                    isMutedRef.current = false;
                   } catch {
                     event.target.mute();
+                    currentVolumeRef.current = 0;
+                    isMutedRef.current = true;
                     setAutoplaySoundAllowed(false);
                   }
                 } else {
                   event.target.mute();
+                  currentVolumeRef.current = 0;
+                  isMutedRef.current = true;
                 }
                 return;
               }
@@ -400,11 +502,15 @@ export function YouTubePreview({
       disposed = true;
       clearStartTimeout();
       window.clearInterval(loopIntervalRef.current);
+      if (fadeIntervalRef.current !== null) {
+        window.clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+      }
       const player = playerRef.current;
       playerRef.current = null;
       destroyPlayer(player);
     };
-  }, [onPlaying, setAutoplaySoundAllowed, shouldBeAudible, title, video.key]);
+  }, [onPlaying, setAutoplaySoundAllowed, title, video.key]);
 
   if (isUnavailable) return null;
 

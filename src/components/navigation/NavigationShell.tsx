@@ -211,6 +211,17 @@ export function NavigationShell({
                         {item.label}
                       </a>
                     ))}
+                    <a
+                      className="netflix-browse-popover__item netflix-browse-popover__item--vip"
+                      href="https://daitignvault.vercel.app/"
+                      onClick={() => setIsBrowseOpen(false)}
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                      target="_blank"
+                    >
+                      <span className="netflix-browse-popover__vip-badge">✦ VIP</span>
+                      <span>DAITIGN Vault</span>
+                    </a>
                   </div>
                 </div>
               )}
@@ -239,6 +250,19 @@ export function NavigationShell({
           </nav>
 
           <div className="top-navigation__actions">
+            <a
+              className="top-navigation__vip-btn"
+              href="https://daitignvault.vercel.app/"
+              rel="noopener noreferrer"
+              target="_blank"
+              title="Visit DAITIGN Vault - VIP Shop"
+            >
+              <span className="top-navigation__vip-icon" aria-hidden="true">✦</span>
+              <span className="top-navigation__vip-text">
+                VIP<span className="top-navigation__vip-suffix"> Shop</span>
+              </span>
+            </a>
+
             {/* Netflix Expandable Search Bar */}
             <div className={cx('netflix-search', isSearchOpen && 'netflix-search--open')}>
               <button
@@ -371,7 +395,7 @@ export function NavigationShell({
               >
                 <div className="profile-button__avatar">
                   <img
-                    alt="User profile"
+                    alt="DAITIGN profile"
                     className="profile-button__avatar-img"
                     src="/profile-avatar.png"
                   />
@@ -387,12 +411,12 @@ export function NavigationShell({
                     <div className="netflix-profile-popover__item netflix-profile-popover__item--active">
                       <div className="profile-button__avatar">
                         <img
-                          alt="User"
+                          alt="DAITIGN"
                           className="profile-button__avatar-img"
                           src="/profile-avatar.png"
                         />
                       </div>
-                      <span>User</span>
+                      <span>DAITIGN</span>
                     </div>
                     <div className="netflix-profile-popover__item">
                       <div className="profile-button__avatar profile-button__avatar--yellow">+</div>
@@ -412,7 +436,7 @@ export function NavigationShell({
                     onClick={() => setIsProfileOpen(false)}
                     type="button"
                   >
-                    Sign out of Netflix
+                    Sign out of DAITIGN
                   </button>
                 </div>
               )}

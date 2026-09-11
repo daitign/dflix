@@ -116,6 +116,8 @@ test('7. Favicon & Profile Avatar: uses the D/ emblem across browser tabs and pr
 
   const navShell = fs.readFileSync(path.resolve('src/components/navigation/NavigationShell.tsx'), 'utf-8');
   assert.ok(navShell.includes('src="/profile-avatar.png"'), 'NavigationShell must use profile-avatar.png for user avatar');
+  assert.ok(navShell.includes('<span>DAITIGN</span>'), 'NavigationShell profile popover must display DAITIGN as profile name');
+  assert.ok(!navShell.includes('<span>User</span>'), 'NavigationShell profile popover must not display User');
 
   const html = fs.readFileSync(path.resolve('index.html'), 'utf-8');
   assert.ok(html.includes('href="/favicon.svg"'), 'index.html must reference favicon.svg');
@@ -282,6 +284,179 @@ test('18. Search Results & My List: 2-column horizontal grid on iPhone and small
     'My List must enforce 2 columns on mobile/iPhone screen widths'
   );
 });
+
+test('19. Movie card badges: flush bottom baseline alignment with zero gap', () => {
+  const mediaCardCss = fs.readFileSync(path.resolve('src/features/home/components/MediaCard.css'), 'utf8');
+  assert.ok(
+    mediaCardCss.includes('bottom: 0;') && mediaCardCss.includes('align-items: flex-end;'),
+    'MediaCard badge container must be anchored to bottom: 0 with flex-end alignment'
+  );
+  assert.ok(
+    mediaCardCss.includes('line-height: 0;') && mediaCardCss.includes('font-size: 0;'),
+    'MediaCard surface must suppress line-height and font-size to prevent subpixel descender gaps'
+  );
+  assert.ok(
+    mediaCardCss.includes('border-radius: 4px;'),
+    'MediaCard surface must use authentic Netflix 4px corner radius so badges align flush'
+  );
+
+  const responsiveImgCss = fs.readFileSync(path.resolve('src/components/primitives/ResponsiveImage.css'), 'utf8');
+  assert.ok(
+    responsiveImgCss.includes('display: block;') && responsiveImgCss.includes('vertical-align: bottom;'),
+    'ResponsiveImage picture and img elements must be display: block and vertical-align: bottom'
+  );
+
+  const badgeCss = fs.readFileSync(path.resolve('src/features/home/components/StatusBadge.css'), 'utf8');
+  assert.ok(
+    badgeCss.includes('margin: 0;') && badgeCss.includes('vertical-align: bottom;'),
+    'StatusBadge must enforce margin: 0 and vertical-align: bottom'
+  );
+
+  const rankedCardCss = fs.readFileSync(path.resolve('src/features/home/components/RankedMediaCard.css'), 'utf8');
+  assert.ok(
+    rankedCardCss.includes('line-height: 0;') && rankedCardCss.includes('font-size: 0;'),
+    'Ranked card art must suppress line-height and font-size to prevent bottom gaps'
+  );
+});
+
+test('20. VIP luxury button: always-visible green-white button outside nav links redirecting to DAITIGN Vault shop', () => {
+  const navShellPath = path.resolve('src/components/navigation/NavigationShell.tsx');
+  const navShellContent = fs.readFileSync(navShellPath, 'utf8');
+
+  assert.ok(
+    navShellContent.includes('https://daitignvault.vercel.app/'),
+    'NavigationShell must link to https://daitignvault.vercel.app/'
+  );
+  assert.ok(
+    navShellContent.includes('top-navigation__vip-btn'),
+    'NavigationShell must include top-navigation__vip-btn class'
+  );
+  assert.ok(
+    navShellContent.includes('top-navigation__vip-suffix'),
+    'NavigationShell must include responsive top-navigation__vip-suffix'
+  );
+  // Verify VIP button is inside top-navigation__actions and NOT inside top-navigation__links
+  const linksBlock = navShellContent.slice(
+    navShellContent.indexOf('top-navigation__links'),
+    navShellContent.indexOf('</nav>')
+  );
+  assert.ok(
+    !linksBlock.includes('top-navigation__vip-btn'),
+    'VIP button must NOT be inside collapsible top-navigation__links'
+  );
+  const actionsBlock = navShellContent.slice(
+    navShellContent.indexOf('top-navigation__actions')
+  );
+  assert.ok(
+    actionsBlock.includes('top-navigation__vip-btn'),
+    'VIP button must be placed inside top-navigation__actions to always display across all device sizes'
+  );
+
+  assert.ok(
+    navShellContent.includes('netflix-browse-popover__item--vip'),
+    'NavigationShell browse popover must include VIP luxury item'
+  );
+
+  const navCssPath = path.resolve('src/components/navigation/NavigationShell.css');
+  const navCssContent = fs.readFileSync(navCssPath, 'utf8');
+
+  assert.ok(
+    navCssContent.includes('.top-navigation__vip-btn'),
+    'NavigationShell.css must define top-navigation__vip-btn'
+  );
+  assert.ok(
+    navCssContent.includes('animation: vip-luxury-glow'),
+    'VIP luxury button must feature glowing highlight animation'
+  );
+  assert.ok(
+    navCssContent.includes('0, 230, 118'),
+    'VIP luxury button must use green luminous color palette'
+  );
+  assert.ok(
+    navCssContent.includes('.top-navigation__vip-suffix'),
+    'NavigationShell.css must handle responsive suffix for small devices'
+  );
+  assert.ok(
+    navCssContent.includes('.netflix-browse-popover__item--vip'),
+    'NavigationShell.css must define mobile popover VIP style'
+  );
+});
+
+test('21. Footer branding: green-white shop button, Telegram group @daitignvault, and highlighted Contact Me (@stxngn) with Telegram icon', () => {
+  const appPath = path.resolve('src/app/App.tsx');
+  const appContent = fs.readFileSync(appPath, 'utf8');
+
+  assert.ok(
+    appContent.includes('https://t.me/daitignvault') && appContent.includes('@daitignvault'),
+    'Footer questions must feature Telegram group link to @daitignvault'
+  );
+  assert.ok(
+    appContent.includes('https://t.me/stxngn') && appContent.includes('@stxngn'),
+    'Footer Contact Me must feature personal Telegram link to @stxngn'
+  );
+  assert.ok(
+    appContent.includes('Contact Me (@stxngn)'),
+    'Footer must render Contact Me (@stxngn)'
+  );
+  assert.ok(
+    appContent.includes('name="telegram"'),
+    'Footer must render Telegram icon'
+  );
+  assert.ok(
+    appContent.includes('netflix-footer__link--highlight'),
+    'Footer Contact Me must be highlighted with netflix-footer__link--highlight'
+  );
+  assert.ok(
+    appContent.includes('netflix-footer__shop-btn') && appContent.includes('https://daitignvault.vercel.app/'),
+    'Footer must replace service code with DAITIGN Vault shop button'
+  );
+
+  assert.ok(
+    appContent.includes('© 2026-{currentYear} DAITIGN, Inc.'),
+    'Footer copyright must be dynamic: © 2026-{currentYear} DAITIGN, Inc.'
+  );
+  assert.ok(
+    !appContent.includes('Netflix, Inc.'),
+    'Footer copyright must not contain Netflix, Inc.'
+  );
+  assert.ok(
+    appContent.includes('Only on DAITIGN'),
+    'Footer must render Only on DAITIGN link'
+  );
+  assert.ok(
+    !appContent.includes('Only on Netflix'),
+    'Footer must not contain Only on Netflix'
+  );
+
+  const iconPath = path.resolve('src/components/icons/Icon.tsx');
+  const iconContent = fs.readFileSync(iconPath, 'utf8');
+  assert.ok(
+    iconContent.includes("'telegram'"),
+    'Icon.tsx must support telegram icon name'
+  );
+
+  const appCssPath = path.resolve('src/app/App.css');
+  const appCssContent = fs.readFileSync(appCssPath, 'utf8');
+
+  assert.ok(
+    appCssContent.includes('.netflix-footer__telegram-group'),
+    'App.css must style netflix-footer__telegram-group'
+  );
+  assert.ok(
+    appCssContent.includes('.netflix-footer__link--highlight'),
+    'App.css must style highlighted Contact Me link'
+  );
+  assert.ok(
+    appCssContent.includes('.netflix-footer__shop-btn'),
+    'App.css must style netflix-footer__shop-btn with luxury glow'
+  );
+  assert.ok(
+    appCssContent.includes('0, 230, 118'),
+    'App.css footer shop button and highlight link must use green and white palette'
+  );
+});
+
+
 
 
 

@@ -180,6 +180,27 @@
   font-size: 0.95rem;
 }
 
+.netflix-footer__telegram-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #29b6f6;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(41, 182, 246, 0.12);
+  margin-left: 0.25rem;
+  transition: color 0.2s ease, background-color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.netflix-footer__telegram-group:hover {
+  color: #ffffff;
+  background: rgba(41, 182, 246, 0.28);
+  text-shadow: 0 0 8px rgba(41, 182, 246, 0.8);
+  text-decoration: none;
+}
+
 .netflix-footer__links {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -196,6 +217,73 @@
 .netflix-footer__links a:hover {
   color: #ffffff;
   text-decoration: underline;
+}
+
+.netflix-footer__links a.netflix-footer__link--highlight {
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 230, 118, 0.6);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.netflix-footer__links a.netflix-footer__link--highlight svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(0, 230, 118, 0.7));
+  transition: filter 0.2s ease;
+}
+
+.netflix-footer__links a.netflix-footer__link--highlight:hover {
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(0, 230, 118, 0.95), 0 0 8px #00e676;
+  text-decoration: none;
+  transform: none;
+}
+
+.netflix-footer__links a.netflix-footer__link--highlight:hover svg {
+  filter: drop-shadow(0 0 7px rgba(0, 230, 118, 0.95));
+}
+
+.netflix-footer__shop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.15rem;
+  border: 1px solid rgba(0, 230, 118, 0.6);
+  border-radius: 4px;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.16) 0%, rgba(16, 185, 129, 0.1) 50%, rgba(0, 0, 0, 0.5) 100%);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(0, 230, 118, 0.28);
+  margin-bottom: 1.5rem;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.netflix-footer__shop-btn:hover {
+  color: #ffffff;
+  border-color: #00e676;
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.3) 0%, rgba(16, 185, 129, 0.22) 100%);
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.netflix-footer__shop-sparkle {
+  color: #00e676;
+  font-size: 0.8rem;
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.8);
 }
 
 .netflix-footer__service-code {

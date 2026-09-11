@@ -11,7 +11,7 @@ export interface HeroScrollPlaybackState {
  * As user scrolls down, volume smoothly fades towards 0.0 over fadeDistance pixels.
  * Negative scroll (iOS rubber-banding / bounce) is clamped to 1.0.
  */
-export function calculateHeroVolumeFade(scrollOffset: number, fadeDistance = 320): number {
+export function calculateHeroVolumeFade(scrollOffset: number, fadeDistance = 600): number {
   if (scrollOffset <= 0) return 1;
   if (scrollOffset >= fadeDistance) return 0;
   const factor = 1 - scrollOffset / fadeDistance;
@@ -76,8 +76,8 @@ export function useHeroScrollPlayback(
 
       // Scroll distance down from top of hero banner
       const scrollDown = Math.max(0, -rect.top);
-      // Gentle fade distance: 320px or 45% of hero height, minimum 160px
-      const fadeDist = Math.max(160, Math.min(320, rect.height * 0.45));
+      // Smooth fade distance: 600px or 75% of hero height, minimum 450px, max 800px
+      const fadeDist = Math.max(450, Math.min(800, rect.height ? rect.height * 0.75 : 600));
       const factor = calculateHeroVolumeFade(scrollDown, fadeDist);
 
       // Only update state if volume factor changed by at least 2% or reached boundaries (0 or 1)

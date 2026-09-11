@@ -85,15 +85,19 @@ test('10. Audio arbitration: Modal hero trailer is audible when isAudible is tru
 });
 
 test('11. Hero scroll volume fade: starts at 100% and smoothly fades to 0% as user scrolls down', () => {
-  // At scroll position 0 (top of hero banner): full volume
+  // Default fade distance (600px)
+  assert.equal(calculateHeroVolumeFade(0), 1.0);
+  assert.equal(calculateHeroVolumeFade(-80), 1.0);
+  assert.equal(calculateHeroVolumeFade(300), 0.5);
+  assert.equal(calculateHeroVolumeFade(150), 0.75);
+  assert.equal(calculateHeroVolumeFade(600), 0.0);
+  assert.equal(calculateHeroVolumeFade(800), 0.0);
+
+  // Explicit fade distance (320px)
   assert.equal(calculateHeroVolumeFade(0, 320), 1.0);
-  // Negative scroll (iOS rubber-banding / pull to refresh): clamped at 1.0
   assert.equal(calculateHeroVolumeFade(-80, 320), 1.0);
-  // Halfway down fade distance (160px of 320px): 50% volume
   assert.equal(calculateHeroVolumeFade(160, 320), 0.5);
-  // Quarter down fade distance (80px of 320px): 75% volume
   assert.equal(calculateHeroVolumeFade(80, 320), 0.75);
-  // At or beyond fade distance (320px+): muted (0.0)
   assert.equal(calculateHeroVolumeFade(320, 320), 0.0);
   assert.equal(calculateHeroVolumeFade(500, 320), 0.0);
 });
@@ -133,6 +137,17 @@ test('14. YouTubePreview: pauses trailer when not in view and smoothly updates v
   assert.ok(ytPreviewSrc.includes('heroVolumeFactor'), 'YouTubePreview must accept heroVolumeFactor');
   assert.ok(ytPreviewSrc.includes('player.pauseVideo()'), 'YouTubePreview must call pauseVideo when not in view');
   assert.ok(ytPreviewSrc.includes('player.setVolume?.(targetVol)'), 'YouTubePreview must set faded volume on scroll');
+  assert.ok(ytPreviewSrc.includes('fadeIntervalRef'), 'YouTubePreview must maintain volume fader interval');
+});
+
+test('15. PreviewAudioContext: initializes sound to ON by default and supports wheel/scroll gesture activation', () => {
+  const audioContextSrc = fs.readFileSync(
+    path.resolve('src/features/preview-audio/PreviewAudioContext.tsx'),
+    'utf8'
+  );
+  assert.ok(audioContextSrc.includes('useState<boolean>(true)'), 'autoplaySoundAllowed must initialize to true for default sound ON');
+  assert.ok(audioContextSrc.includes("'wheel'"), 'audioContext must listen for wheel events');
+  assert.ok(audioContextSrc.includes("'scroll'"), 'audioContext must listen for scroll events');
 });
 
 

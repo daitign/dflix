@@ -4,10 +4,14 @@ import { IconButton } from '../../../components/primitives/IconButton';
 import { Skeleton } from '../../../components/primitives/Skeleton';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { getMediaVideos } from '../../../lib/tmdb/videos';
+import { filterAndRankTrailers, MAX_TRAILERS_COUNT } from '../trailersUtils';
 import type { MediaDetails } from '../types';
+
+export { filterAndRankTrailers, MAX_TRAILERS_COUNT };
 
 interface TrailersAndMoreProps {
   details: MediaDetails;
+  maxTrailers?: number;
 }
 
 interface TrailerCardProps {
@@ -96,16 +100,8 @@ function TrailerCard({ defaultBackdrop, isActive, onPlay, onStop, video }: Trail
   );
 }
 
-const TYPE_PRIORITY: Record<string, number> = {
-  trailer: 1,
-  teaser: 2,
-  featurette: 3,
-  'behind the scenes': 4,
-  clip: 5,
-  bloopers: 6,
-};
 
-export function TrailersAndMore({ details }: TrailersAndMoreProps) {
+export function TrailersAndMore({ details, maxTrailers = MAX_TRAILERS_COUNT }: TrailersAndMoreProps) {
   const [videos, setVideos] = useState<TmdbVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoKey, setActiveVideoKey] = useState<string | null>(null);
@@ -139,31 +135,8 @@ export function TrailersAndMore({ details }: TrailersAndMoreProps) {
   }, [details.playbackType, details.tmdbId, details.type]);
 
   const displayVideos = useMemo(() => {
-    const valid = videos.filter(
-      (v) => v.site?.toLowerCase() === 'youtube' && /^[A-Za-z0-9_-]{6,}$/.test(v.key),
-    );
-
-    // Deduplicate by video key
-    const seen = new Set<string>();
-    const unique = valid.filter((v) => {
-      if (seen.has(v.key)) return false;
-      seen.add(v.key);
-      return true;
-    });
-
-    // Sort by priority: Official first, then type rank, then recency
-    unique.sort((a, b) => {
-      if (a.official !== b.official) return a.official ? -1 : 1;
-      const typeRankA = TYPE_PRIORITY[a.type?.trim().toLowerCase()] ?? 99;
-      const typeRankB = TYPE_PRIORITY[b.type?.trim().toLowerCase()] ?? 99;
-      if (typeRankA !== typeRankB) return typeRankA - typeRankB;
-      const dateA = a.published_at ? Date.parse(a.published_at) : 0;
-      const dateB = b.published_at ? Date.parse(b.published_at) : 0;
-      return dateB - dateA;
-    });
-
-    return unique;
-  }, [videos]);
+    return filterAndRankTrailers(videos, maxTrailers);
+  }, [videos, maxTrailers]);
 
   if (isLoading) {
     return (

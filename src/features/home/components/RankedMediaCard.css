@@ -132,6 +132,9 @@
   color: inherit;
   cursor: pointer;
   transform: translateZ(0);
+  font-size: 0;
+  line-height: 0;
+  vertical-align: bottom;
   transition:
     transform var(--duration-base) var(--ease-standard),
     box-shadow var(--duration-base) var(--ease-standard);
@@ -147,6 +150,9 @@
   aspect-ratio: 2 / 3;
   border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
   overflow: hidden;
+  display: block;
+  vertical-align: bottom;
+  line-height: 0;
 }
 
 .ranked-card__badge-container {
@@ -160,6 +166,9 @@
   align-items: flex-end;
   pointer-events: none;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
 }
 
 .ranked-card__art img {
