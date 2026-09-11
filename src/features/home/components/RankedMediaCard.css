@@ -217,6 +217,25 @@
   }
 }
 
+@media (max-width: 22.499rem) {
+  .ranked-card {
+    --rank-zone-width: 4.5rem;
+    --rank-poster-width: 5.75rem;
+    --rank-poster-height: 8.625rem;
+    --rank-poster-overlap: 0.625rem;
+    --rank-number-size: 9.7rem;
+  }
+
+  .ranked-card--double-digit {
+    --rank-zone-width: 5.75rem;
+    --rank-poster-overlap: 0.875rem;
+  }
+
+  .carousel-shell--ranked .carousel-shell__track::after {
+    width: calc(4.5rem + 5.75rem - 0.625rem + var(--container-gutter));
+  }
+}
+
 @media (hover: none) and (pointer: coarse) {
   .ranked-card__art:hover,
   .ranked-card__art:hover img {

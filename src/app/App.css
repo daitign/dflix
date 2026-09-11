@@ -65,7 +65,7 @@
 
 .top-ten-feature {
   position: relative;
-  margin-top: -6.75rem;
+  margin-top: -4.25rem;
   padding-top: 3rem;
 }
 
@@ -142,7 +142,7 @@
 
 @media (max-width: 47.999rem) {
   .top-ten-feature {
-    margin-top: -3.5rem;
+    margin-top: -2rem;
     padding-top: 1rem;
   }
 
