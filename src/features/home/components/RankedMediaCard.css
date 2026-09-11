@@ -1,66 +1,124 @@
-.ranked-card {
-  --rank-zone-width: 8.75rem;
-  --rank-poster-width: 8.25rem;
-  --rank-poster-height: 12.375rem;
-  --rank-poster-overlap: 1.25rem;
-  --rank-number-size: 14.4rem;
+/* ==========================================================================
+   RankedMediaCard.css - Netflix Top 10 Today Row Component
+   ========================================================================== */
 
+.carousel-shell--ranked {
+  --carousel-gap: 8px;
+  --rank-card-height: clamp(11.5rem, 15.5vw, 15.75rem);
+  --rank-poster-radius: 4px 10px 10px 4px;
+  --rank-poster-width: calc(var(--rank-card-height) * 2 / 3);
+  --rank-poster-left: calc(var(--rank-card-height) * 0.44);
+  --rank-card-width: calc(var(--rank-poster-left) + var(--rank-poster-width));
+
+  /* Rank 10 double-digit zone: calibrated so '0' is partially visible behind poster */
+  --rank-poster-left-double: calc(var(--rank-card-height) * 0.58);
+  --rank-card-width-double: calc(var(--rank-poster-left-double) + var(--rank-poster-width));
+}
+
+@media (max-width: 68.749rem) {
+  .carousel-shell--ranked {
+    --rank-poster-radius: 3px 8px 8px 3px;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .carousel-shell--ranked {
+    --carousel-gap: 6px;
+    --rank-poster-radius: 2px 7px 7px 2px;
+    --rank-card-height: clamp(8.75rem, 30vw, 11.5rem);
+  }
+}
+
+/* 1. Relatively positioned container for number + poster */
+.ranked-card {
   position: relative;
-  width: calc(var(--rank-zone-width) + var(--rank-poster-width) - var(--rank-poster-overlap));
-  height: var(--rank-poster-height);
+  width: var(--rank-card-width);
+  height: var(--rank-card-height);
+  flex-shrink: 0;
   overflow: visible;
   isolation: isolate;
 }
 
-.ranked-card--double-digit {
-  --rank-zone-width: 10rem;
-  --rank-poster-overlap: 1.5rem;
+/* Specific calibration for Rank 1 so stem is proportionally spaced */
+.ranked-card--rank-1 {
+  --rank-poster-left: calc(var(--rank-card-height) * 0.38);
+  width: calc(var(--rank-poster-left) + var(--rank-poster-width));
 }
 
+.ranked-card--double-digit {
+  width: var(--rank-card-width-double);
+}
+
+/* 2. Rank Number: clean, flat heavy sans-serif typography matching poster height */
+.rankNumber,
 .ranked-card__number {
   position: absolute;
-  z-index: 0;
-  inset: 0 auto 0 0;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100%;
   display: flex;
-  width: var(--rank-zone-width);
-  align-items: flex-end;
-  justify-content: flex-end;
-  overflow: visible;
-  color: #090b0e;
-  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', 'Arial Narrow', sans-serif;
-  font-size: var(--rank-number-size);
-  font-stretch: condensed;
+  align-items: center;
+  font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
   font-weight: 900;
-  letter-spacing: -0.065em;
-  line-height: 0.79;
-  text-align: right;
-  white-space: nowrap;
-  -webkit-text-stroke: 3px rgb(137 143 151 / 68%);
-  paint-order: stroke fill;
-  text-shadow:
-    0 2px 1px rgb(0 0 0 / 88%),
-    0 8px 22px rgb(0 0 0 / 62%);
+  font-size: calc(var(--rank-card-height) * 1.365);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(125, 125, 125, 0.8);
+  text-shadow: none;
+  transform: translateY(-3.5%) scaleX(0.95);
+  transform-origin: left center;
   pointer-events: none;
   user-select: none;
+  white-space: nowrap;
 }
 
-.ranked-card--double-digit .ranked-card__number {
-  letter-spacing: -0.11em;
+/* Rank 10 double-digit: condensed scaling and tight kerning so '0' sits behind poster without overflowing right */
+.ranked-card--double-digit .rankNumber,
+.ranked-card--double-digit .ranked-card__number,
+.ranked-card__number--rank-10 {
+  letter-spacing: -0.22em;
+  transform: translateY(-3%) scale(0.68, 0.97);
+  transform-origin: left center;
+  max-width: var(--rank-card-width-double);
+  overflow: hidden;
 }
 
+@media (max-width: 47.999rem) {
+  .rankNumber,
+  .ranked-card__number {
+    -webkit-text-stroke: 1.6px rgba(125, 125, 125, 0.8);
+  }
+
+  .ranked-card--double-digit .rankNumber,
+  .ranked-card--double-digit .ranked-card__number,
+  .ranked-card__number--rank-10 {
+    letter-spacing: -0.22em;
+    transform: translateY(-3%) scale(0.68, 0.97);
+  }
+}
+
+
+/* 3. Poster: foreground layer (z-index: 2), rounded corners & left-cast depth shadow */
 .ranked-card__art {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
+  left: var(--rank-poster-left);
   top: 0;
-  left: calc(var(--rank-zone-width) - var(--rank-poster-overlap));
+  bottom: 0;
   width: var(--rank-poster-width);
-  height: var(--rank-poster-height);
+  height: var(--rank-card-height);
+  aspect-ratio: 2 / 3;
   padding: 0;
   overflow: hidden;
   border: 0;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  box-shadow: 0 12px 26px rgb(0 0 0 / 28%);
+  border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
+  background: var(--color-surface-1);
+  box-shadow:
+    -8px 0 18px rgba(0, 0, 0, 0.35),
+    0 8px 20px rgba(0, 0, 0, 0.20);
   color: inherit;
   cursor: pointer;
   transform: translateZ(0);
@@ -69,14 +127,34 @@
     box-shadow var(--duration-base) var(--ease-standard);
 }
 
+.ranked-card--double-digit .ranked-card__art {
+  left: var(--rank-poster-left-double);
+}
+
 .ranked-card__art .responsive-image {
   width: 100%;
   height: 100%;
   aspect-ratio: 2 / 3;
+  border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
+  overflow: hidden;
 }
 
 .ranked-card__art .responsive-image::after {
   border-color: rgb(255 255 255 / 8%);
+  border-radius: var(--rank-poster-radius, 4px 10px 10px 4px);
+}
+
+.ranked-card__badge-container {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+  width: 100%;
 }
 
 .ranked-card__art img {
@@ -87,7 +165,9 @@
 }
 
 .ranked-card__art:hover {
-  box-shadow: 0 16px 32px rgb(0 0 0 / 36%);
+  box-shadow:
+    -10px 0 24px rgba(0, 0, 0, 0.45),
+    0 12px 28px rgba(0, 0, 0, 0.28);
   transform: translateY(-3px);
 }
 
@@ -96,144 +176,33 @@
 }
 
 .ranked-card__art:active {
-  box-shadow: 0 8px 20px rgb(0 0 0 / 26%);
+  box-shadow:
+    -6px 0 14px rgba(0, 0, 0, 0.26),
+    0 6px 16px rgba(0, 0, 0, 0.16);
   transform: translateY(-1px) scale(0.99);
 }
 
 .ranked-card__art:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
-  box-shadow: var(--shadow-focus), 0 16px 32px rgb(0 0 0 / 36%);
+  box-shadow:
+    var(--shadow-focus),
+    -8px 0 18px rgba(0, 0, 0, 0.35),
+    0 12px 24px rgba(0, 0, 0, 0.30);
 }
 
-.carousel-shell--ranked .carousel-shell__controls {
-  opacity: 0.32;
-  transition: opacity var(--duration-base) var(--ease-standard);
-}
-
-.carousel-shell--ranked::before {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  bottom: 0;
-  left: calc(var(--container-gutter) * -1);
-  width: var(--container-gutter);
-  background: var(--color-bg);
-  content: '';
-  pointer-events: none;
-}
-
-.carousel-shell--ranked:hover .carousel-shell__controls,
-.carousel-shell--ranked:focus-within .carousel-shell__controls {
-  opacity: 1;
-}
-
-.carousel-shell--ranked .carousel-shell__controls .icon-button {
-  width: 2rem;
-  height: 2rem;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.carousel-shell--ranked .carousel-shell__controls .icon-button:hover:not(:disabled),
-.carousel-shell--ranked .carousel-shell__controls .icon-button:focus-visible {
-  background: rgb(255 255 255 / 7%);
-}
-
+/* 4. Carousel track spacing specifically for ranked row */
 .carousel-shell--ranked .carousel-shell__track {
-  gap: clamp(0.5rem, 0.9vw, 0.75rem);
-  padding-top: 0.75rem;
-  padding-bottom: 1.75rem;
+  gap: var(--carousel-gap, 8px);
+  padding: 0.25rem var(--container-gutter) 0.5rem;
   overflow-y: hidden;
   overscroll-behavior-block: none;
 }
 
 .carousel-shell--ranked .carousel-shell__item {
+  width: max-content;
   overflow: visible;
   scroll-snap-stop: always;
-}
-
-.carousel-shell--ranked .carousel-shell__track::after {
-  display: block;
-  width: calc(8.75rem + 8.25rem - 1.25rem + var(--container-gutter));
-  content: '';
-}
-
-@media (min-width: 48rem) and (max-width: 63.999rem) {
-  .ranked-card {
-    --rank-zone-width: 7.5rem;
-    --rank-poster-width: 7.5rem;
-    --rank-poster-height: 11.25rem;
-    --rank-poster-overlap: 1.125rem;
-    --rank-number-size: 13rem;
-  }
-
-  .ranked-card--double-digit {
-    --rank-zone-width: 9rem;
-    --rank-poster-overlap: 1.35rem;
-  }
-
-  .ranked-card__number {
-    -webkit-text-stroke-width: 2.5px;
-  }
-
-  .carousel-shell--ranked .carousel-shell__track::after {
-    width: calc(7.5rem + 7.5rem - 1.125rem + var(--container-gutter));
-  }
-}
-
-@media (max-width: 47.999rem) {
-  .ranked-card {
-    --rank-zone-width: 5.5rem;
-    --rank-poster-width: 6.5rem;
-    --rank-poster-height: 9.75rem;
-    --rank-poster-overlap: 0.75rem;
-    --rank-number-size: 11.1rem;
-  }
-
-  .ranked-card--double-digit {
-    --rank-zone-width: 6.75rem;
-    --rank-poster-overlap: 1rem;
-  }
-
-  .ranked-card__number {
-    -webkit-text-stroke-width: 2px;
-  }
-
-  .ranked-card__art {
-    box-shadow: 0 9px 20px rgb(0 0 0 / 28%);
-  }
-
-  .carousel-shell--ranked .carousel-shell__track {
-    gap: 0.45rem;
-    padding-top: 0.625rem;
-    padding-bottom: 1.25rem;
-  }
-
-  .carousel-shell--ranked .carousel-shell__track::after {
-    width: calc(5.5rem + 6.5rem - 0.75rem + var(--container-gutter));
-  }
-}
-
-@media (max-width: 22.499rem) {
-  .ranked-card {
-    --rank-zone-width: 4.5rem;
-    --rank-poster-width: 5.75rem;
-    --rank-poster-height: 8.625rem;
-    --rank-poster-overlap: 0.625rem;
-    --rank-number-size: 9.7rem;
-  }
-
-  .ranked-card--double-digit {
-    --rank-zone-width: 5.75rem;
-    --rank-poster-overlap: 0.875rem;
-  }
-
-  .carousel-shell--ranked .carousel-shell__track::after {
-    width: calc(4.5rem + 5.75rem - 0.625rem + var(--container-gutter));
-  }
 }
 
 @media (hover: none) and (pointer: coarse) {

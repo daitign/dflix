@@ -1,4 +1,5 @@
 import type { MediaBadge, MediaItem, MediaType } from '../../features/catalog';
+import { getFreshnessBadge } from '../../features/catalog/freshness';
 import type { EpisodeData, MediaDetails, SeasonData } from '../../features/details-modal';
 import { getTmdbLocale } from './config';
 import { getTmdbArtwork, getTmdbImageUrl } from './images';
@@ -71,7 +72,7 @@ export function hasUsableTmdbMedia(item: TmdbMediaSummary) {
 function normalizeTmdbMedia(
   item: TmdbMediaSummary,
   playbackType: 'movie' | 'tv',
-  options: { badge?: MediaBadge; category?: MediaType } = {},
+  options: { category?: MediaType } = {},
 ): MediaItem | null {
   const title = getTitle(item, playbackType);
   if (!title || !Number.isInteger(item.id) || item.id <= 0 || (!item.poster_path && !item.backdrop_path)) {
@@ -79,14 +80,24 @@ function normalizeTmdbMedia(
   }
 
   const inferredCategory: MediaType = isAnimeSource(item) ? 'anime' : playbackType;
+  const category = options.category ?? inferredCategory;
   const backdrop = getTmdbArtwork(item.backdrop_path ?? item.poster_path, 'backdrop');
   const poster = getTmdbArtwork(item.poster_path ?? item.backdrop_path, 'poster');
+  const releaseDate = playbackType === 'movie' ? item.release_date : undefined;
+  const firstAirDate = playbackType === 'tv' ? item.first_air_date : undefined;
+  const badge = getFreshnessBadge({
+    firstAirDate,
+    playbackType,
+    releaseDate,
+    type: category,
+  });
 
   return {
     backdrop,
     backdropUrl: backdrop.fallback,
-    badge: options.badge,
-    catalogCategory: options.category ?? inferredCategory,
+    badge,
+    catalogCategory: category,
+    firstAirDate,
     genres: getGenres(item),
     id: `${playbackType}-${item.id}`,
     originalTitle: getOriginalTitle(item, playbackType),
@@ -94,30 +105,34 @@ function normalizeTmdbMedia(
     playbackType,
     poster,
     posterUrl: poster.fallback,
+    releaseDate,
     title,
     tmdbId: item.id,
-    type: options.category ?? inferredCategory,
+    type: category,
     voteAverage: item.vote_average,
     year: getYear(playbackType === 'movie' ? item.release_date : item.first_air_date),
   };
 }
 
-export function normalizeTmdbMovie(item: TmdbMediaSummary, badge?: MediaBadge) {
-  return normalizeTmdbMedia(item, 'movie', { badge });
+export function normalizeTmdbMovie(item: TmdbMediaSummary, _badge?: MediaBadge) {
+  return normalizeTmdbMedia(item, 'movie');
 }
 
 export function normalizeTmdbTv(
   item: TmdbMediaSummary,
-  badge?: MediaBadge,
+  _badgeOrCategory?: MediaBadge | MediaType,
   category?: MediaType,
 ) {
-  return normalizeTmdbMedia(item, 'tv', { badge, category });
+  const resolvedCategory = typeof _badgeOrCategory === 'string' && (_badgeOrCategory === 'movie' || _badgeOrCategory === 'tv' || _badgeOrCategory === 'anime')
+    ? _badgeOrCategory
+    : category;
+  return normalizeTmdbMedia(item, 'tv', { category: resolvedCategory });
 }
 
-export function normalizeTmdbMixed(item: TmdbMediaSummary, badge?: MediaBadge) {
+export function normalizeTmdbMixed(item: TmdbMediaSummary, _badge?: MediaBadge) {
   if (item.media_type === 'person') return null;
   const playbackType = item.media_type === 'tv' ? 'tv' : 'movie';
-  return normalizeTmdbMedia(item, playbackType, { badge });
+  return normalizeTmdbMedia(item, playbackType);
 }
 
 function chooseLogo(images: TmdbImage[] | undefined) {
@@ -160,7 +175,7 @@ function normalizeRelated(
       category: category === 'anime' ? 'anime' : playbackType,
     }))
     .filter((item): item is MediaItem => item !== null);
-  return [...new Map(items.map((item) => [item.tmdbId, item])).values()].slice(0, 9);
+  return [...new Map(items.map((item) => [item.tmdbId, item])).values()].slice(0, 24);
 }
 
 function seasonSummaries(details: TmdbTvDetails): SeasonData[] {

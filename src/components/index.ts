@@ -12,3 +12,5 @@ export { IconButton } from './primitives/IconButton';
 export { ModalShell } from './primitives/ModalShell';
 export { ResponsiveImage } from './primitives/ResponsiveImage';
 export { Skeleton } from './primitives/Skeleton';
+export { SpatialAudioBadge } from './primitives/SpatialAudioBadge';
+

@@ -88,7 +88,7 @@
 .modal-shell__panel--cinematic .modal-shell__body {
   padding: 0;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 
 .modal-shell--left .modal-shell__panel,

@@ -2,7 +2,9 @@ import { useEffect, useState, type FocusEvent, type KeyboardEvent, type PointerE
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import { ResponsiveImage } from '../../components/primitives/ResponsiveImage';
+import { SpatialAudioBadge } from '../../components/primitives/SpatialAudioBadge';
 import type { TmdbVideo } from '../../lib/tmdb/types';
+
 import { getMediaVideos, selectBestPreviewVideo } from '../../lib/tmdb/videos';
 import type {
   HoverPreviewAction,
@@ -11,6 +13,7 @@ import type {
 } from './types';
 import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
 import { YouTubePreview } from './YouTubePreview';
+import { usePreviewAudio } from '../preview-audio';
 
 interface HoverPreviewCardProps {
   anchorElement: HTMLElement;
@@ -48,6 +51,24 @@ export function HoverPreviewCard({
   const [isListed, setIsListed] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<TmdbVideo | null>(null);
   const canPlayPreview = usePreviewPlaybackEligibility();
+  const { setHoverActive } = usePreviewAudio();
+
+  // Arbitrate audio playback with Hero banner
+  useEffect(() => {
+    if (phase === 'open') {
+      setHoverActive(true);
+    } else {
+      setHoverActive(false);
+    }
+    return () => {
+      setHoverActive(false);
+    };
+  }, [phase, setHoverActive]);
+
+  const matchPercentage = Math.max(
+    74,
+    Math.min(99, Math.round((data.voteAverage && data.voteAverage > 0 ? data.voteAverage : 8.3) * 10 + 2)),
+  );
 
   useEffect(() => {
     setPreviewVideo(null);
@@ -173,10 +194,12 @@ export function HoverPreviewCard({
         </div>
 
         <div aria-label="Title information" className="hover-preview-card__facts">
+          <span className="hover-preview-card__match">{matchPercentage}% Match</span>
           {data.maturityRating && <span className="hover-preview-card__rating">{data.maturityRating}</span>}
           <span>{getLengthLabel(data)}</span>
           <span className="hover-preview-card__quality">{data.quality}</span>
-          {data.year && <span>{data.year}</span>}
+          {data.type === 'movie' && <SpatialAudioBadge />}
+          {data.type !== 'movie' && data.year && <span>{data.year}</span>}
         </div>
 
         {data.genres.length > 0 && (

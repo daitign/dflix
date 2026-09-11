@@ -1,3 +1,4 @@
+import { SpatialAudioBadge } from '../../../components/primitives/SpatialAudioBadge';
 import type { MediaDetails } from '../types';
 
 interface DetailsMetadataProps {
@@ -16,16 +17,21 @@ export function DetailsMetadata({ details }: DetailsMetadataProps) {
   const length = seasonCount
     ? `${seasonCount} Season${seasonCount === 1 ? '' : 's'}`
     : formatRuntime(details.runtime);
+  const matchPercentage = Math.max(
+    75,
+    Math.min(99, Math.round((details.voteAverage && details.voteAverage > 0 ? details.voteAverage : 8.4) * 10 + 2)),
+  );
 
   return (
     <section aria-label="Title details" className="details-metadata">
       <div className="details-metadata__primary">
         <div aria-label="Title information" className="details-metadata__facts">
+          <span className="details-metadata__match">{matchPercentage}% Match</span>
           {details.year && <span>{details.year}</span>}
           {details.maturityRating && <span className="details-metadata__rating">{details.maturityRating}</span>}
-          {details.voteAverage !== undefined && details.voteAverage > 0 && <span>{details.voteAverage.toFixed(1)} ★</span>}
           {length && <span>{length}</span>}
           <span className="details-metadata__quality">{details.quality}</span>
+          <SpatialAudioBadge />
         </div>
         <p className="details-metadata__synopsis">{details.overview}</p>
       </div>

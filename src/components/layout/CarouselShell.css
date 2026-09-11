@@ -3,20 +3,89 @@
   min-width: 0;
 }
 
-.carousel-shell__controls {
+/* Netflix Pagination Indicators */
+.carousel-shell__pagination {
+  position: absolute;
+  top: -1.35rem;
+  right: 0;
   display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  align-items: center;
+  gap: 2px;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.carousel-shell:hover .carousel-shell__pagination {
+  opacity: 1;
+}
+
+.carousel-shell__indicator {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.3s ease;
+}
+
+.carousel-shell__indicator--active {
+  background: #ffffff;
+}
+
+/* Netflix Side Handle Paddles */
+.carousel-shell__paddle {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.5rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--container-gutter);
+  padding: 0;
+  border: 0;
+  color: #ffffff;
+  background: rgba(20, 20, 20, 0.7);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.25s ease,
+    background 0.2s ease;
+}
+
+.carousel-shell:hover .carousel-shell__paddle {
+  opacity: 1;
+}
+
+.carousel-shell__paddle--left {
+  left: calc(var(--container-gutter) * -1);
+  border-radius: 0 4px 4px 0;
+}
+
+.carousel-shell__paddle--right {
+  right: calc(var(--container-gutter) * -1);
+  border-radius: 4px 0 0 4px;
+}
+
+.carousel-shell__paddle:hover {
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.carousel-shell__paddle svg {
+  transition: transform 0.2s ease;
+}
+
+.carousel-shell__paddle:hover svg {
+  transform: scale(1.25);
 }
 
 .carousel-shell__track {
   display: grid;
-  grid-auto-columns: var(--carousel-item-width);
+  grid-auto-columns: var(--carousel-item-width, calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6)));
   grid-auto-flow: column;
-  gap: clamp(0.75rem, 2vw, 1.25rem);
+  gap: var(--carousel-gap, 4px);
   margin-inline: calc(var(--container-gutter) * -1);
-  padding: var(--space-2) var(--container-gutter) var(--space-6);
+  padding: 0.25rem var(--container-gutter) 0.5rem;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   scroll-padding-inline: var(--container-gutter);
@@ -38,17 +107,15 @@
 }
 
 @media (max-width: 47.999rem) {
-  .carousel-shell__controls {
+  .carousel-shell__paddle,
+  .carousel-shell__pagination {
     display: none;
-  }
-
-  .carousel-shell__track {
-    grid-auto-columns: var(--carousel-mobile-item-width);
   }
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .carousel-shell__controls {
+  .carousel-shell__paddle,
+  .carousel-shell__pagination {
     display: none;
   }
 }

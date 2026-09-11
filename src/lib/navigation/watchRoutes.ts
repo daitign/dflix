@@ -20,7 +20,9 @@ export interface WatchNavigationState {
   title: string;
 }
 
-type WatchableMedia = Pick<MediaItem | MediaPreviewData, 'playbackType' | 'title' | 'tmdbId' | 'type'>;
+type WatchableMedia = Pick<MediaItem | MediaPreviewData, 'playbackType' | 'title' | 'tmdbId' | 'type'> & {
+  id?: number | string;
+};
 
 export function buildWatchPath(route: WatchRoute) {
   if (route.type === 'movie') return `/watch/movie/${route.tmdbId}`;
@@ -45,14 +47,22 @@ export function navigateToWatch(
   media: WatchableMedia,
   options: { episode?: number; episodeLabel?: string; season?: number } = {},
 ) {
-  if (!media.tmdbId || !Number.isInteger(media.tmdbId) || media.tmdbId <= 0) return false;
+  const candidateId = media.tmdbId && Number.isInteger(media.tmdbId) && media.tmdbId > 0
+    ? media.tmdbId
+    : (typeof media.id === 'number' && Number.isInteger(media.id) && media.id > 0
+      ? media.id
+      : (typeof media.id === 'string' && /^\d+$/.test(media.id)
+        ? Number(media.id)
+        : 0));
+
+  if (!candidateId) return false;
   const playbackType = media.playbackType ?? (media.type === 'movie' ? 'movie' : 'tv');
   const route: WatchRoute = playbackType === 'movie'
-    ? { tmdbId: media.tmdbId, type: 'movie' }
+    ? { tmdbId: candidateId, type: 'movie' }
     : {
       episode: options.episode ?? 1,
       season: options.season ?? 1,
-      tmdbId: media.tmdbId,
+      tmdbId: candidateId,
       type: 'tv',
     };
   const state: WatchNavigationState = { episodeLabel: options.episodeLabel, title: media.title };

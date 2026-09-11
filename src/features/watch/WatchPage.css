@@ -7,9 +7,7 @@
   grid-template-rows: auto 1fr;
   overflow-x: hidden;
   color: var(--color-text);
-  background:
-    radial-gradient(circle at 50% -30%, rgb(65 76 86 / 22%), transparent 45%),
-    #030506;
+  background: #000000;
 }
 
 .watch-page__header {
@@ -142,7 +140,8 @@
     min-height: 0;
     align-content: center;
     margin: 0;
-    padding-block: max(0.75rem, env(safe-area-inset-bottom));
+    padding-top: 0.75rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     padding-inline: 0;
   }
 
@@ -168,8 +167,11 @@
   .watch-page__header {
     position: relative;
     grid-template-columns: auto minmax(0, 1fr);
-    padding-top: max(0.45rem, env(safe-area-inset-top));
-    padding-bottom: 0.45rem;
+    padding:
+      max(0.45rem, env(safe-area-inset-top))
+      max(0.75rem, env(safe-area-inset-right))
+      0.45rem
+      max(0.75rem, env(safe-area-inset-left));
     background: #030506;
   }
 
@@ -181,7 +183,7 @@
     width: 100vw;
     max-width: 100%;
     align-content: center;
-    padding: 0;
+    padding: 0 max(0.75rem, env(safe-area-inset-right)) max(0.45rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   }
 
   .watch-page__stage .vidstuck-frame {

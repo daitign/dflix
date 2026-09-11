@@ -3,10 +3,13 @@ import type { ReactNode, SVGProps } from 'react';
 export type IconName =
   | 'bell'
   | 'bookmark'
+  | 'caretDown'
+  | 'caretUp'
   | 'check'
   | 'chevronDown'
   | 'chevronLeft'
   | 'chevronRight'
+  | 'chevronUp'
   | 'close'
   | 'grid'
   | 'fullscreen'
@@ -31,10 +34,13 @@ interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {
 const paths: Record<IconName, ReactNode> = {
   bell: <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />,
   bookmark: <path d="M6 4.8A1.8 1.8 0 0 1 7.8 3h8.4A1.8 1.8 0 0 1 18 4.8V21l-6-3.6L6 21z" />,
+  caretDown: <path d="m6 9.5 6 6 6-6z" fill="currentColor" stroke="none" />,
+  caretUp: <path d="m6 14.5 6-6 6 6z" fill="currentColor" stroke="none" />,
   check: <path d="m5 12 4.25 4.25L19 6.5" />,
   chevronDown: <path d="m6 9 6 6 6-6" />,
   chevronLeft: <path d="m15 18-6-6 6-6" />,
   chevronRight: <path d="m9 18 6-6-6-6" />,
+  chevronUp: <path d="m6 15 6-6 6 6" />,
   close: <path d="M18 6 6 18M6 6l12 12" />,
   grid: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />,
   fullscreen: <path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5" />,

@@ -1,9 +1,14 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../../../components/primitives/Button';
 import { Icon } from '../../../components/icons/Icon';
 import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage';
 import type { MediaItem } from '../../catalog';
 import { useDetailsModal } from '../../details-modal';
+import { YouTubePreview } from '../../hover-preview/YouTubePreview';
+import { usePreviewAudio } from '../../preview-audio';
+import { useHeroPlaybackEligibility } from '../useHeroPlaybackEligibility';
+import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
+import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { navigateToWatch } from '../../../lib/navigation/watchRoutes';
 import './HeroBanner.css';
 
@@ -11,68 +16,131 @@ interface HeroBannerProps {
   item: MediaItem;
 }
 
-function formatRuntime(minutes?: number): string | null {
-  if (!minutes) return null;
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  return `${hours}h ${remaining}m`;
-}
-
 export function HeroBanner({ item }: HeroBannerProps) {
   const { openDetails } = useDetailsModal();
-  const runtime = formatRuntime(item.runtime);
-  const titleParts = useMemo(() => {
-    const words = item.title.split(' ');
-    return { lead: words.slice(0, -1).join(' '), accent: words.at(-1) ?? item.title };
-  }, [item.title]);
+  const { isAudible, toggleSound } = usePreviewAudio();
+  const [heroVideo, setHeroVideo] = useState<TmdbVideo | null>(null);
+  const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+  const canPlayVideo = useHeroPlaybackEligibility();
+
+  const mediaFormat = item.type === 'tv' ? 'SERIES' : item.type === 'anime' ? 'ANIME SERIES' : 'FILM';
+  const categoryLabel = item.type === 'tv' ? 'TV Shows' : 'Movies';
+
+  useEffect(() => {
+    setHeroVideo(null);
+    setIsTrailerPlaying(false);
+    if (!canPlayVideo || !item.tmdbId) return;
+
+    const controller = new AbortController();
+    const playbackType = item.playbackType ?? (item.type === 'movie' ? 'movie' : 'tv');
+    getMediaVideos(playbackType, item.tmdbId, { signal: controller.signal })
+      .then((videos) => {
+        if (!controller.signal.aborted) {
+          setHeroVideo(selectBestPreviewVideo(videos));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHeroVideo(null);
+      });
+
+    return () => controller.abort();
+  }, [canPlayVideo, item.playbackType, item.tmdbId, item.type]);
 
   return (
     <section aria-labelledby="hero-title" className="hero-banner" id="home">
       <ResponsiveImage
         alt=""
-        className="hero-banner__backdrop"
+        className={`hero-banner__backdrop${isTrailerPlaying ? ' hero-banner__backdrop--under-trailer' : ''}`}
         fetchPriority="high"
         loading="eager"
-        objectPosition="72% center"
+        objectPosition="center 30%"
         sizes="100vw"
         sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: item.backdrop.type }] : []}
         src={item.backdrop?.fallback ?? item.backdropUrl ?? '/media/fallback-landscape.svg'}
       />
+      {heroVideo && (
+        <YouTubePreview
+          key={heroVideo.key}
+          onPlaying={() => setIsTrailerPlaying(true)}
+          title={item.title}
+          variant="hero"
+          video={heroVideo}
+        />
+      )}
       <div aria-hidden="true" className="hero-banner__wash" />
+
       <div className="container hero-banner__content">
         <div className="hero-banner__copy">
-          <p className="hero-banner__kicker">
-            <span aria-hidden="true" className="hero-banner__brand-glyph">D</span>
-            DAITIGN FEATURE PRESENTS
-          </p>
+          {/* Netflix Series / Film Badge */}
+          <div className="hero-banner__badge">
+            <span aria-hidden="true" className="hero-banner__n-glyph">N</span>
+            <span className="hero-banner__format-label">{mediaFormat}</span>
+          </div>
+
+          {/* Title or Logo */}
           {item.logoUrl ? (
             <h1 className="hero-banner__logo-title" id="hero-title">
               <img alt={item.title} src={item.logoUrl} />
             </h1>
           ) : (
-            <h1 id="hero-title" aria-label={item.title}>
-              <span>{titleParts.lead}</span>
-              <em>{titleParts.accent}</em>
+            <h1 className="hero-banner__text-title" id="hero-title">
+              {item.title}
             </h1>
           )}
-          <div aria-label="Title information" className="hero-banner__meta">
-            {item.year && <span>{item.year}</span>}
-            {(item.maturityRating ?? item.rating) && <span className="hero-banner__rating">{item.maturityRating ?? item.rating}</span>}
-            {item.genres?.[0] && <span className="hero-banner__meta-detail">{item.genres[0]}</span>}
-            {runtime && <span className="hero-banner__meta-detail">{runtime}</span>}
+
+          {/* Top 10 Ribbon */}
+          <div className="hero-banner__top-ten">
+            <div aria-hidden="true" className="hero-banner__top-ten-badge">
+              <span>TOP</span>
+              <span>10</span>
+            </div>
+            <span className="hero-banner__top-ten-text">#1 in {categoryLabel} Today</span>
           </div>
+
+          {/* Overview */}
           {item.overview && <p className="hero-banner__overview">{item.overview}</p>}
+
+          {/* Action Buttons */}
           <div className="hero-banner__actions">
-            <Button onClick={() => navigateToWatch(item)} size="lg" startIcon={<Icon name="play" />}>
+            <Button
+              className="hero-banner__play-button"
+              onClick={() => navigateToWatch(item)}
+              size="lg"
+              startIcon={<Icon name="play" size={22} />}
+            >
               Play
             </Button>
-            <Button onClick={(event) => openDetails(item, event.currentTarget)} size="lg" startIcon={<Icon name="info" />} variant="secondary">
-              More Details
+            <Button
+              className="hero-banner__info-button"
+              onClick={(event) => openDetails(item, event.currentTarget)}
+              size="lg"
+              startIcon={<Icon name="info" size={22} />}
+              variant="secondary"
+            >
+              More Info
             </Button>
           </div>
         </div>
+
+        {/* Right side controls: Mute button & Maturity Rating strip */}
+        <div className="hero-banner__rail">
+          <button
+            aria-label={isAudible ? 'Mute preview' : 'Unmute preview'}
+            aria-pressed={isAudible}
+            className="hero-banner__audio-toggle"
+            onClick={toggleSound}
+            type="button"
+          >
+            <Icon name={isAudible ? 'volume' : 'volumeOff'} size={18} />
+          </button>
+          <div className="hero-banner__rating-strip">
+            <span>{item.maturityRating ?? item.rating ?? '16+'}</span>
+          </div>
+        </div>
       </div>
+
       <div aria-hidden="true" className="hero-banner__fade" />
     </section>
   );
 }
+

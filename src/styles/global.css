@@ -1,14 +1,13 @@
 body {
   color: var(--color-text);
-  background:
-    radial-gradient(circle at 82% -5%, rgb(209 163 84 / 8%), transparent 27rem),
-    radial-gradient(circle at -8% 32%, rgb(91 112 138 / 7%), transparent 30rem),
-    var(--color-bg);
+  background: var(--color-bg);
   font-family: var(--font-body);
   font-size: var(--font-size-md);
   line-height: var(--line-height-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 #root {
@@ -16,9 +15,8 @@ body {
 }
 
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 3px;
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-white);
+  outline-offset: 2px;
 }
 
 :where(button, a)[aria-disabled='true'],
@@ -33,9 +31,9 @@ body {
   z-index: var(--z-toast);
   translate: 0 -180%;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-950);
-  background: var(--color-accent-400);
+  border-radius: var(--radius-xs);
+  color: #ffffff;
+  background: var(--color-accent-500);
   font-weight: 700;
   transition: translate var(--duration-base) var(--ease-standard);
 }

@@ -1,4 +1,4 @@
-import type { MediaArtwork, MediaBadge, MediaItem, MediaType } from '../catalog';
+import { getFreshnessBadge, type MediaArtwork, type MediaBadge, type MediaItem, type MediaType } from '../catalog';
 
 export type HoverPreviewPlacement = 'left' | 'center' | 'right';
 
@@ -18,6 +18,7 @@ export interface MediaPreviewData {
   title: string;
   tmdbId?: number;
   type: MediaType;
+  voteAverage?: number;
   year?: number;
 }
 
@@ -33,7 +34,7 @@ export function toMediaPreviewData(item: MediaItem): MediaPreviewData {
   return {
     artwork: item.backdrop,
     artworkUrl: item.backdropUrl,
-    badge: item.badge,
+    badge: getFreshnessBadge(item),
     genres: item.genres?.slice(0, 3) ?? [],
     id: item.id,
     maturityRating: item.maturityRating ?? item.rating,
@@ -44,6 +45,7 @@ export function toMediaPreviewData(item: MediaItem): MediaPreviewData {
     title: item.title,
     tmdbId: item.tmdbId,
     type: item.type,
+    voteAverage: item.voteAverage,
     year: item.year,
   };
 }

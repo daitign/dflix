@@ -32,9 +32,17 @@ export function MediaRow({ items, mode = 'standard', row, title }: MediaRowProps
         <CarouselShell
           aria-label={resolvedTitle}
           className={isRanked ? 'carousel-shell--ranked' : undefined}
-          itemWidth={isRanked ? 'max-content' : isContinue ? 'clamp(17rem, 24vw, 22rem)' : 'clamp(12.75rem, 16vw, 17.25rem)'}
-          mobileItemWidth={isRanked ? 'max-content' : isContinue ? '74vw' : '47vw'}
-          navigationMode={isRanked ? 'item-aligned' : 'page'}
+          itemWidth={
+            isRanked
+              ? 'max-content'
+              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6))'
+          }
+          mobileItemWidth={
+            isRanked
+              ? 'max-content'
+              : 'calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 4px))) / var(--items-per-page, 6))'
+          }
+          navigationMode="page"
         >
           {resolvedItems.map((item, index) => {
             if (isRanked) return <RankedMediaCard item={item} key={item.id} rank={index + 1} />;

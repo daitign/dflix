@@ -80,6 +80,9 @@ export interface TmdbTvDetails extends TmdbMediaSummary {
   episode_run_time?: number[];
   genres: TmdbGenre[];
   images?: { backdrops: TmdbImage[]; logos: TmdbImage[]; posters: TmdbImage[] };
+  last_air_date?: string;
+  last_episode_to_air?: TmdbEpisode | null;
+  next_episode_to_air?: TmdbEpisode | null;
   number_of_seasons: number;
   recommendations?: TmdbPagedResponse<TmdbMediaSummary>;
   seasons: TmdbSeasonSummary[];

@@ -6,6 +6,7 @@ import {
   HOVER_PREVIEW_ACTION_EVENT,
   type HoverPreviewActionDetail,
 } from '../hover-preview/types';
+import { usePreviewAudio } from '../preview-audio';
 import { DetailsModal } from './components/DetailsModal';
 import type { DetailsModalContextValue, MediaDetails, SeasonData } from './types';
 
@@ -16,11 +17,17 @@ interface DetailsModalProviderProps {
 }
 
 export function DetailsModalProvider({ children }: DetailsModalProviderProps) {
+  const { setModalActive } = usePreviewAudio();
   const [sourceMedia, setSourceMedia] = useState<MediaItem | null>(null);
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [detailsError, setDetailsError] = useState('');
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setModalActive(isOpen);
+    return () => setModalActive(false);
+  }, [isOpen, setModalActive]);
   const [seasonLoading, setSeasonLoading] = useState<number | null>(null);
   const [seasonError, setSeasonError] = useState<{ message: string; seasonNumber: number } | null>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);

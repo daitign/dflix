@@ -1,10 +1,10 @@
 export type MediaType = 'movie' | 'tv' | 'anime';
 
 export type MediaBadge =
+  | 'new'
   | 'recently-added'
   | 'new-episode'
   | 'new-season'
-  | 'trending'
   | 'top-10';
 
 export interface MediaArtwork {
@@ -26,6 +26,15 @@ export interface MediaItem {
   poster?: MediaArtwork;
   logoUrl?: string;
   year?: number;
+  releaseDate?: string;
+  firstAirDate?: string;
+  lastAirDate?: string;
+  lastEpisodeAirDate?: string;
+  lastEpisodeSeasonNumber?: number;
+  lastEpisodeNumber?: number;
+  lastEpisodeName?: string;
+  seasonAirDates?: string[];
+  inTopTen?: boolean;
   voteAverage?: number;
   rating?: string;
   maturityRating?: string;

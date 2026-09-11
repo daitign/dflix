@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { navigateToWatch } from '../../lib/navigation/watchRoutes';
+import { usePreviewAudio } from '../preview-audio';
 import { HoverPreviewCard } from './HoverPreviewCard';
 import {
   HOVER_PREVIEW_ACTION_EVENT,
@@ -101,6 +102,7 @@ interface HoverPreviewProviderProps {
 }
 
 export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
+  const { isModalActive } = usePreviewAudio();
   const [activePreview, setActivePreviewState] = useState<ActivePreview | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const activePreviewRef = useRef<ActivePreview | null>(null);
@@ -150,6 +152,13 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     }, COLLAPSE_DURATION_MS);
   }, [commitActivePreview]);
 
+  // When Details modal becomes active, immediately destroy hover preview
+  useEffect(() => {
+    if (isModalActive) {
+      close({ immediate: true });
+    }
+  }, [isModalActive, close]);
+
   const scheduleClose = useCallback((anchorElement?: HTMLElement) => {
     clearTimer(openTimerRef);
     clearTimer(closeIntentTimerRef);
@@ -165,6 +174,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     clearTimer(closeIntentTimerRef);
     clearTimer(collapseTimerRef);
 
+    if (isModalActive) return;
     if (request.source === 'pointer'
       && (pointerPreviewSuppressedRef.current || !canUsePointerPreview())) return;
     if (request.source === 'keyboard' && window.innerWidth < MIN_KEYBOARD_PREVIEW_WIDTH) return;

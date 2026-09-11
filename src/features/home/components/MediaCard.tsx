@@ -1,7 +1,7 @@
 import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage';
-import type { MediaItem } from '../../catalog';
+import { getFreshnessBadge, type MediaItem } from '../../catalog';
 import { toMediaPreviewData, useHoverPreviewAnchor } from '../../hover-preview';
-import { StatusBadge } from './StatusBadge';
+import { FreshnessBadge } from './StatusBadge';
 import './MediaCard.css';
 
 interface MediaCardProps {
@@ -14,8 +14,11 @@ export function MediaCard({ item }: MediaCardProps) {
     data: toMediaPreviewData(item),
   });
 
+  const freshnessBadge = getFreshnessBadge(item);
+  const hasBadge = Boolean(freshnessBadge);
+
   return (
-    <article className="media-card" ref={referenceRef}>
+    <article className={`media-card${hasBadge ? ' media-card--has-badge' : ''}`} ref={referenceRef}>
       <button
         {...anchorProps}
         aria-label={`View ${item.title}`}
@@ -31,19 +34,21 @@ export function MediaCard({ item }: MediaCardProps) {
           src={artwork?.fallback ?? item.backdropUrl ?? ''}
         />
         <span aria-hidden="true" className="media-card__shade" />
-        {item.badge && (
-          <span className="media-card__badge"><StatusBadge status={item.badge} /></span>
+        <div className="media-card__title-overlay">
+          <h4>{item.title}</h4>
+        </div>
+        {item.inTopTen && (
+          <div aria-label="Top 10" className="media-card__top10-badge">
+            <span className="media-card__top10-text">TOP</span>
+            <span className="media-card__top10-rank">10</span>
+          </div>
+        )}
+        {hasBadge && (
+          <div className="media-card__badge-container">
+            <FreshnessBadge layout="inline" item={item} status={freshnessBadge} />
+          </div>
         )}
       </button>
-      <div className="media-card__meta">
-        <h3>{item.title}</h3>
-        <p>
-          {item.year && <span>{item.year}</span>}
-          {item.type && <span>{item.type === 'tv' ? 'Series' : item.type === 'anime' ? 'Anime' : 'Film'}</span>}
-          {(item.maturityRating ?? item.rating) && <span>{item.maturityRating ?? item.rating}</span>}
-          {!item.maturityRating && !item.rating && item.voteAverage !== undefined && item.voteAverage > 0 && <span>{item.voteAverage.toFixed(1)} ★</span>}
-        </p>
-      </div>
     </article>
   );
 }

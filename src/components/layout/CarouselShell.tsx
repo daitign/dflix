@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { cx } from '../../lib/cx';
-import { CarouselControls } from './CarouselControls';
+import { Icon } from '../icons/Icon';
 import './CarouselShell.css';
 
 interface CarouselShellProps {
@@ -31,6 +31,8 @@ export function CarouselShell({
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollBack, setCanScrollBack] = useState(false);
   const [canScrollForward, setCanScrollForward] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
 
   const updateControls = useCallback(() => {
     const track = trackRef.current;
@@ -44,12 +46,20 @@ export function CarouselShell({
 
       setCanScrollBack(track.scrollLeft > 4);
       setCanScrollForward(Boolean(lastItem && lastItem.offsetLeft + lastItem.offsetWidth > visibleRight + 4));
+
+      const pages = Math.max(1, Math.ceil(track.scrollWidth / (track.clientWidth || 1)));
+      setPageCount(Math.min(6, pages));
+      setCurrentPage(Math.min(pages - 1, Math.round(track.scrollLeft / (track.clientWidth || 1))));
       return;
     }
 
     const maxScroll = track.scrollWidth - track.clientWidth;
     setCanScrollBack(track.scrollLeft > 4);
     setCanScrollForward(maxScroll > 4 && track.scrollLeft < maxScroll - 4);
+
+    const pages = Math.max(1, Math.ceil(track.scrollWidth / (track.clientWidth || 1)));
+    setPageCount(Math.min(6, pages));
+    setCurrentPage(Math.min(pages - 1, Math.round(track.scrollLeft / (track.clientWidth || 1))));
   }, [navigationMode]);
 
   useEffect(() => {
@@ -96,18 +106,43 @@ export function CarouselShell({
       return;
     }
 
-    track.scrollBy({ left: direction * track.clientWidth * 0.82, behavior: 'smooth' });
+    const styles = getComputedStyle(track);
+    const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+    const pageWidth = Math.max(100, track.clientWidth - (paddingLeft + paddingRight));
+    track.scrollBy({ left: direction * pageWidth, behavior: 'smooth' });
   };
 
   return (
     <section aria-label={ariaLabel} className={cx('carousel-shell', className)} role="region">
-      <CarouselControls
-        canGoNext={canScrollForward}
-        canGoPrevious={canScrollBack}
-        label={ariaLabel}
-        onNext={() => move(1)}
-        onPrevious={() => move(-1)}
-      />
+      {/* Netflix Pagination Indicators */}
+      {pageCount > 1 && (
+        <div aria-hidden="true" className="carousel-shell__pagination">
+          {Array.from({ length: pageCount }).map((_, index) => (
+            <span
+              className={cx(
+                'carousel-shell__indicator',
+                index === currentPage && 'carousel-shell__indicator--active',
+              )}
+              key={index}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Netflix Left Paddle Handle */}
+      {canScrollBack && (
+        <button
+          aria-label={`Previous items in ${ariaLabel}`}
+          className="carousel-shell__paddle carousel-shell__paddle--left"
+          onClick={() => move(-1)}
+          type="button"
+        >
+          <Icon name="chevronLeft" size={32} />
+        </button>
+      )}
+
+      {/* Track */}
       <div
         className="carousel-shell__track"
         onKeyDown={(event) => {
@@ -131,6 +166,18 @@ export function CarouselShell({
           <div className="carousel-shell__item">{child}</div>
         ))}
       </div>
+
+      {/* Netflix Right Paddle Handle */}
+      {canScrollForward && (
+        <button
+          aria-label={`Next items in ${ariaLabel}`}
+          className="carousel-shell__paddle carousel-shell__paddle--right"
+          onClick={() => move(1)}
+          type="button"
+        >
+          <Icon name="chevronRight" size={32} />
+        </button>
+      )}
     </section>
   );
 }

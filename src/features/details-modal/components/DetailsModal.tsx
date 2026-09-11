@@ -12,6 +12,7 @@ import { DetailsMetadata } from './DetailsMetadata';
 import { EpisodeList } from './EpisodeList';
 import { SeasonSelector } from './SeasonSelector';
 import { SimilarTitles } from './SimilarTitles';
+import { TrailersAndMore } from './TrailersAndMore';
 import './DetailsModal.css';
 
 interface DetailsModalProps {
@@ -79,6 +80,11 @@ export function DetailsModal({
       ?? 1;
     setSelectedSeasonNumber(firstSeason);
     setNotice('');
+
+    const scrollContainer = document.querySelector('.detailsModalScroll');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
   }, [details?.id]);
 
   useEffect(() => {
@@ -105,7 +111,7 @@ export function DetailsModal({
 
   return (
     <ModalShell
-      bodyClassName="details-modal"
+      bodyClassName="details-modal detailsModalScroll"
       isOpen={isOpen}
       onAfterClose={onAfterClose}
       onClose={onClose}
@@ -116,8 +122,8 @@ export function DetailsModal({
       variant="cinematic"
     >
       <div className="details-modal__close-wrap">
-        <IconButton aria-label="Close details" className="details-modal__close" onClick={onClose} size="md" tone="glass" tooltip="Close">
-          <Icon name="close" size={21} />
+        <IconButton aria-label="Close details" className="details-modal__close" onClick={onClose} size="sm" tone="glass" tooltip="Close">
+          <Icon name="close" size={16} />
         </IconButton>
       </div>
 
@@ -168,15 +174,7 @@ export function DetailsModal({
               </section>
             )}
 
-            {details.type === 'movie' && (
-              <section aria-labelledby="trailers-heading" className="details-section details-trailers" data-future-trailer-slot>
-                <div>
-                  <span>DAITIGN FEATURE</span>
-                  <h3 id="trailers-heading">Trailers &amp; More</h3>
-                  <p>Additional video extras can be connected through the same isolated player boundary.</p>
-                </div>
-              </section>
-            )}
+            <TrailersAndMore details={details} />
 
             {details.similar.length > 0 && <SimilarTitles items={details.similar} onSelect={onSelectSimilar} />}
             <AboutTitle details={details} />

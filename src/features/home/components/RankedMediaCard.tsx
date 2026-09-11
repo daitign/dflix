@@ -1,6 +1,8 @@
 import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage';
-import type { MediaItem } from '../../catalog';
+import { getFreshnessBadge, type MediaItem } from '../../catalog';
 import { toMediaPreviewData, useHoverPreviewAnchor } from '../../hover-preview';
+import { RankNumeral } from './RankNumeral';
+import { FreshnessBadge } from './StatusBadge';
 import './RankedMediaCard.css';
 
 interface RankedMediaCardProps {
@@ -28,8 +30,8 @@ export function RankedMediaCard({ item, rank }: RankedMediaCardProps) {
   });
 
   return (
-    <article className={`ranked-card${rank === 10 ? ' ranked-card--double-digit' : ''}`} ref={referenceRef}>
-      <span aria-hidden="true" className="ranked-card__number">{rank}</span>
+    <article className={`ranked-card ranked-card--rank-${rank}${rank === 10 ? ' ranked-card--double-digit' : ''}`} ref={referenceRef}>
+      <RankNumeral className="ranked-card__number" rank={rank} />
       <button
         {...anchorProps}
         aria-label={`Number ${rank}: ${item.title}`}
@@ -45,6 +47,14 @@ export function RankedMediaCard({ item, rank }: RankedMediaCardProps) {
           sources={artwork ? [{ srcSet: artwork.srcSet, type: artwork.type }] : []}
           src={artwork?.fallback ?? item.posterUrl ?? item.backdropUrl ?? ''}
         />
+        {(() => {
+          const freshnessBadge = getFreshnessBadge(item);
+          return freshnessBadge ? (
+            <div className="ranked-card__badge-container">
+              <FreshnessBadge layout="stacked" item={item} status={freshnessBadge} />
+            </div>
+          ) : null;
+        })()}
       </button>
     </article>
   );

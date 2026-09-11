@@ -1,0 +1,195 @@
+/* ==========================================================================
+   StatusBadge.css - Netflix Style Media Badges (Recently Added / New Episode / New Season)
+   ========================================================================== */
+
+.netflix-badge {
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: center;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* 1. Solid Red Badges: Recently Added, New Season, New */
+.netflix-badge--solid-red {
+  background-color: #e50914;
+  color: #ffffff;
+  height: clamp(1.28rem, 1.5vw, 1.45rem);
+  padding: 0 clamp(0.5rem, 0.7vw, 0.72rem);
+  font-size: clamp(0.66rem, 0.78vw, 0.75rem);
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+/* 2. Split Badges: New Episode + Watch Now CTA */
+
+/* 2a. Inline Horizontal Layout (Normal Media Cards) */
+.netflix-badge--inline {
+  display: inline-flex;
+  flex-direction: row;
+  height: clamp(1.28rem, 1.5vw, 1.45rem);
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+/* 2b. Stacked Vertical Layout (Top 10 Ranked Cards) */
+.netflix-badge--stacked {
+  display: inline-flex;
+  flex-direction: column;
+  width: 88%;
+  max-width: 114px;
+  height: auto;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+/* Shared Segment Styles */
+.netflix-badge__segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.015em;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.netflix-badge__segment--red {
+  background-color: #e50914;
+  color: #ffffff;
+}
+
+.netflix-badge__segment--white {
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: 800;
+}
+
+/* Inline segment dimensions */
+.netflix-badge__segment--inline-left {
+  height: 100%;
+  padding: 0 clamp(0.45rem, 0.6vw, 0.64rem);
+  font-size: clamp(0.62rem, 0.74vw, 0.72rem);
+  border-radius: 3px 0 0 0;
+}
+
+.netflix-badge__segment--inline-right {
+  height: 100%;
+  padding: 0 clamp(0.45rem, 0.6vw, 0.64rem);
+  font-size: clamp(0.62rem, 0.74vw, 0.72rem);
+  border-radius: 0 3px 0 0;
+}
+
+/* Stacked segment dimensions */
+.netflix-badge__segment--stacked-top {
+  width: 100%;
+  height: clamp(1.18rem, 1.38vw, 1.34rem);
+  padding: 0 0.32rem;
+  font-size: clamp(0.58rem, 0.7vw, 0.67rem);
+  border-radius: 3px 3px 0 0;
+}
+
+.netflix-badge__segment--stacked-bottom {
+  width: 100%;
+  height: clamp(1.18rem, 1.38vw, 1.34rem);
+  padding: 0 0.32rem;
+  font-size: clamp(0.58rem, 0.7vw, 0.67rem);
+  border-radius: 0;
+}
+
+/* Watch Now CTA Interactive Behaviors */
+.netflix-badge__cta {
+  pointer-events: auto;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.netflix-badge__cta:hover {
+  background-color: #e6e6e6;
+  color: #000000;
+}
+
+.netflix-badge__cta:active {
+  background-color: #d4d4d4;
+  color: #000000;
+}
+
+.netflix-badge__cta:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -1px;
+}
+
+/* Single badge portrait / Top 10 adaptation */
+.netflix-badge--portrait.netflix-badge--solid-red {
+  height: clamp(1.24rem, 1.45vw, 1.40rem);
+  padding: 0 clamp(0.5rem, 0.7vw, 0.72rem);
+  font-size: clamp(0.64rem, 0.76vw, 0.73rem);
+  border-radius: 3px 3px 0 0;
+  max-width: 90%;
+}
+
+/* Mobile Responsiveness across all devices */
+@media (max-width: 47.999rem) {
+  .netflix-badge--inline {
+    height: 1.18rem;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .netflix-badge__segment--inline-left {
+    padding: 0 0.38rem;
+    font-size: 0.58rem;
+    border-radius: 3px 0 0 0;
+  }
+
+  .netflix-badge__segment--inline-right {
+    padding: 0 0.38rem;
+    font-size: 0.58rem;
+    border-radius: 0 3px 0 0;
+  }
+
+  .netflix-badge--stacked {
+    width: 90%;
+    max-width: 104px;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .netflix-badge__segment--stacked-top {
+    height: 1.10rem;
+    padding: 0 0.25rem;
+    font-size: 0.55rem;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .netflix-badge__segment--stacked-bottom {
+    height: 1.10rem;
+    padding: 0 0.25rem;
+    font-size: 0.55rem;
+    border-radius: 0;
+  }
+
+  .netflix-badge--solid-red {
+    height: 1.18rem;
+    padding: 0 0.44rem;
+    font-size: 0.60rem;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .netflix-badge--portrait.netflix-badge--solid-red {
+    height: 1.15rem;
+    padding: 0 0.42rem;
+    font-size: 0.58rem;
+    max-width: 92%;
+  }
+}
+

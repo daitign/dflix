@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import type { TmdbVideo } from '../../lib/tmdb/types';
+import { shouldTrailerBeAudible, usePreviewAudio } from '../preview-audio';
 
 const YOUTUBE_API_SCRIPT_ID = 'daitign-youtube-iframe-api';
 const PLAYER_START_TIMEOUT_MS = 12_000;
@@ -10,6 +11,7 @@ interface YouTubePlayer {
   destroy: () => void;
   getIframe: () => HTMLIFrameElement;
   mute: () => void;
+  pauseVideo: () => void;
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   unMute: () => void;
@@ -39,6 +41,7 @@ interface YouTubeApi {
   Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer;
   PlayerState: {
     ENDED: number;
+    PAUSED: number;
     PLAYING: number;
   };
 }
@@ -108,20 +111,94 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
   return youtubeApiPromise;
 }
 
-interface YouTubePreviewProps {
+export interface YouTubePreviewProps {
+  className?: string;
+  onPlaying?: () => void;
   title: string;
+  variant?: 'hover' | 'hero' | 'modal';
   video: TmdbVideo;
 }
 
-export function YouTubePreview({ title, video }: YouTubePreviewProps) {
+export function YouTubePreview({
+  className = '',
+  onPlaying,
+  title,
+  variant = 'hover',
+  video,
+}: YouTubePreviewProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
+  const hasStartedRef = useRef(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
   const [isUnavailable, setIsUnavailable] = useState(false);
+
+  const {
+    isAudible,
+    isHoverActive,
+    isModalActive,
+    setAutoplaySoundAllowed,
+    toggleSound,
+  } = usePreviewAudio();
+
+  const isHero = variant === 'hero';
+  const isModal = variant === 'modal';
+  const shouldBeAudible = shouldTrailerBeAudible({
+    variant,
+    isAudible,
+    isHoverActive,
+    isModalActive,
+  });
+
+  // React to audio state changes and preview arbitration
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !hasStarted) return;
+
+    if (isHero) {
+      if (isHoverActive || isModalActive) {
+        // Pause and mute Hero while hover preview or Details modal is active
+        try {
+          player.mute();
+          player.pauseVideo();
+        } catch {}
+      } else {
+        // Resume Hero when neither hover preview nor modal is active
+        try {
+          player.playVideo();
+          if (shouldBeAudible) {
+            player.unMute();
+          } else {
+            player.mute();
+          }
+        } catch {}
+      }
+    } else if (isModal) {
+      // Modal trailer audio state
+      try {
+        if (shouldBeAudible) {
+          player.unMute();
+        } else {
+          player.mute();
+        }
+      } catch {}
+    } else {
+      // Hover preview audio update
+      try {
+        if (shouldBeAudible) {
+          player.unMute();
+        } else {
+          player.mute();
+        }
+      } catch {}
+    }
+  }, [hasStarted, isHero, isHoverActive, isModal, isModalActive, shouldBeAudible]);
 
   useEffect(() => {
     let disposed = false;
+    hasStartedRef.current = false;
+    setHasStarted(false);
+    setIsUnavailable(false);
+
     let startTimeout = window.setTimeout(() => {
       const player = playerRef.current;
       playerRef.current = null;
@@ -141,10 +218,6 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
       destroyPlayer(activePlayer);
       if (!disposed) setIsUnavailable(true);
     };
-
-    setHasStarted(false);
-    setIsMuted(true);
-    setIsUnavailable(false);
 
     loadYouTubeApi()
       .then((api) => {
@@ -180,16 +253,47 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
               iframe.referrerPolicy = 'strict-origin-when-cross-origin';
               iframe.tabIndex = -1;
               iframe.title = `${title} trailer preview`;
+
+              // Always start muted initially so autoplay is guaranteed without browser block
               event.target.mute();
               event.target.playVideo();
             },
             onStateChange: (event) => {
               if (disposed) return;
+
               if (event.data === api.PlayerState.PLAYING) {
                 clearStartTimeout();
-                setHasStarted(true);
+                if (!hasStartedRef.current) {
+                  hasStartedRef.current = true;
+                  setHasStarted(true);
+                  onPlaying?.();
+                }
+
+                // If sound should be on and browser permits it, attempt unmuting safely
+                if (shouldBeAudible) {
+                  try {
+                    event.target.unMute();
+                  } catch {
+                    // Browser policy blocked unmuting; fallback to muted
+                    event.target.mute();
+                    setAutoplaySoundAllowed(false);
+                  }
+                } else {
+                  event.target.mute();
+                }
                 return;
               }
+
+              // Autoplay rejection recovery: If browser paused player because of sound, mute and resume immediately
+              if (event.data === api.PlayerState.PAUSED && !hasStartedRef.current) {
+                try {
+                  event.target.mute();
+                  event.target.playVideo();
+                  setAutoplaySoundAllowed(false);
+                } catch {}
+                return;
+              }
+
               if (event.data === api.PlayerState.ENDED) {
                 event.target.seekTo(0, true);
                 event.target.playVideo();
@@ -208,37 +312,54 @@ export function YouTubePreview({ title, video }: YouTubePreviewProps) {
       playerRef.current = null;
       destroyPlayer(player);
     };
-  }, [title, video.key]);
+  }, [onPlaying, setAutoplaySoundAllowed, shouldBeAudible, title, video.key]);
 
   if (isUnavailable) return null;
+
+  if (isHero) {
+    return (
+      <div
+        aria-hidden="true"
+        className={`hero-banner__trailer${hasStarted ? ' hero-banner__trailer--playing' : ''} ${className}`.trim()}
+      >
+        <div className="hero-banner__trailer-mount" ref={mountRef} />
+      </div>
+    );
+  }
+
+  if (isModal) {
+    return (
+      <div
+        aria-hidden="true"
+        className={`details-hero__trailer${hasStarted ? ' details-hero__trailer--playing' : ''} ${className}`.trim()}
+      >
+        <div className="details-hero__trailer-mount" ref={mountRef} />
+      </div>
+    );
+  }
 
   return (
     <>
       <div
         aria-hidden="true"
-        className={`hover-preview-card__video${hasStarted ? ' hover-preview-card__video--playing' : ''}`}
+        className={`hover-preview-card__video${hasStarted ? ' hover-preview-card__video--playing' : ''} ${className}`.trim()}
       >
         <div className="hover-preview-card__video-mount" ref={mountRef} />
       </div>
       {hasStarted && (
         <IconButton
-          aria-label={`${isMuted ? 'Unmute' : 'Mute'} trailer preview for ${title}`}
-          aria-pressed={!isMuted}
+          aria-label={`${isAudible ? 'Mute' : 'Unmute'} trailer preview for ${title}`}
+          aria-pressed={isAudible}
           className="hover-preview-card__audio-toggle"
-          onClick={() => {
-            const player = playerRef.current;
-            if (!player) return;
-            if (isMuted) player.unMute();
-            else player.mute();
-            setIsMuted((current) => !current);
-          }}
+          onClick={toggleSound}
           size="sm"
           tone="glass"
-          tooltip={isMuted ? 'Unmute Preview' : 'Mute Preview'}
+          tooltip={isAudible ? 'Mute Preview' : 'Unmute Preview'}
         >
-          <Icon name={isMuted ? 'volumeOff' : 'volume'} size={17} />
+          <Icon name={isAudible ? 'volume' : 'volumeOff'} size={17} />
         </IconButton>
       )}
     </>
   );
 }
+

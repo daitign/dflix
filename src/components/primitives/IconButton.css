@@ -5,6 +5,7 @@
 }
 
 .icon-button {
+  position: relative;
   display: inline-grid;
   place-items: center;
   border: 1px solid transparent;
@@ -12,11 +13,25 @@
   color: var(--color-text-secondary);
   background: transparent;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     color var(--duration-base) var(--ease-standard),
     background var(--duration-base) var(--ease-standard),
     border-color var(--duration-base) var(--ease-standard),
     transform var(--duration-fast) var(--ease-standard);
+}
+
+@media (pointer: coarse) {
+  .icon-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+  }
 }
 
 .icon-button:hover:not(:disabled) {
@@ -49,19 +64,27 @@
 }
 
 .icon-button--glass {
-  border-color: var(--color-border);
-  background: rgb(10 12 15 / 64%);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(14px);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  background: rgba(42, 42, 42, 0.6);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(10px);
+}
+
+.icon-button--glass:hover:not(:disabled) {
+  border-color: #ffffff;
+  color: #ffffff;
+  background: rgba(55, 55, 55, 0.9);
 }
 
 .icon-button--accent {
-  color: #181107;
-  background: var(--color-accent-400);
+  border: none;
+  color: #ffffff;
+  background: var(--color-accent-500);
   box-shadow: var(--shadow-accent);
 }
 
 .icon-button--accent:hover:not(:disabled) {
-  color: #181107;
-  background: #edcb89;
+  color: #ffffff;
+  background: var(--color-accent-400);
 }

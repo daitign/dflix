@@ -5,10 +5,13 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   background: var(--color-surface-2);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+  transform: translateZ(0);
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  isolation: isolate;
   transition:
     border-color var(--duration-base) var(--ease-standard),
     box-shadow var(--duration-base) var(--ease-standard),
@@ -23,12 +26,13 @@
 
 .continue-card__surface .responsive-image {
   aspect-ratio: 16 / 9 !important;
-  border-radius: 0;
+  border-radius: inherit;
 }
 
 .continue-card__shade {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: linear-gradient(to top, rgb(4 5 7 / 74%), transparent 65%);
 }
 
@@ -99,6 +103,12 @@
   flex: 0 0 auto;
   color: var(--color-text-muted);
   font-size: var(--font-size-2xs);
+}
+
+@media (max-width: 47.999rem) {
+  .continue-card__surface {
+    border-radius: 6px;
+  }
 }
 
 @media (hover: none) and (pointer: coarse) {
