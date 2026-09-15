@@ -14,3 +14,11 @@ coverage
 .DS_Store
 *.tsbuildinfo
 .chrome-user
+
+# Android / Gradle generated files
+android-tv/.gradle/
+android-tv/app/build/
+android-tv/build/
+android-tv/local.properties
+*.apk
+*.aab
