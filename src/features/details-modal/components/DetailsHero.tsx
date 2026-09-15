@@ -7,7 +7,7 @@ import type { MediaDetails } from '../types';
 import { YouTubePreview } from '../../hover-preview/YouTubePreview';
 import { isMobileTouchDevice, usePreviewAudio } from '../../preview-audio';
 import { useHeroPlaybackEligibility } from '../../home/useHeroPlaybackEligibility';
-import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
+import { getMediaVideos, selectPreviewVideoCandidates } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { useMyList } from '../../my-list';
 
@@ -22,6 +22,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
   const { isInList, toggleItem } = useMyList();
   const isListed = isInList(details.tmdbId);
   const [modalVideo, setModalVideo] = useState<TmdbVideo | null>(null);
+  const [modalCandidates, setModalCandidates] = useState<TmdbVideo[]>([]);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
 
   const { isAudible, toggleSound } = usePreviewAudio();
@@ -50,6 +51,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
 
   useEffect(() => {
     setModalVideo(null);
+    setModalCandidates([]);
     setIsTrailerPlaying(false);
     if (!canPlayVideo || !details.tmdbId) return;
 
@@ -58,11 +60,16 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
     getMediaVideos(playbackType, details.tmdbId, { signal: controller.signal })
       .then((videos) => {
         if (!controller.signal.aborted) {
-          setModalVideo(selectBestPreviewVideo(videos));
+          const candidates = selectPreviewVideoCandidates(videos);
+          setModalCandidates(candidates);
+          setModalVideo(candidates[0] ?? null);
         }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setModalVideo(null);
+        if (!controller.signal.aborted) {
+          setModalVideo(null);
+          setModalCandidates([]);
+        }
       });
 
     return () => controller.abort();
@@ -83,11 +90,12 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
       {modalVideo && (
         <YouTubePreview
           isAudible={isTrailerAudible}
-          key={modalVideo.key}
+          key={details.tmdbId}
           onPlaying={() => setIsTrailerPlaying(true)}
           title={details.title}
           variant="modal"
           video={modalVideo}
+          videos={modalCandidates}
         />
       )}
       <div aria-hidden="true" className="details-hero__shade" />
@@ -99,13 +107,14 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
         )}
         <div className="details-hero__bottom-row">
           <div className="details-hero__actions">
-            <Button onClick={onPlay} size="lg" startIcon={<Icon name="play" />}>
+            <Button data-tv-focusable="true" onClick={onPlay} size="lg" startIcon={<Icon name="play" />}>
               Play
             </Button>
             <IconButton
               aria-label={isListed ? `Remove ${details.title} from My List` : `Add ${details.title} to My List`}
               aria-pressed={isListed}
               className={isListed ? 'details-action--active' : undefined}
+              data-tv-focusable="true"
               onClick={() => {
                 const added = toggleItem(details);
                 onAction(added ? `Added ${details.title} to My List.` : `Removed ${details.title} from My List.`);
@@ -120,6 +129,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
               aria-label={isLiked ? `Unlike ${details.title}` : `Like ${details.title}`}
               aria-pressed={isLiked}
               className={isLiked ? 'details-action--active' : undefined}
+              data-tv-focusable="true"
               onClick={() => {
                 setIsLiked((current) => !current);
                 onAction(`${details.title} rating preference updated for this session.`);
@@ -135,6 +145,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
             aria-label={isTrailerAudible ? `Mute trailer for ${details.title}` : `Unmute trailer for ${details.title}`}
             aria-pressed={isTrailerAudible}
             className="details-hero__audio-toggle"
+            data-tv-focusable="true"
             onClick={handleAudioToggle}
             size="lg"
             tone="glass"

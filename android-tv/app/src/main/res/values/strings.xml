@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DAITIGN Stream</string>
+    <string name="error_network">Connection error. Please check your internet connection.</string>
+    <string name="retry">Retry</string>
+    <string name="press_again_to_exit">Press BACK again to exit</string>
+</resources>

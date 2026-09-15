@@ -85,6 +85,7 @@ export function CategoryHeader({
             aria-haspopup="true"
             aria-label={`Select genre for ${title}. Current selection: ${buttonLabel}`}
             className="category-header__button"
+            data-tv-focusable="true"
             onClick={() => setIsOpen((prev) => !prev)}
             type="button"
           >
@@ -106,6 +107,7 @@ export function CategoryHeader({
                       className={`category-header__option ${
                         isSelected ? 'category-header__option--selected' : ''
                       }`}
+                      data-tv-focusable="true"
                       key={genre.id}
                       onClick={() => handleSelect(genre)}
                       role="menuitem"

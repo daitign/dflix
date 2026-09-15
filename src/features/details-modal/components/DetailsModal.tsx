@@ -122,7 +122,7 @@ export function DetailsModal({
       variant="cinematic"
     >
       <div className="details-modal__close-wrap">
-        <IconButton aria-label="Close details" className="details-modal__close" onClick={onClose} size="sm" tone="glass" tooltip="Close">
+        <IconButton aria-label="Close details" className="details-modal__close" data-tv-focusable="true" onClick={onClose} size="sm" tone="glass" tooltip="Close">
           <Icon name="close" size={16} />
         </IconButton>
       </div>
@@ -134,7 +134,7 @@ export function DetailsModal({
           <span aria-hidden="true">D</span>
           <h3>Details are temporarily unavailable</h3>
           <p>{error}</p>
-          <Button onClick={onRetry} variant="secondary">Try again</Button>
+          <Button data-tv-focusable="true" onClick={onRetry} variant="secondary">Try again</Button>
         </div>
       )}
 
@@ -158,7 +158,7 @@ export function DetailsModal({
                 {seasonError?.seasonNumber === selectedSeason.seasonNumber && (
                   <div className="episode-error" role="alert">
                     <p>{seasonError.message}</p>
-                    <Button onClick={() => onLoadSeason(selectedSeason.seasonNumber)} size="sm" variant="secondary">Retry season</Button>
+                    <Button data-tv-focusable="true" onClick={() => onLoadSeason(selectedSeason.seasonNumber)} size="sm" variant="secondary">Retry season</Button>
                   </div>
                 )}
                 {selectedSeason.episodes && (

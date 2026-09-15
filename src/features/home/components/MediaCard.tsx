@@ -18,11 +18,18 @@ export function MediaCard({ item }: MediaCardProps) {
   const hasBadge = Boolean(freshnessBadge);
 
   return (
-    <article className={`media-card${hasBadge ? ' media-card--has-badge' : ''}`} ref={referenceRef}>
+    <article
+      className={`media-card${hasBadge ? ' media-card--has-badge' : ''}`}
+      data-media-id={item.id}
+      ref={referenceRef}
+    >
       <button
         {...anchorProps}
         aria-label={`View ${item.title}`}
         className="media-card__surface"
+        data-media-id={item.id}
+        data-tv-card="true"
+        data-tv-focusable="true"
         ref={anchorRef}
         type="button"
       >

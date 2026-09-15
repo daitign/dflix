@@ -34,16 +34,30 @@ function uniqueValid(items: Array<MediaItem | null>, limit = 18): MediaItem[] {
   return [...unique.values()].slice(0, limit);
 }
 
+interface LanguagesCacheData {
+  hero: MediaItem | null;
+  rows: MediaRowModel[];
+}
+
+const languagesCache = new Map<string, LanguagesCacheData>();
+
 export function LanguagesPage() {
   const [selectedLang, setSelectedLang] = useState<LanguageOption>(LANGUAGES[0]);
-  const [hero, setHero] = useState<MediaItem | null>(null);
-  const [rows, setRows] = useState<MediaRowModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hero, setHero] = useState<MediaItem | null>(() => languagesCache.get(LANGUAGES[0].id)?.hero ?? null);
+  const [rows, setRows] = useState<MediaRowModel[]>(() => languagesCache.get(LANGUAGES[0].id)?.rows ?? []);
+  const [isLoading, setIsLoading] = useState(() => !languagesCache.has(LANGUAGES[0].id));
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
+    const cached = languagesCache.get(selectedLang.id);
+    if (cached) {
+      setHero(cached.hero);
+      setRows(cached.rows);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError('');
 
     const safely = async <T,>(p: Promise<T>): Promise<T | null> => {
@@ -93,6 +107,10 @@ export function LanguagesPage() {
           },
         ].filter((r) => r.items.length > 0);
 
+        languagesCache.set(selectedLang.id, {
+          hero: heroCandidate ?? null,
+          rows: nextRows,
+        });
         setHero(heroCandidate ?? null);
         setRows(nextRows);
       })

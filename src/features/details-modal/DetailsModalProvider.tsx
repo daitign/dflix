@@ -9,6 +9,7 @@ import {
 import { usePreviewAudio } from '../preview-audio';
 import { DetailsModal } from './components/DetailsModal';
 import type { DetailsModalContextValue, MediaDetails, SeasonData } from './types';
+import { registerTVBackHandler } from '../../lib/tv';
 
 const DetailsModalContext = createContext<DetailsModalContextValue | null>(null);
 
@@ -71,6 +72,14 @@ export function DetailsModalProvider({ children }: DetailsModalProviderProps) {
   }, [loadDetails]);
 
   const closeDetails = useCallback(() => setIsOpen(false), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    return registerTVBackHandler(() => {
+      closeDetails();
+      return true;
+    });
+  }, [isOpen, closeDetails]);
 
   const clearClosedDetails = useCallback(() => {
     requestVersionRef.current += 1;

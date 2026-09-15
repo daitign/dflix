@@ -8,3 +8,4 @@ coverage
 *.log
 *.pem
 *.key
+android-tv/

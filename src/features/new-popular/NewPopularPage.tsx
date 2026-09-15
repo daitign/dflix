@@ -45,15 +45,28 @@ function enrichMovie(item: MediaItem): MediaItem {
   return { ...item, badge };
 }
 
+interface NewPopularCacheData {
+  hero: MediaItem | null;
+  rows: MediaRowModel[];
+}
+
+let newPopularCache: NewPopularCacheData | null = null;
+
 export function NewPopularPage() {
-  const [hero, setHero] = useState<MediaItem | null>(null);
-  const [rows, setRows] = useState<MediaRowModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hero, setHero] = useState<MediaItem | null>(() => newPopularCache?.hero ?? null);
+  const [rows, setRows] = useState<MediaRowModel[]>(() => newPopularCache?.rows ?? []);
+  const [isLoading, setIsLoading] = useState(() => !newPopularCache);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
+    if (newPopularCache) {
+      setHero(newPopularCache.hero);
+      setRows(newPopularCache.rows);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError('');
 
     const safely = async <T,>(p: Promise<T>): Promise<T | null> => {
@@ -142,6 +155,10 @@ export function NewPopularPage() {
           },
         ].filter((r) => r.items.length > 0);
 
+        newPopularCache = {
+          hero: enrichedHero,
+          rows: nextRows,
+        };
         setHero(enrichedHero);
         setRows(nextRows);
       })

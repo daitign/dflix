@@ -26,7 +26,7 @@ function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item
 
   return (
     <article className="similar-card">
-      <button className="similar-card__open" onClick={() => onSelect(item)} type="button">
+      <button className="similar-card__open" data-tv-card="true" data-tv-focusable="true" onClick={() => onSelect(item)} type="button">
         <div className="similar-card__media">
           <ResponsiveImage
             alt=""
@@ -56,6 +56,7 @@ function SimilarTitleCard({ item, onSelect }: { item: MediaItem; onSelect: (item
             aria-label={isListed ? `Remove ${item.title} from My List` : `Add ${item.title} to My List`}
             aria-pressed={isListed}
             className={`similar-card__list-btn ${isListed ? 'similar-card__list-btn--active' : ''}`}
+            data-tv-focusable="true"
             onClick={(e) => {
               e.stopPropagation();
               toggleItem(item);

@@ -69,19 +69,35 @@ function enrichTv(item: MediaItem, detailsMap: Map<number, TmdbTvDetails>, topTe
   return { ...itemWithDates, badge };
 }
 
+interface ShowsCacheData {
+  hero: MediaItem | null;
+  topTen: MediaItem[];
+  rows: MediaRowModel[];
+}
+
+const showsCache = new Map<string, ShowsCacheData>();
+
 export function ShowsPage() {
   const [selectedGenreId, setSelectedGenreId] = useState('all');
-  const [hero, setHero] = useState<MediaItem | null>(null);
-  const [topTen, setTopTen] = useState<MediaItem[]>([]);
-  const [rows, setRows] = useState<MediaRowModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hero, setHero] = useState<MediaItem | null>(() => showsCache.get('all')?.hero ?? null);
+  const [topTen, setTopTen] = useState<MediaItem[]>(() => showsCache.get('all')?.topTen ?? []);
+  const [rows, setRows] = useState<MediaRowModel[]>(() => showsCache.get('all')?.rows ?? []);
+  const [isLoading, setIsLoading] = useState(() => !showsCache.has('all'));
   const [error, setError] = useState('');
 
   const currentGenre = TV_GENRES.find((g) => g.id === selectedGenreId);
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
+    const cached = showsCache.get(selectedGenreId);
+    if (cached) {
+      setHero(cached.hero);
+      setTopTen(cached.topTen);
+      setRows(cached.rows);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError('');
 
     const safely = async <T,>(p: Promise<T>): Promise<T | null> => {
@@ -174,6 +190,11 @@ export function ShowsPage() {
             { id: 'scifi-tv', title: 'Sci-Fi & Fantasy', items: sciFiItems.map((i) => enrichTv(i, detailsMap, topTenIds)) },
           ].filter((r) => r.items.length > 0);
 
+          showsCache.set(selectedGenreId, {
+            hero: enrichedHero,
+            topTen: enrichedTopTen,
+            rows: nextRows,
+          });
           setHero(enrichedHero);
           setTopTen(enrichedTopTen);
           setRows(nextRows);
@@ -246,6 +267,11 @@ export function ShowsPage() {
             { id: 'genre-recent', title: `Fresh & New in ${genreTitle}`, items: recentItems.map((i) => enrichTv(i, detailsMap, topTenIds)), emphasis: 'compact' as const },
           ].filter((r) => r.items.length > 0);
 
+          showsCache.set(selectedGenreId, {
+            hero: enrichedHero,
+            topTen: enrichedTopTen,
+            rows: nextRows,
+          });
           setHero(enrichedHero);
           setTopTen(enrichedTopTen);
           setRows(nextRows);

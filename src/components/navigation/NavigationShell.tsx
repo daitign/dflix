@@ -179,6 +179,7 @@ export function NavigationShell({
                 aria-haspopup="true"
                 aria-label="Browse categories"
                 className={cx('top-navigation__browse-btn', isBrowseOpen && 'top-navigation__browse-btn--open')}
+                data-tv-focusable="true"
                 onClick={() => setIsBrowseOpen((prev) => !prev)}
                 type="button"
               >
@@ -198,6 +199,7 @@ export function NavigationShell({
                           'netflix-browse-popover__item',
                           activeId === item.id && 'netflix-browse-popover__item--active'
                         )}
+                        data-tv-focusable="true"
                         href={item.href}
                         key={item.id}
                         onClick={(e) => {
@@ -224,6 +226,7 @@ export function NavigationShell({
                 <a
                   aria-current={isActive ? 'page' : undefined}
                   className={cx('top-navigation__link', isActive && 'top-navigation__link--active')}
+                  data-tv-focusable="true"
                   href={item.href}
                   key={item.id}
                   onClick={(e) => {
@@ -244,6 +247,7 @@ export function NavigationShell({
                 'top-navigation__vip-btn',
                 isSearchOpen && 'top-navigation__vip-btn--hidden'
               )}
+              data-tv-focusable="true"
               href="https://daitignvault.vercel.app/"
               rel="noopener noreferrer"
               target="_blank"
@@ -260,6 +264,7 @@ export function NavigationShell({
               <button
                 aria-label={isSearchOpen ? 'Close search' : 'Search'}
                 className="netflix-search__trigger"
+                data-tv-focusable="true"
                 onClick={() => {
                   if (isSearchOpen) {
                     setIsSearchOpen(false);
@@ -276,6 +281,7 @@ export function NavigationShell({
               <input
                 aria-label="Search titles, people, genres"
                 className="netflix-search__input"
+                data-tv-focusable="true"
                 onChange={(e) => onSearchChange?.(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
@@ -292,6 +298,7 @@ export function NavigationShell({
                 <button
                   aria-label={searchQuery ? 'Clear search' : 'Close search'}
                   className="netflix-search__clear"
+                  data-tv-focusable="true"
                   onClick={() => {
                     if (searchQuery) {
                       onSearchChange?.('');
@@ -313,6 +320,7 @@ export function NavigationShell({
                 aria-expanded={isNotificationsOpen}
                 aria-label="Notifications"
                 className={cx(isNotificationsOpen && 'top-navigation__action--active')}
+                data-tv-focusable="true"
                 onClick={() => {
                   setIsNotificationsOpen((prev) => {
                     const next = !prev;
@@ -386,6 +394,7 @@ export function NavigationShell({
                 aria-expanded={isProfileOpen}
                 aria-label="Open profile menu"
                 className="profile-button"
+                data-tv-focusable="true"
                 onClick={() => {
                   setIsProfileOpen((prev) => !prev);
                   setIsNotificationsOpen(false);

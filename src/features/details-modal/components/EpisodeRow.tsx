@@ -17,7 +17,7 @@ export function EpisodeRow({ episode, onPlay }: EpisodeRowProps) {
   const airDate = formatAirDate(episode.airDate);
   return (
     <li className="episode-row">
-      <button aria-label={`Play episode ${episode.episodeNumber}: ${episode.title}`} onClick={() => onPlay(episode)} type="button">
+      <button aria-label={`Play episode ${episode.episodeNumber}: ${episode.title}`} data-tv-focusable="true" onClick={() => onPlay(episode)} type="button">
         <span aria-hidden="true" className="episode-row__number">{episode.episodeNumber}</span>
         <span className="episode-row__still">
           <ResponsiveImage

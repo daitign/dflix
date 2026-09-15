@@ -56,6 +56,7 @@ function TrailerCard({ defaultBackdrop, isActive, onPlay, onStop, video }: Trail
             <IconButton
               aria-label={`Stop playing ${video.name}`}
               className="trailer-card__stop-btn"
+              data-tv-focusable="true"
               onClick={onStop}
               size="sm"
               tone="glass"
@@ -76,6 +77,7 @@ function TrailerCard({ defaultBackdrop, isActive, onPlay, onStop, video }: Trail
             <button
               aria-label={`Play ${video.name}`}
               className="trailer-card__trigger"
+              data-tv-focusable="true"
               onClick={() => onPlay(video.key)}
               type="button"
             >

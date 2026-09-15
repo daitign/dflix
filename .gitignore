@@ -13,3 +13,4 @@ coverage
 *.key
 .DS_Store
 *.tsbuildinfo
+.chrome-user

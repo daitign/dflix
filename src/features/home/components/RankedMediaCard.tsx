@@ -30,12 +30,21 @@ export function RankedMediaCard({ item, rank }: RankedMediaCardProps) {
   });
 
   return (
-    <article className={`ranked-card ranked-card--rank-${rank}${rank === 10 ? ' ranked-card--double-digit' : ''}`} ref={referenceRef}>
+    <article
+      className={`ranked-card ranked-card--rank-${rank}${rank === 10 ? ' ranked-card--double-digit' : ''}`}
+      data-card-index={rank - 1}
+      data-media-id={item.id}
+      ref={referenceRef}
+    >
       <RankNumeral className="ranked-card__number" rank={rank} />
       <button
         {...anchorProps}
         aria-label={`Number ${rank}: ${item.title}`}
         className="ranked-card__art ranked-card__poster-anchor"
+        data-card-index={rank - 1}
+        data-media-id={item.id}
+        data-tv-card="true"
+        data-tv-focusable="true"
         ref={anchorRef}
         type="button"
       >

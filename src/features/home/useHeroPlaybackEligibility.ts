@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { isTVMode } from '../../lib/tv/tvDetection.ts';
+
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export interface HeroPlaybackConditions {
@@ -23,6 +25,7 @@ export function shouldAutoplayHeroTrailer({
 
 function getHeroEligibility(): boolean {
   if (typeof window === 'undefined') return false;
+  if (isTVMode()) return true;
 
   const nav = navigator as unknown as { connection?: { effectiveType?: string; saveData?: boolean } };
   const connection = nav.connection;

@@ -8,7 +8,7 @@ import { YouTubePreview } from '../../hover-preview/YouTubePreview';
 import { usePreviewAudio } from '../../preview-audio';
 import { useHeroPlaybackEligibility } from '../useHeroPlaybackEligibility';
 import { useHeroScrollPlayback } from '../useHeroScrollPlayback';
-import { getMediaVideos, selectBestPreviewVideo } from '../../../lib/tmdb/videos';
+import { getMediaVideos, selectPreviewVideoCandidates } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { navigateToWatch } from '../../../lib/navigation/watchRoutes';
 import { useMyList } from '../../my-list';
@@ -26,6 +26,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
   const { isInList, toggleItem } = useMyList();
   const isListed = isInList(item.tmdbId ?? item.id);
   const [heroVideo, setHeroVideo] = useState<TmdbVideo | null>(null);
+  const [heroCandidates, setHeroCandidates] = useState<TmdbVideo[]>([]);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
   const canPlayVideo = useHeroPlaybackEligibility();
 
@@ -34,6 +35,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
 
   useEffect(() => {
     setHeroVideo(null);
+    setHeroCandidates([]);
     setIsTrailerPlaying(false);
     if (!canPlayVideo || !item.tmdbId) return;
 
@@ -42,11 +44,16 @@ export function HeroBanner({ item }: HeroBannerProps) {
     getMediaVideos(playbackType, item.tmdbId, { signal: controller.signal })
       .then((videos) => {
         if (!controller.signal.aborted) {
-          setHeroVideo(selectBestPreviewVideo(videos));
+          const candidates = selectPreviewVideoCandidates(videos);
+          setHeroCandidates(candidates);
+          setHeroVideo(candidates[0] ?? null);
         }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setHeroVideo(null);
+        if (!controller.signal.aborted) {
+          setHeroVideo(null);
+          setHeroCandidates([]);
+        }
       });
 
     return () => controller.abort();
@@ -68,11 +75,12 @@ export function HeroBanner({ item }: HeroBannerProps) {
         <YouTubePreview
           heroVolumeFactor={heroVolumeFactor}
           isHeroInView={isHeroInView}
-          key={heroVideo.key}
+          key={item.tmdbId}
           onPlaying={() => setIsTrailerPlaying(true)}
           title={item.title}
           variant="hero"
           video={heroVideo}
+          videos={heroCandidates}
         />
       )}
       <div aria-hidden="true" className="hero-banner__wash" />
@@ -112,6 +120,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
           <div className="hero-banner__actions">
             <Button
               className="hero-banner__play-button"
+              data-tv-focusable="true"
               onClick={() => navigateToWatch(item)}
               size="lg"
               startIcon={<Icon name="play" size={22} />}
@@ -120,6 +129,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
             </Button>
             <Button
               className="hero-banner__info-button"
+              data-tv-focusable="true"
               onClick={(event) => openDetails(item, event.currentTarget)}
               size="lg"
               startIcon={<Icon name="info" size={22} />}
@@ -130,6 +140,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
             <Button
               aria-label={isListed ? `Remove ${item.title} from My List` : `Add ${item.title} to My List`}
               className="hero-banner__list-button"
+              data-tv-focusable="true"
               onClick={() => toggleItem(item)}
               size="lg"
               startIcon={<Icon name={isListed ? 'check' : 'plus'} size={22} />}
@@ -146,6 +157,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
             aria-label={isAudible ? 'Mute preview' : 'Unmute preview'}
             aria-pressed={isAudible}
             className="hero-banner__audio-toggle"
+            data-tv-focusable="true"
             onClick={toggleSound}
             type="button"
           >

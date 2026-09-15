@@ -20,6 +20,7 @@ import {
   type HoverPreviewPlacement,
   type MediaPreviewData,
 } from './types';
+import { isTVMode } from '../../lib/tv';
 import './HoverPreview.css';
 
 const HOVER_OPEN_DELAY_MS = 520;
@@ -76,6 +77,24 @@ function getPreviewPosition(anchorElement: HTMLElement, referenceElement: HTMLEl
     : anchorCenter > viewportWidth * 0.7
       ? 'right'
       : 'center';
+
+  if (isTVMode()) {
+    // TV mode: 16:9 cinematic landscape preview tile (~520–680px width at 1080p)
+    const tvWidth = clamp(Math.round(viewportWidth * 0.32), 520, 680);
+    const tvHeight = Math.round(tvWidth * (9 / 16));
+    const proposedLeft = placement === 'left'
+      ? anchor.left
+      : placement === 'right'
+        ? anchor.right - tvWidth
+        : anchorCenter - tvWidth / 2;
+    const left = clamp(proposedLeft, safeInset, viewportWidth - tvWidth - safeInset);
+    const growthAboveAnchor = (tvHeight - anchor.height) * 0.5;
+    const proposedTop = anchor.top - growthAboveAnchor;
+    const top = clamp(proposedTop, safeInset, Math.max(safeInset, viewportHeight - tvHeight - safeInset));
+
+    return { left, placement, top, width: tvWidth };
+  }
+
   const maximumWidth = Math.min(512, viewportWidth - safeInset * 2);
   const width = clamp(reference.width * 1.55, 288, maximumWidth);
   const proposedLeft = placement === 'left'
@@ -195,6 +214,10 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     };
 
     if (request.source === 'keyboard') {
+      if (isTVMode()) {
+        openTimerRef.current = window.setTimeout(activate, 500);
+        return;
+      }
       activate();
       return;
     }
@@ -341,9 +364,19 @@ export function useHoverPreviewAnchor<TReference extends HTMLElement>({ data }: 
     'aria-controls': 'daitign-hover-preview',
     onBlur: (event) => {
       if (context.isPreviewTarget(event.relatedTarget)) return;
+      if (isTVMode()) {
+        context.close({ immediate: true });
+        return;
+      }
       context.scheduleClose(event.currentTarget);
     },
     onClick: (event) => {
+      if (isTVMode()) {
+        context.performAction('details', data, event.currentTarget);
+        context.close({ immediate: true });
+        lastPointerTypeRef.current = '';
+        return;
+      }
       const pointerType = lastPointerTypeRef.current;
       const isTouchAction = (pointerType !== '' && pointerType !== 'mouse')
         || !context.supportsPointerPreview();
@@ -375,6 +408,11 @@ export function useHoverPreviewAnchor<TReference extends HTMLElement>({ data }: 
 
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
+        if (isTVMode()) {
+          context.performAction('details', data, event.currentTarget);
+          context.close({ immediate: true });
+          return;
+        }
         context.performAction('play', data, event.currentTarget);
       }
     },

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background_black">#141414</color>
+    <color name="primary_red">#E50914</color>
+    <color name="surface_dark">#1F1F1F</color>
+    <color name="text_white">#FFFFFF</color>
+    <string name="app_name">DAITIGN Stream</string>
+    <string name="error_network">Connection error. Please check your internet connection.</string>
+    <string name="press_again_to_exit">Press BACK again to exit</string>
+    <string name="retry">Retry</string>
+    <style name="Theme.DAITIGN.TV" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@color/background_black</item>
+        <item name="android:colorBackground">@color/background_black</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="colorPrimary">@color/primary_red</item>
+        <item name="colorAccent">@color/primary_red</item>
+    </style>
+</resources>

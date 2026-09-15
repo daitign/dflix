@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isTVMode } from '../../lib/tv';
 
 const MIN_AUTOPLAY_WIDTH = 1024;
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
@@ -21,6 +22,7 @@ export function shouldAutoplayHoverPreview({
 }
 
 function getEligibility() {
+  if (isTVMode()) return true;
   return shouldAutoplayHoverPreview({
     hasFinePointer: window.matchMedia(FINE_POINTER_QUERY).matches,
     prefersReducedMotion: window.matchMedia(REDUCED_MOTION_QUERY).matches,
@@ -29,7 +31,7 @@ function getEligibility() {
 }
 
 export function usePreviewPlaybackEligibility() {
-  const [isEligible, setIsEligible] = useState(false);
+  const [isEligible, setIsEligible] = useState(() => (typeof window !== 'undefined' ? isTVMode() : false));
 
   useEffect(() => {
     const finePointer = window.matchMedia(FINE_POINTER_QUERY);

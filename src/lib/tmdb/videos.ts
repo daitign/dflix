@@ -50,6 +50,9 @@ function getSelectionRank(video: TmdbVideo) {
   if (type === 'trailer' && video.official) return 0;
   if (type === 'trailer') return 1;
   if (type === 'teaser') return 2;
+  if (type === 'clip') return 3;
+  if (type === 'featurette') return 4;
+  if (type === 'behind the scenes' || type === 'opening credits') return 5;
   return Number.POSITIVE_INFINITY;
 }
 
@@ -78,7 +81,7 @@ export async function getMediaVideos(
   return videos;
 }
 
-export function selectBestPreviewVideo(videos: TmdbVideo[]): TmdbVideo | null {
+export function selectPreviewVideoCandidates(videos: TmdbVideo[]): TmdbVideo[] {
   const candidates = videos.filter((video) => {
     const isYouTube = video.site.trim().toLowerCase() === 'youtube';
     const hasValidKey = /^[A-Za-z0-9_-]{6,}$/.test(video.key);
@@ -95,5 +98,10 @@ export function selectBestPreviewVideo(videos: TmdbVideo[]): TmdbVideo | null {
     return (second.size ?? 0) - (first.size ?? 0);
   });
 
-  return candidates[0] ?? null;
+  return candidates;
 }
+
+export function selectBestPreviewVideo(videos: TmdbVideo[]): TmdbVideo | null {
+  return selectPreviewVideoCandidates(videos)[0] ?? null;
+}
+

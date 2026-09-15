@@ -25,6 +25,7 @@ export function MediaRow({ items, mode = 'standard', row, title }: MediaRowProps
   return (
     <section
       className={`media-row media-row--${row?.emphasis ?? (isRanked ? 'featured' : 'standard')}${isRanked ? ' media-row--ranked' : ''}`}
+      data-row-id={row?.id}
       id={row?.id}
     >
       <Container>

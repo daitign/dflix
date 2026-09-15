@@ -58,19 +58,35 @@ function enrichMovie(item: MediaItem, topTenIds: Set<string>): MediaItem {
   };
 }
 
+interface MoviesCacheData {
+  hero: MediaItem | null;
+  topTen: MediaItem[];
+  rows: MediaRowModel[];
+}
+
+const moviesCache = new Map<string, MoviesCacheData>();
+
 export function MoviesPage() {
   const [selectedGenreId, setSelectedGenreId] = useState('all');
-  const [hero, setHero] = useState<MediaItem | null>(null);
-  const [topTen, setTopTen] = useState<MediaItem[]>([]);
-  const [rows, setRows] = useState<MediaRowModel[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hero, setHero] = useState<MediaItem | null>(() => moviesCache.get('all')?.hero ?? null);
+  const [topTen, setTopTen] = useState<MediaItem[]>(() => moviesCache.get('all')?.topTen ?? []);
+  const [rows, setRows] = useState<MediaRowModel[]>(() => moviesCache.get('all')?.rows ?? []);
+  const [isLoading, setIsLoading] = useState(() => !moviesCache.has('all'));
   const [error, setError] = useState('');
 
   const currentGenre = MOVIE_GENRES.find((g) => g.id === selectedGenreId);
 
   useEffect(() => {
     let active = true;
-    setIsLoading(true);
+    const cached = moviesCache.get(selectedGenreId);
+    if (cached) {
+      setHero(cached.hero);
+      setTopTen(cached.topTen);
+      setRows(cached.rows);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError('');
 
     const safely = async <T,>(p: Promise<T>): Promise<T | null> => {
@@ -145,6 +161,11 @@ export function MoviesPage() {
             { id: 'thriller', title: 'Thrillers', items: thrillerItems.map((i) => enrichMovie(i, topTenIds)) },
           ].filter((r) => r.items.length > 0);
 
+          moviesCache.set(selectedGenreId, {
+            hero: enrichedHero,
+            topTen: enrichedTopTen,
+            rows: nextRows,
+          });
           setHero(enrichedHero);
           setTopTen(enrichedTopTen);
           setRows(nextRows);
@@ -190,6 +211,11 @@ export function MoviesPage() {
             { id: 'genre-recent', title: `Fresh ${genreTitle} Releases`, items: recentItems.map((i) => enrichMovie(i, topTenIds)), emphasis: 'compact' as const },
           ].filter((r) => r.items.length > 0);
 
+          moviesCache.set(selectedGenreId, {
+            hero: enrichedHero,
+            topTen: enrichedTopTen,
+            rows: nextRows,
+          });
           setHero(enrichedHero);
           setTopTen(enrichedTopTen);
           setRows(nextRows);

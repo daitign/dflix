@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '../../lib/cx';
+import { isTVMode, scrollElementIntoOptimalView } from '../../lib/tv';
 import { Icon } from '../icons/Icon';
 import { IconButton } from './IconButton';
 import './ModalShell.css';
@@ -122,7 +123,12 @@ export function ModalShell({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
       if (!rootWasInert) appRoot?.removeAttribute('inert');
-      previouslyFocused?.focus();
+      if (previouslyFocused) {
+        previouslyFocused.focus();
+        if (isTVMode()) {
+          scrollElementIntoOptimalView(previouslyFocused);
+        }
+      }
     };
   }, [onClose, restoreFocusElement, shouldRender]);
 
@@ -166,7 +172,7 @@ export function ModalShell({
                 </div>
               )}
             </div>
-            <IconButton aria-label="Close dialog" onClick={onClose} tooltip="Close">
+            <IconButton aria-label="Close dialog" data-tv-focusable="true" onClick={onClose} tooltip="Close">
               <Icon name="close" />
             </IconButton>
           </header>

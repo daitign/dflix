@@ -1,0 +1,24 @@
+R_DEF: Internal format may change without notice
+local
+color background_black
+color primary_red
+color surface_dark
+color text_white
+drawable tv_banner
+id btnRetry
+id customViewContainer
+id errorText
+id errorTitle
+id errorView
+id rootContainer
+id splashLogo
+id splashOverlay
+id splashProgress
+id webViewContainer
+layout activity_main
+mipmap ic_launcher
+string app_name
+string error_network
+string press_again_to_exit
+string retry
+style Theme.DAITIGN.TV

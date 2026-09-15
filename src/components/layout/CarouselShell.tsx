@@ -160,7 +160,7 @@ export function CarouselShell({
           '--carousel-item-width': itemWidth,
           '--carousel-mobile-item-width': mobileItemWidth,
         } as CSSProperties}
-        tabIndex={0}
+        tabIndex={-1}
       >
         {Children.map(children, (child) => (
           <div className="carousel-shell__item">{child}</div>

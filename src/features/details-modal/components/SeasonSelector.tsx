@@ -12,7 +12,7 @@ export function SeasonSelector({ onChange, seasons, value }: SeasonSelectorProps
     <label className="season-selector">
       <span className="season-selector__label">Choose a season</span>
       <div className="season-selector__wrap">
-        <select onChange={(event) => onChange(Number(event.target.value))} value={value}>
+        <select data-tv-focusable="true" onChange={(event) => onChange(Number(event.target.value))} value={value}>
           {seasons.map((season) => (
             <option key={season.seasonNumber} value={season.seasonNumber}>
               {season.name} · {season.episodeCount} episodes

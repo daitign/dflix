@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme for Android TV / Google TV -->
+    <!-- Inherits from Theme.AppCompat.NoActionBar to ensure full AppCompat and ComponentActivity compatibility -->
+    <style name="Theme.DAITIGN.TV" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@color/background_black</item>
+        <item name="android:colorBackground">@color/background_black</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="colorPrimary">@color/primary_red</item>
+        <item name="colorAccent">@color/primary_red</item>
+    </style>
+</resources>

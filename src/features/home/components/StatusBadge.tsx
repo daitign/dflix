@@ -70,8 +70,6 @@ export function StatusBadge({
             }}
             onMouseDown={stopPropagation}
             onPointerDown={stopPropagation}
-            role="button"
-            tabIndex={0}
           >
             Watch Now
           </span>
@@ -98,8 +96,6 @@ export function StatusBadge({
           }}
           onMouseDown={stopPropagation}
           onPointerDown={stopPropagation}
-          role="button"
-          tabIndex={0}
         >
           Watch Now
         </span>

@@ -5,7 +5,7 @@ import { ResponsiveImage } from '../../components/primitives/ResponsiveImage';
 import { SpatialAudioBadge } from '../../components/primitives/SpatialAudioBadge';
 import type { TmdbVideo } from '../../lib/tmdb/types';
 
-import { getMediaVideos, selectBestPreviewVideo } from '../../lib/tmdb/videos';
+import { getMediaVideos, selectPreviewVideoCandidates } from '../../lib/tmdb/videos';
 import type {
   HoverPreviewAction,
   HoverPreviewPlacement,
@@ -15,6 +15,7 @@ import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
 import { YouTubePreview } from './YouTubePreview';
 import { usePreviewAudio } from '../preview-audio';
 import { useMyList } from '../my-list';
+import { isTVMode } from '../../lib/tv';
 
 interface HoverPreviewCardProps {
   anchorElement: HTMLElement;
@@ -52,6 +53,7 @@ export function HoverPreviewCard({
   const { isInList, toggleItem } = useMyList();
   const isListed = isInList(data.tmdbId ?? data.id);
   const [previewVideo, setPreviewVideo] = useState<TmdbVideo | null>(null);
+  const [previewCandidates, setPreviewCandidates] = useState<TmdbVideo[]>([]);
   const canPlayPreview = usePreviewPlaybackEligibility();
   const { setHoverActive } = usePreviewAudio();
 
@@ -74,15 +76,23 @@ export function HoverPreviewCard({
 
   useEffect(() => {
     setPreviewVideo(null);
+    setPreviewCandidates([]);
     if (phase !== 'open' || !canPlayPreview || !data.tmdbId) return undefined;
 
     const controller = new AbortController();
     getMediaVideos(data.playbackType, data.tmdbId, { signal: controller.signal })
       .then((videos) => {
-        if (!controller.signal.aborted) setPreviewVideo(selectBestPreviewVideo(videos));
+        if (!controller.signal.aborted) {
+          const candidates = selectPreviewVideoCandidates(videos);
+          setPreviewCandidates(candidates);
+          setPreviewVideo(candidates[0] ?? null);
+        }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setPreviewVideo(null);
+        if (!controller.signal.aborted) {
+          setPreviewVideo(null);
+          setPreviewCandidates([]);
+        }
       });
 
     return () => controller.abort();
@@ -98,10 +108,24 @@ export function HoverPreviewCard({
     onScheduleClose();
   };
 
+  const isTv = isTVMode();
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    onClose({ returnFocus: true });
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose({ returnFocus: true });
+      return;
+    }
+    if (isTv && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      onAction('details', data, anchorElement);
+    }
+  };
+
+  const handleCardClick = () => {
+    if (isTv) {
+      onAction('details', data, anchorElement);
+    }
   };
 
   const handlePointerEnter = (event: PointerEvent<HTMLElement>) => {
@@ -115,16 +139,18 @@ export function HoverPreviewCard({
   return (
     <article
       aria-label={`Preview for ${data.title}`}
-      className={`hover-preview-card hover-preview-card--${placement} hover-preview-card--${phase}`}
+      className={`hover-preview-card hover-preview-card--${placement} hover-preview-card--${phase}${isTv ? ' hover-preview-card--tv' : ''}`}
       data-hover-preview-root
       id="daitign-hover-preview"
       onBlurCapture={handleBlur}
+      onClick={handleCardClick}
       onFocusCapture={onCancelClose}
       onKeyDown={handleKeyDown}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       role="region"
       style={style}
+      tabIndex={-1}
     >
       <div aria-label={`Cinematic preview for ${data.title}`} className="hover-preview-card__media" data-preview-video-slot>
         <ResponsiveImage
@@ -136,13 +162,14 @@ export function HoverPreviewCard({
           src={data.artwork?.fallback ?? data.artworkUrl ?? ''}
         />
         {phase === 'open' && previewVideo && (
-          <YouTubePreview title={data.title} video={previewVideo} />
+          <YouTubePreview title={data.title} video={previewVideo} videos={previewCandidates} />
         )}
         <span aria-hidden="true" className="hover-preview-card__media-shade" />
         <h2>{data.title}</h2>
       </div>
 
-      <div className="hover-preview-card__body">
+      {!isTv && (
+        <div className="hover-preview-card__body">
         <div className="hover-preview-card__controls">
           <IconButton
             aria-label={`Play ${data.title}`}
@@ -209,7 +236,8 @@ export function HoverPreviewCard({
             {data.genres.map((genre) => <span key={genre}>{genre}</span>)}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </article>
   );
 }

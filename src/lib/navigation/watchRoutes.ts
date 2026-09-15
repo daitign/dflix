@@ -1,5 +1,7 @@
 import type { MediaItem } from '../../features/catalog';
 import type { MediaPreviewData } from '../../features/hover-preview/types';
+import { buildVidStuckUrl } from '../vidstuck/buildPlayerUrl.ts';
+import { saveTvBrowseState } from '../tv/tvBrowseState.ts';
 
 export interface MovieWatchRoute {
   tmdbId: number;
@@ -65,6 +67,13 @@ export function navigateToWatch(
       tmdbId: candidateId,
       type: 'tv',
     };
+  if (typeof window !== 'undefined' && window.AndroidTVBridge?.startTvPlayer) {
+    saveTvBrowseState();
+    const vidstuckUrl = buildVidStuckUrl(route);
+    window.AndroidTVBridge.startTvPlayer(vidstuckUrl, JSON.stringify(route));
+    return true;
+  }
+
   const state: WatchNavigationState = { episodeLabel: options.episodeLabel, title: media.title };
   window.history.pushState({ daitignWatch: state }, '', buildWatchPath(route));
   window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));

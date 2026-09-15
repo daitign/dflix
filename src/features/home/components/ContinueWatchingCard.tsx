@@ -15,11 +15,18 @@ export function ContinueWatchingCard({ item }: ContinueWatchingCardProps) {
   });
 
   return (
-    <article className="continue-card" ref={referenceRef}>
+    <article
+      className="continue-card"
+      data-media-id={item.id}
+      ref={referenceRef}
+    >
       <button
         {...anchorProps}
         aria-label={`Resume ${item.title}`}
         className="continue-card__surface"
+        data-media-id={item.id}
+        data-tv-card="true"
+        data-tv-focusable="true"
         ref={anchorRef}
         type="button"
       >

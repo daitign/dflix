@@ -10,6 +10,7 @@ import {
   requestElementFullscreen,
   unlockOrientation,
 } from './fullscreen';
+import { isTVMode } from '../../lib/tv';
 import './VidStuckPlayer.css';
 
 interface VidStuckPlayerProps {
@@ -20,6 +21,8 @@ interface VidStuckPlayerProps {
 
 export interface VidStuckPlayerHandle {
   canRequestFullscreen: () => boolean;
+  getContainer: () => HTMLDivElement | null;
+  getFrame: () => HTMLIFrameElement | null;
   requestFullscreen: () => Promise<boolean>;
 }
 
@@ -43,6 +46,8 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
 
   useImperativeHandle(forwardedRef, () => ({
     canRequestFullscreen: () => canRequestElementFullscreen(playerRef.current),
+    getContainer: () => playerRef.current,
+    getFrame: () => frameRef.current,
     requestFullscreen: () => requestElementFullscreen(playerRef.current),
   }), []);
 
@@ -69,6 +74,7 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
     };
   }, []);
 
+
   return (
     <div className="vidstuck-frame" data-player-status={status} ref={playerRef}>
       {status === 'loading' && (
@@ -88,12 +94,19 @@ export const VidStuckPlayer = forwardRef<VidStuckPlayerHandle, VidStuckPlayerPro
         <iframe
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
+          data-tv-player="true"
           key={attempt}
           onError={() => setStatus('error')}
-          onLoad={() => setStatus('ready')}
+          onLoad={() => {
+            setStatus('ready');
+            if (isTVMode()) {
+              frameRef.current?.focus();
+            }
+          }}
           ref={frameRef}
           referrerPolicy="strict-origin-when-cross-origin"
           src={source}
+          tabIndex={0}
           title={`${title} video player`}
         />
       )}

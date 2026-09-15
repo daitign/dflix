@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Container, Icon, NavigationShell } from '../components';
 import { getTmdbHomeCatalog, type HomeCatalog, type MediaItem } from '../features/catalog';
 import { DetailsModalProvider } from '../features/details-modal';
@@ -15,7 +15,9 @@ import { WatchPage } from '../features/watch';
 import { useCurrentRoute } from '../lib/navigation/routes';
 import { parseWatchPath, type WatchNavigationState } from '../lib/navigation/watchRoutes';
 import { searchMulti } from '../lib/tmdb';
+import { initSpatialNavigation, initTVMode, registerTVBackHandler } from '../lib/tv';
 import './App.css';
+import '../styles/tv.css';
 
 function CatalogError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -129,12 +131,14 @@ function SearchResultsView({
   );
 }
 
+let moduleCachedHomeCatalog: HomeCatalog | null = null;
+
 function BrowseExperience() {
   const { activeId } = useCurrentRoute();
 
-  const [catalog, setCatalog] = useState<HomeCatalog | null>(null);
+  const [catalog, setCatalog] = useState<HomeCatalog | null>(() => moduleCachedHomeCatalog);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !moduleCachedHomeCatalog);
   const [attempt, setAttempt] = useState(0);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,7 +155,10 @@ function BrowseExperience() {
         setError('');
         getTmdbHomeCatalog()
           .then((nextCatalog) => {
-            if (active) setCatalog(nextCatalog);
+            if (active) {
+              moduleCachedHomeCatalog = nextCatalog;
+              setCatalog(nextCatalog);
+            }
           })
           .catch((reason) => {
             if (!active) return;
@@ -297,6 +304,8 @@ function BrowseCatalog({ catalog }: { catalog: HomeCatalog }) {
 
 function App() {
   const [, setRouteRevision] = useState(0);
+  const lastBrowseScrollYRef = useRef(0);
+  const lastBrowseFocusedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const syncRoute = () => setRouteRevision((value) => value + 1);
@@ -304,13 +313,62 @@ function App() {
     return () => window.removeEventListener('popstate', syncRoute);
   }, []);
 
-  const watchRoute = parseWatchPath(window.location.pathname);
-  if (watchRoute) {
-    const state = window.history.state as { daitignWatch?: WatchNavigationState } | null;
-    return <WatchPage navigationState={state?.daitignWatch} route={watchRoute} />;
-  }
+  useEffect(() => {
+    initTVMode();
+    return initSpatialNavigation();
+  }, []);
 
-  return <BrowseExperience />;
+  const watchRoute = parseWatchPath(window.location.pathname);
+
+  useEffect(() => {
+    if (watchRoute) {
+      lastBrowseScrollYRef.current = window.scrollY;
+      if (document.activeElement && document.activeElement !== document.body) {
+        lastBrowseFocusedIdRef.current = (document.activeElement as HTMLElement).id || null;
+      }
+    } else {
+      const targetY = lastBrowseScrollYRef.current;
+      window.scrollTo({ top: targetY, behavior: 'instant' as ScrollBehavior });
+      if (lastBrowseFocusedIdRef.current) {
+        const el = document.getElementById(lastBrowseFocusedIdRef.current);
+        if (el) {
+          el.focus({ preventScroll: true });
+        }
+      }
+    }
+  }, [Boolean(watchRoute)]);
+
+  useEffect(() => {
+    if (!watchRoute) return;
+    return registerTVBackHandler(() => {
+      window.history.pushState({}, '', '/');
+      setRouteRevision((v) => v + 1);
+      return true;
+    });
+  }, [Boolean(watchRoute)]);
+
+  return (
+    <>
+      <div
+        aria-hidden={Boolean(watchRoute)}
+        id="daitign-browse-root"
+        style={watchRoute ? { display: 'none' } : undefined}
+      >
+        <BrowseExperience />
+      </div>
+      {watchRoute && (
+        <WatchPage
+          navigationState={(window.history.state as { daitignWatch?: WatchNavigationState } | null)?.daitignWatch}
+          onExit={() => {
+            window.history.pushState({}, '', '/');
+            setRouteRevision((v) => v + 1);
+          }}
+          route={watchRoute}
+        />
+      )}
+    </>
+  );
 }
+
 
 export { App };
