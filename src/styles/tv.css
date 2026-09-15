@@ -121,10 +121,10 @@ html.daitign-tv .continue-card:focus-within .continue-card__shade {
    ========================================================================== */
 
 html.daitign-tv .hover-preview-card {
-  border-radius: 10px !important;
+  border-radius: 8px !important;
   outline: none !important;
   border: none !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(0, 0, 0, 0.5) !important;
   background: #141414 !important;
   overflow: hidden !important;
   cursor: pointer !important;
@@ -154,12 +154,63 @@ html.daitign-tv .hover-preview-card__media {
   width: 100% !important;
   height: 100% !important;
   border-radius: inherit !important;
+  position: relative !important;
 }
 
 html.daitign-tv .hover-preview-card__media .responsive-image {
   width: 100% !important;
   height: 100% !important;
   aspect-ratio: 16 / 9 !important;
+}
+
+/* TV Modest Preview: title + single metadata line overlay at bottom */
+html.daitign-tv .hover-preview-card__media > h2 {
+  display: none !important;
+}
+
+html.daitign-tv .hover-preview-card__tv-info {
+  position: absolute !important;
+  z-index: 4 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding: clamp(0.4rem, 1vh, 0.65rem) clamp(0.6rem, 1.2vw, 0.9rem) !important;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.65) 55%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+
+html.daitign-tv .hover-preview-card__tv-title {
+  font-size: clamp(0.88rem, 1.2vw, 1.05rem) !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin: 0 0 0.2rem 0 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9) !important;
+}
+
+html.daitign-tv .hover-preview-card__tv-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  font-size: 0.74rem !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  white-space: nowrap !important;
+}
+
+html.daitign-tv .hover-preview-card__tv-dot {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+html.daitign-tv .hover-preview-card__tv-rating {
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  border-radius: 2px !important;
+  padding: 0 0.25rem !important;
+  font-size: 0.66rem !important;
+  line-height: 1.3 !important;
 }
 
 /* ==========================================================================
@@ -215,17 +266,17 @@ html.daitign-tv .top-navigation__vip-btn {
    ========================================================================== */
 
 html.daitign-tv .hero-banner {
-  min-height: clamp(19rem, 52vh, 28rem) !important;
-  max-height: 55vh !important;
-  height: 52vh !important;
+  min-height: clamp(18rem, 48vh, 26rem) !important;
+  max-height: 54vh !important;
+  height: 50vh !important;
 }
 
 html.daitign-tv .hero-banner__content {
-  min-height: clamp(19rem, 52vh, 28rem) !important;
-  max-height: 55vh !important;
-  height: 52vh !important;
-  padding-top: clamp(1.8rem, 3.6vh, 2.6rem) !important;
-  padding-bottom: 0.55rem !important;
+  min-height: clamp(18rem, 48vh, 26rem) !important;
+  max-height: 54vh !important;
+  height: 50vh !important;
+  padding-top: clamp(1.6rem, 3.2vh, 2.4rem) !important;
+  padding-bottom: clamp(0.75rem, 1.5vh, 1.25rem) !important;
   align-items: flex-end !important;
 }
 
@@ -347,9 +398,9 @@ html.daitign-tv .hero-banner__trailer iframe {
   transform: translate(-50%, -46%) scale(1.15) !important;
 }
 
-/* First Row Proximity: pull first carousel row upward into Hero gradient */
+/* First Row Proximity: clean spacing without negative overlap into Hero */
 html.daitign-tv .browse-catalog {
-  margin-top: clamp(-4.8rem, -8.5vh, -3.2rem) !important;
+  margin-top: clamp(0.25rem, 0.8vh, 0.75rem) !important;
 }
 
 html.daitign-tv .top-ten-feature {
@@ -450,7 +501,7 @@ html.daitign-tv .carousel-shell__track::-webkit-scrollbar {
 /* Scaled Top 10 Ranked Cards on TV: proportional number + poster composition */
 html.daitign-tv .carousel-shell--ranked {
   --carousel-gap: clamp(10px, 1.2vw, 16px) !important;
-  --rank-card-height: clamp(9.5rem, 13vw, 13.2rem) !important;
+  --rank-card-height: clamp(8.5rem, 11.5vw, 11.5rem) !important;
 }
 
 html.daitign-tv .carousel-shell--ranked .carousel-shell__track {
@@ -459,19 +510,19 @@ html.daitign-tv .carousel-shell--ranked .carousel-shell__track {
 
 /* Loading skeleton layout density parity with real catalog */
 html.daitign-tv .browse-loading__hero {
-  min-height: clamp(19rem, 52vh, 28rem) !important;
-  max-height: 55vh !important;
-  height: 52vh !important;
+  min-height: clamp(18rem, 48vh, 26rem) !important;
+  max-height: 54vh !important;
+  height: 50vh !important;
 }
 
 html.daitign-tv .browse-loading__hero-container {
-  padding-top: clamp(1.8rem, 3.6vh, 2.6rem) !important;
-  padding-bottom: 0.55rem !important;
+  padding-top: clamp(1.6rem, 3.2vh, 2.4rem) !important;
+  padding-bottom: clamp(0.75rem, 1.5vh, 1.25rem) !important;
 }
 
 html.daitign-tv .browse-loading__catalog {
   gap: clamp(1.2rem, 2.2vh, 1.6rem) !important;
-  margin-top: clamp(-4.8rem, -8.5vh, -3.2rem) !important;
+  margin-top: clamp(0.25rem, 0.8vh, 0.75rem) !important;
 }
 
 html.daitign-tv .browse-loading__track {
@@ -493,10 +544,10 @@ html.daitign-tv .modal-shell--cinematic {
 }
 
 html.daitign-tv .modal-shell__panel--cinematic {
-  width: min(84vw, 62rem) !important;
-  max-width: 84vw !important;
+  width: min(76vw, 56rem) !important;
+  max-width: 76vw !important;
   height: auto !important;
-  max-height: 86vh !important;
+  max-height: 85vh !important;
   margin: auto !important;
   border-radius: 12px !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
@@ -509,7 +560,7 @@ html.daitign-tv .modal-shell__panel--cinematic {
 
 html.daitign-tv .modal-shell__panel--cinematic .modal-shell__body,
 html.daitign-tv .details-modal {
-  max-height: 86vh !important;
+  max-height: 85vh !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   scrollbar-width: none !important;
@@ -522,79 +573,80 @@ html.daitign-tv .details-modal::-webkit-scrollbar {
 
 /* Details Hero inside Modal */
 html.daitign-tv .details-hero {
-  min-height: clamp(14rem, 32vh, 20rem) !important;
-  max-height: 34vh !important;
+  min-height: clamp(12rem, 30vh, 18rem) !important;
+  max-height: 32vh !important;
 }
 
 html.daitign-tv .details-hero__content {
   right: clamp(1.2rem, 3vw, 2.5rem) !important;
-  bottom: clamp(1.2rem, 2.5vh, 2rem) !important;
+  bottom: clamp(1rem, 2vh, 1.8rem) !important;
   left: clamp(1.2rem, 3vw, 2.5rem) !important;
 }
 
 html.daitign-tv .details-hero__title {
-  font-size: clamp(1.6rem, 2.8vw, 2.2rem) !important;
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem) !important;
   font-weight: 800 !important;
   line-height: 1.1 !important;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 0.4rem !important;
 }
 
 html.daitign-tv .details-hero__logo {
-  max-height: 5.5rem !important;
-  margin-bottom: 0.5rem !important;
+  max-height: 4.5rem !important;
+  margin-bottom: 0.4rem !important;
 }
 
 html.daitign-tv .details-hero__actions {
-  gap: 0.75rem !important;
+  gap: 0.65rem !important;
 }
 
 html.daitign-tv .details-hero__actions button {
-  font-size: 0.95rem !important;
-  padding: 0.5rem 1.3rem !important;
+  font-size: 0.85rem !important;
+  padding: 0.4rem 1.1rem !important;
 }
 
 /* Details Content & Metadata */
 html.daitign-tv .details-modal__content {
-  padding: 0 clamp(1.2rem, 2.5vw, 2rem) clamp(1.5rem, 3.5vh, 2.5rem) !important;
+  padding: 0 clamp(1.2rem, 2.5vw, 2rem) clamp(1.2rem, 3vh, 2.2rem) !important;
 }
 
 html.daitign-tv .details-metadata {
   grid-template-columns: minmax(0, 1.65fr) minmax(12rem, 0.85fr) !important;
-  gap: clamp(1.2rem, 2.5vw, 2rem) !important;
-  padding: 0.5rem 0 clamp(1.2rem, 2.5vh, 1.8rem) !important;
+  gap: clamp(1rem, 2vw, 1.6rem) !important;
+  padding: 0.4rem 0 clamp(1rem, 2vh, 1.5rem) !important;
 }
 
 html.daitign-tv .details-metadata__facts {
-  min-height: 1.5rem !important;
-  gap: 0.5rem !important;
+  min-height: 1.35rem !important;
+  font-size: 0.88rem !important;
+  gap: 0.45rem !important;
 }
 
 html.daitign-tv .details-metadata__match {
-  font-size: 1.05rem !important;
+  font-size: 0.92rem !important;
 }
 
 html.daitign-tv .details-metadata__synopsis {
-  font-size: 0.98rem !important;
-  line-height: 1.5 !important;
-  max-width: 55ch !important;
-  margin-top: 0.75rem !important;
+  font-size: 0.86rem !important;
+  line-height: 1.42 !important;
+  max-width: 52ch !important;
+  margin-top: 0.6rem !important;
 }
 
 html.daitign-tv .details-metadata__credits {
-  font-size: 0.88rem !important;
-  line-height: 1.5 !important;
-  gap: 0.5rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1.42 !important;
+  gap: 0.45rem !important;
 }
 
 html.daitign-tv .details-section {
-  margin-top: 1.25rem !important;
-  margin-bottom: 1.25rem !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
 }
 
 html.daitign-tv .details-section h3 {
-  font-size: 1.2rem !important;
+  font-size: 1.05rem !important;
   font-weight: 700 !important;
-  margin-bottom: 0.65rem !important;
+  margin-bottom: 0.55rem !important;
 }
 
 /* Compact Episode Rows (10–15% height reduction) */

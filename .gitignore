@@ -22,3 +22,4 @@ android-tv/build/
 android-tv/local.properties
 *.apk
 *.aab
+outputs/*.apk

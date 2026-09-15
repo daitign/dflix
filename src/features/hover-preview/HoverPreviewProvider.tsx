@@ -79,8 +79,13 @@ function getPreviewPosition(anchorElement: HTMLElement, referenceElement: HTMLEl
       : 'center';
 
   if (isTVMode()) {
-    // TV mode: 16:9 cinematic landscape preview tile (~520–680px width at 1080p)
-    const tvWidth = clamp(Math.round(viewportWidth * 0.32), 520, 680);
+    // TV mode: Modest 16:9 cinematic preview tile (~125%–130% of card width, 400–490px at 1080p)
+    const baseCardWidth = anchor.width || reference.width || (viewportWidth / 6);
+    const targetScale = 1.28;
+    const rawWidth = Math.round(baseCardWidth * targetScale);
+    const minTvWidth = Math.round(viewportWidth * 0.21); // ~403px at 1080p
+    const maxTvWidth = Math.round(viewportWidth * 0.255); // ~490px at 1080p
+    const tvWidth = clamp(rawWidth, Math.min(380, minTvWidth), Math.max(460, maxTvWidth));
     const tvHeight = Math.round(tvWidth * (9 / 16));
     const proposedLeft = placement === 'left'
       ? anchor.left

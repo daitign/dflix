@@ -165,7 +165,28 @@ export function HoverPreviewCard({
           <YouTubePreview title={data.title} video={previewVideo} videos={previewCandidates} />
         )}
         <span aria-hidden="true" className="hover-preview-card__media-shade" />
-        <h2>{data.title}</h2>
+        {isTv ? (
+          <div className="hover-preview-card__tv-info">
+            <h2 className="hover-preview-card__tv-title">{data.title}</h2>
+            <div className="hover-preview-card__tv-meta">
+              <span>{getLengthLabel(data)}</span>
+              {data.maturityRating && (
+                <>
+                  <span className="hover-preview-card__tv-dot">•</span>
+                  <span className="hover-preview-card__tv-rating">{data.maturityRating}</span>
+                </>
+              )}
+              {data.year && (
+                <>
+                  <span className="hover-preview-card__tv-dot">•</span>
+                  <span>{data.year}</span>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <h2>{data.title}</h2>
+        )}
       </div>
 
       {!isTv && (

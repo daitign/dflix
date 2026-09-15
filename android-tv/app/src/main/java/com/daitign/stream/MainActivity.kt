@@ -773,6 +773,37 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                var controlsVisible = true;
+                var controlsFadeTimer = null;
+
+                function showControls() {
+                    controlsVisible = true;
+                    keepControlsVisible();
+                    if (controlsFadeTimer) clearTimeout(controlsFadeTimer);
+                    controlsFadeTimer = setTimeout(function() {
+                        if (currentState !== 'PLAYER_MENU') {
+                            controlsVisible = false;
+                        }
+                    }, 4500);
+                }
+
+                function hideControls() {
+                    controlsVisible = false;
+                    if (controlsFadeTimer) clearTimeout(controlsFadeTimer);
+                    if (selectedElement) {
+                        selectedElement.classList.remove('daitign-tv-selected');
+                        selectedElement.classList.remove('daitign-tv-selected-timeline');
+                        try { selectedElement.blur(); } catch (e) {}
+                        selectedElement = null;
+                    }
+                    var evt = new MouseEvent('mouseleave', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 });
+                    document.dispatchEvent(evt);
+                    var controlsWrap = document.querySelector('div.z-30, .art-bottom, .art-controls');
+                    if (controlsWrap) {
+                        controlsWrap.dispatchEvent(evt);
+                    }
+                }
+
                 // Intercept capture phase to stop VIDSTUCK from executing default seeking unless on timeline!
                 function captureKey(e) {
                     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -791,72 +822,98 @@ class MainActivity : ComponentActivity() {
                 window.daitignTvPlayer = {
                     getState: function() { return currentState; },
                     handleKey: function(key) {
-                        console.log('[DAITIGN TV Player] handleKey:', key, 'currentState:', currentState);
-                        keepControlsVisible();
-                        var controls = discoverControls();
+                        console.log('[DAITIGN TV Player] handleKey:', key, 'currentState:', currentState, 'controlsVisible:', controlsVisible);
 
-                        if (controls.type === 'menu') {
-                            currentState = 'PLAYER_MENU';
-                            var items = controls.elements;
-                            if (items.length === 0) return true;
+                        var activeMenu = getOpenMenu();
 
-                            var currentIndex = items.indexOf(selectedElement);
-                            if (currentIndex === -1) currentIndex = 0;
+                        // 1. Menu hierarchy: if open, navigate or close on BACK
+                        if (activeMenu) {
+                            showControls();
+                            var controls = discoverControls();
+                            if (controls.type === 'menu') {
+                                currentState = 'PLAYER_MENU';
+                                var items = controls.elements;
+                                if (items.length === 0) return true;
 
-                            if (key === 'UP') {
-                                updateSelection(items[Math.max(0, currentIndex - 1)]);
-                                return true;
-                            } else if (key === 'DOWN') {
-                                updateSelection(items[Math.min(items.length - 1, currentIndex + 1)]);
-                                return true;
-                            } else if (key === 'CENTER' || key === 'ENTER') {
-                                if (selectedElement) {
-                                    selectedElement.click();
-                                    setTimeout(function() {
-                                        var activeMenu = getOpenMenu();
-                                        if (activeMenu) {
-                                            var newControls = discoverControls();
-                                            if (newControls.type === 'menu' && newControls.elements.length > 0) {
-                                                updateSelection(newControls.elements[0]);
-                                                return;
+                                var currentIndex = items.indexOf(selectedElement);
+                                if (currentIndex === -1) currentIndex = 0;
+
+                                if (key === 'UP') {
+                                    updateSelection(items[Math.max(0, currentIndex - 1)]);
+                                    return true;
+                                } else if (key === 'DOWN') {
+                                    updateSelection(items[Math.min(items.length - 1, currentIndex + 1)]);
+                                    return true;
+                                } else if (key === 'CENTER' || key === 'ENTER') {
+                                    if (selectedElement) {
+                                        selectedElement.click();
+                                        setTimeout(function() {
+                                            var m = getOpenMenu();
+                                            if (m) {
+                                                var nc = discoverControls();
+                                                if (nc.type === 'menu' && nc.elements.length > 0) {
+                                                    updateSelection(nc.elements[0]);
+                                                    return;
+                                                }
                                             }
-                                        }
-                                        // Menu closed after option selection! Restore button focus:
+                                            if (lastOpenedButton && isVisible(lastOpenedButton)) {
+                                                updateSelection(lastOpenedButton);
+                                            } else {
+                                                window.daitignTvPlayer.ensureDefaultFocus();
+                                            }
+                                        }, 200);
+                                    }
+                                    return true;
+                                } else if (key === 'BACK') {
+                                    var closeBtn = activeMenu.querySelector('button.close, [data-slot="drawer-close"], [aria-label*="Close" i], .close');
+                                    if (closeBtn) {
+                                        closeBtn.click();
+                                    } else {
+                                        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
+                                    }
+                                    setTimeout(function() {
                                         if (lastOpenedButton && isVisible(lastOpenedButton)) {
                                             updateSelection(lastOpenedButton);
                                         } else {
                                             window.daitignTvPlayer.ensureDefaultFocus();
                                         }
-                                    }, 200);
+                                    }, 150);
+                                    return true;
                                 }
-                                return true;
-                            } else if (key === 'BACK') {
-                                var closeBtn = controls.container.querySelector('button.close, [data-slot="drawer-close"], [aria-label*="Close" i], .close');
-                                if (closeBtn) {
-                                    closeBtn.click();
-                                } else {
-                                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true }));
-                                }
-                                setTimeout(function() {
-                                    if (lastOpenedButton && isVisible(lastOpenedButton)) {
-                                        updateSelection(lastOpenedButton);
-                                    } else {
-                                        window.daitignTvPlayer.ensureDefaultFocus();
-                                    }
-                                }, 150);
                                 return true;
                             }
-                            return true;
                         }
 
-                        var bottom = controls.bottom || [];
-                        var topRight = controls.topRight || [];
-                        var timeline = controls.timeline;
+                        // 2. If controls are not visible / dismissed
+                        if (!controlsVisible || !selectedElement || !selectedElement.isConnected || !isVisible(selectedElement)) {
+                            if (key === 'BACK') {
+                                // Controls already hidden: check fullscreen or exit player
+                                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                                    if (document.exitFullscreen) document.exitFullscreen();
+                                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                                    return true;
+                                }
+                                return false; // Exit player back to browse
+                            }
 
-                        if (!selectedElement || !selectedElement.isConnected || !isVisible(selectedElement)) {
+                            // Pressing ENTER / CENTER or Arrows when controls are hidden wakes controls & focuses Play/Pause
+                            showControls();
                             this.ensureDefaultFocus();
                             return true;
                         }
+
+                        // 3. Controls are visible and user pressed BACK: hide controls first
+                        if (key === 'BACK') {
+                            hideControls();
+                            return true;
+                        }
+
+                        // 4. Normal controls navigation
+                        showControls();
+                        var controls = discoverControls();
+                        var bottom = controls.bottom || [];
+                        var topRight = controls.topRight || [];
+                        var timeline = controls.timeline;
 
                         if (currentState === 'PLAYER_TIMELINE') {
                             if (key === 'LEFT') {
@@ -890,8 +947,6 @@ class MainActivity : ComponentActivity() {
                                     if (v.paused) v.play(); else v.pause();
                                 }
                                 return true;
-                            } else if (key === 'BACK') {
-                                return false; // Exit player back to browse
                             }
                             return true;
                         }
@@ -931,13 +986,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }, 180);
                                 return true;
-                            } else if (key === 'BACK') {
-                                if (document.fullscreenElement || document.webkitFullscreenElement) {
-                                    if (document.exitFullscreen) document.exitFullscreen();
-                                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                                    return true;
-                                }
-                                return false;
                             }
                         } else if (isTopRight) {
                             var tIdx = topRight.indexOf(selectedElement);
@@ -970,19 +1018,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }, 180);
                                 return true;
-                            } else if (key === 'BACK') {
-                                if (document.fullscreenElement || document.webkitFullscreenElement) {
-                                    if (document.exitFullscreen) document.exitFullscreen();
-                                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                                    return true;
-                                }
-                                return false;
                             }
                         }
 
-                        return false;
+                        return true;
                     },
                     ensureDefaultFocus: function() {
+                        showControls();
                         var controls = discoverControls();
                         console.log('[DAITIGN TV Player] Discovered controls:', {
                             type: controls.type,
