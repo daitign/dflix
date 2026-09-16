@@ -209,3 +209,22 @@ test('12. TV layout remains isolated and defines the three responsive density ba
   assert.ok(styles.includes('@media (min-width: 3000px)'));
   assert.ok(styles.includes('54vh'));
 });
+
+test('13. Android TV startup cannot remain on a silent black splash', () => {
+  const activity = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
+    'utf-8',
+  );
+  assert.ok(activity.includes('https://daiflix.vercel.app/?tv=1'));
+  assert.ok(activity.includes('LOAD_TIMEOUT_MS = 9_000L'));
+  assert.ok(activity.includes('showStartupFailure()'));
+  assert.ok(activity.includes('onPageStarted'));
+  assert.ok(activity.includes('onPageFinished'));
+  assert.ok(activity.includes('onReceivedError'));
+  assert.ok(activity.includes('onReceivedHttpError'));
+  assert.ok(activity.includes('onReceivedSslError'));
+  assert.ok(activity.includes('handler?.cancel()'));
+  assert.ok(activity.includes('errorView.bringToFront()'));
+  assert.ok(activity.includes('playerWebView = player'));
+  assert.ok(activity.indexOf('playerWebView = player') > activity.indexOf('fun startTvPlayer'));
+});

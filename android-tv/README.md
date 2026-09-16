@@ -42,6 +42,18 @@ Debug APK:
 android-tv/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Startup diagnostics
+
+Native startup and WebView lifecycle messages use one Logcat tag:
+
+```bash
+adb logcat -s DAITIGN-TV
+```
+
+The debug APK replaces an unresolved splash after nine seconds with an on-screen
+status panel and Retry action. Release builds show the same recovery action without
+the detailed URL/error diagnostics.
+
 `local.properties`, Gradle caches, APKs, and build output are ignored and must not be committed.
 
 ## Device validation

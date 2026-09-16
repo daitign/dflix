@@ -61,6 +61,7 @@
         android:id="@+id/errorView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/background_black"
         android:layout_gravity="center"
         android:gravity="center"
         android:orientation="vertical"
@@ -82,7 +83,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:gravity="center"
-            android:maxLines="6"
+            android:maxLines="12"
             android:text="@string/error_network"
             android:textColor="@color/text_white"
             android:textSize="18sp" />

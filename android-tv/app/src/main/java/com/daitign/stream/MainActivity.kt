@@ -1,25 +1,34 @@
 package com.daitign.stream
 
 import android.annotation.SuppressLint
+import android.content.pm.ApplicationInfo
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.webkit.CookieManager
+import android.webkit.ConsoleMessage
 import android.webkit.PermissionRequest
+import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.net.http.SslError
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -36,41 +45,75 @@ enum class PlayerState {
 
 class MainActivity : ComponentActivity() {
     companion object {
-        private const val APP_URL = "https://daiflix.vercel.app?tv=1"
+        private const val TAG = "DAITIGN-TV"
+        private const val APP_URL = "https://daiflix.vercel.app/?tv=1"
         private const val EXIT_INTERVAL_MS = 2_000L
+        private const val LOAD_TIMEOUT_MS = 9_000L
         private const val TV_USER_AGENT = " DAITIGN-TV/2.0"
     }
 
+    private lateinit var rootContainer: FrameLayout
     private lateinit var webViewContainer: FrameLayout
     private lateinit var customViewContainer: FrameLayout
     private lateinit var splashOverlay: View
     private lateinit var errorView: View
+    private lateinit var errorTitle: TextView
     private lateinit var errorText: TextView
     private lateinit var retryButton: Button
 
+    private val startupHandler = Handler(Looper.getMainLooper())
     private var browseWebView: WebView? = null
     private var playerWebView: WebView? = null
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var customViewOwner: WebView? = null
     private var lastBackAt = 0L
+    private var pageStarted = false
+    private var pageFinished = false
+    private var pageRendered = false
+    private var loadFailed = false
+    private var rendererGone = false
+    private var lastLoadError: String? = null
+    private var lastHttpStatus: Int? = null
+
+    private val startupTimeout = Runnable {
+        if (!pageFinished || !pageRendered) {
+            Log.e(TAG, "startup timeout after ${LOAD_TIMEOUT_MS}ms")
+            lastLoadError = lastLoadError ?: if (pageFinished) {
+                "Page finished but application content did not render"
+            } else {
+                "Page did not finish within ${LOAD_TIMEOUT_MS / 1_000} seconds"
+            }
+            showStartupFailure()
+        }
+    }
 
     @Volatile
     private var playerState = PlayerState.PLAYER_HIDDEN
 
+    private val isDebugBuild: Boolean
+        get() = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.i(TAG, "MainActivity.onCreate")
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enterImmersiveMode()
         setContentView(R.layout.activity_main)
+        Log.i(TAG, "root layout created")
 
+        rootContainer = findViewById(R.id.rootContainer)
         webViewContainer = findViewById(R.id.webViewContainer)
         customViewContainer = findViewById(R.id.customViewContainer)
         splashOverlay = findViewById(R.id.splashOverlay)
         errorView = findViewById(R.id.errorView)
+        errorTitle = findViewById(R.id.errorTitle)
         errorText = findViewById(R.id.errorText)
         retryButton = findViewById(R.id.btnRetry)
-        retryButton.setOnClickListener { loadBrowseApp() }
+        retryButton.setOnClickListener {
+            Log.i(TAG, "Retry selected")
+            loadBrowseApp()
+        }
 
         installBackHandler()
         loadBrowseApp()
@@ -84,7 +127,7 @@ class MainActivity : ComponentActivity() {
                 systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         } else {
-            @Suppress("DEPRECATION")
+            @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
             window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
@@ -97,15 +140,61 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadBrowseApp() {
+        startupHandler.removeCallbacks(startupTimeout)
+        pageStarted = false
+        pageFinished = false
+        pageRendered = false
+        loadFailed = false
+        lastLoadError = null
+        lastHttpStatus = null
+        if (rendererGone) {
+            browseWebView?.let {
+                webViewContainer.removeView(it)
+                it.removeJavascriptInterface("AndroidTVBridge")
+                it.destroy()
+            }
+            browseWebView = null
+            rendererGone = false
+        }
         errorView.visibility = View.GONE
         splashOverlay.alpha = 1f
         splashOverlay.visibility = View.VISIBLE
-        val webView = browseWebView ?: createBrowseWebView().also {
-            browseWebView = it
-            webViewContainer.addView(it)
+        val webView = browseWebView ?: try {
+            createBrowseWebView().also {
+                browseWebView = it
+                Log.i(TAG, "browse WebView created")
+                webViewContainer.addView(
+                    it,
+                    0,
+                    FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    ),
+                )
+                Log.i(TAG, "browse WebView attached")
+                it.post { logViewState("browse WebView attached and laid out") }
+            }
+        } catch (error: Throwable) {
+            lastLoadError = "WebView creation failed: ${error.message ?: error.javaClass.simpleName}"
+            Log.e(TAG, "browse WebView creation failed", error)
+            showStartupFailure()
+            return
         }
         webView.visibility = View.VISIBLE
-        webView.loadUrl(APP_URL)
+        webView.bringToFront()
+        splashOverlay.bringToFront()
+        logViewState("URL about to load")
+        Log.i(TAG, "URL about to load: $APP_URL")
+        startupHandler.postDelayed(startupTimeout, LOAD_TIMEOUT_MS)
+        try {
+            webView.loadUrl(APP_URL)
+        } catch (error: Throwable) {
+            startupHandler.removeCallbacks(startupTimeout)
+            loadFailed = true
+            lastLoadError = "loadUrl failed: ${error.message ?: error.javaClass.simpleName}"
+            Log.e(TAG, "loadUrl failed for $APP_URL", error)
+            showStartupFailure()
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -133,6 +222,13 @@ class MainActivity : ComponentActivity() {
             setAcceptCookie(true)
             setAcceptThirdPartyCookies(webView, true)
         }
+        Log.i(
+            TAG,
+            "settings applied: javaScriptEnabled=${webView.settings.javaScriptEnabled}, " +
+                "domStorageEnabled=${webView.settings.domStorageEnabled}, " +
+                "mediaPlaybackRequiresUserGesture=${webView.settings.mediaPlaybackRequiresUserGesture}, " +
+                "layerType=${webView.layerType}",
+        )
     }
 
     private fun createBrowseWebView(): WebView = WebView(this).also { webView ->
@@ -141,29 +237,126 @@ class MainActivity : ComponentActivity() {
         webView.addJavascriptInterface(WebAppInterface(this), "AndroidTVBridge")
         webView.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                pageStarted = true
+                pageFinished = false
+                pageRendered = false
+                Log.i(TAG, "onPageStarted: $url")
                 errorView.visibility = View.GONE
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
-                splashOverlay.animate().alpha(0f).setDuration(260).withEndAction {
-                    splashOverlay.visibility = View.GONE
-                    splashOverlay.alpha = 1f
-                    view?.requestFocus()
+                pageFinished = true
+                Log.i(TAG, "onPageFinished: $url")
+                logViewState("page finished")
+                if (loadFailed) {
+                    showStartupFailure()
+                    return
                 }
+                view?.let { verifyBrowseContent(it, allowRetry = true) }
+            }
+
+            override fun onPageCommitVisible(view: WebView?, url: String?) {
+                Log.i(TAG, "first WebView paint committed: $url")
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
-                if (request?.isForMainFrame == true) showNetworkError(error?.description?.toString())
+                val message = "${error?.errorCode ?: -1}: ${error?.description ?: "Unknown WebView error"}"
+                Log.e(TAG, "onReceivedError: main=${request?.isForMainFrame}, url=${request?.url}, error=$message")
+                if (request?.isForMainFrame == true) {
+                    loadFailed = true
+                    lastLoadError = message
+                    showStartupFailure()
+                }
+            }
+
+            @Suppress("DEPRECATION")
+            @Deprecated("Legacy callback for Android 5.x WebView compatibility")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?,
+            ) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) return
+                val message = "$errorCode: ${description ?: "Unknown WebView error"}"
+                Log.e(TAG, "onReceivedError: url=$failingUrl, error=$message")
+                loadFailed = true
+                lastLoadError = message
+                showStartupFailure()
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                errorResponse: WebResourceResponse?,
+            ) {
+                val status = errorResponse?.statusCode ?: -1
+                Log.e(TAG, "onReceivedHttpError: main=${request?.isForMainFrame}, url=${request?.url}, status=$status")
+                if (request?.isForMainFrame == true) {
+                    loadFailed = true
+                    lastHttpStatus = status
+                    lastLoadError = "HTTP $status ${errorResponse?.reasonPhrase.orEmpty()}".trim()
+                    showStartupFailure()
+                }
+            }
+
+            override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                val message = "SSL ${error?.primaryError ?: -1} at ${error?.url ?: APP_URL}"
+                Log.e(TAG, "SSL validation failed: $message")
+                loadFailed = true
+                lastLoadError = message
+                handler?.cancel()
+                showStartupFailure()
+            }
+
+            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+                rendererGone = true
+                loadFailed = true
+                lastLoadError = "WebView renderer exited (crashed=${detail?.didCrash() == true})"
+                Log.e(TAG, "onRenderProcessGone: $lastLoadError")
+                showStartupFailure()
+                return true
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 if (request?.isForMainFrame != true) return false
                 val uri = request.url
-                if (uri.host == Uri.parse(APP_URL).host) return false
+                val isDaitign = uri.host.equals(Uri.parse(APP_URL).host, ignoreCase = true)
+                Log.i(TAG, "shouldOverrideUrlLoading: url=$uri, allowInWebView=$isDaitign")
+                if (isDaitign) return false
                 return openExternal(uri)
             }
         }
         webView.webChromeClient = chromeClientFor(webView)
+    }
+
+    private fun verifyBrowseContent(webView: WebView, allowRetry: Boolean) {
+        webView.evaluateJavascript(
+            "(function(){var root=document.getElementById('root');return !!(root&&root.childElementCount);})()",
+        ) { result ->
+            val rendered = result == "true"
+            Log.i(TAG, "browse render probe: rendered=$rendered, result=$result")
+            if (rendered) {
+                pageRendered = true
+                startupHandler.removeCallbacks(startupTimeout)
+                errorView.visibility = View.GONE
+                splashOverlay.animate().alpha(0f).setDuration(260).withEndAction {
+                    splashOverlay.visibility = View.GONE
+                    splashOverlay.alpha = 1f
+                    webView.requestFocus()
+                    logViewState("browse visible after first paint")
+                }
+            } else if (allowRetry) {
+                startupHandler.postDelayed(
+                    { verifyBrowseContent(webView, allowRetry = false) },
+                    1_200L,
+                )
+            } else {
+                loadFailed = true
+                lastLoadError = "Page finished but application content did not render"
+                showStartupFailure()
+            }
+        }
     }
 
     fun startTvPlayer(url: String, @Suppress("UNUSED_PARAMETER") stateJson: String) {
@@ -179,11 +372,13 @@ class MainActivity : ComponentActivity() {
             destroyPlayerWebView()
 
             playerState = PlayerState.PLAYER_HIDDEN
+            Log.i(TAG, "creating player WebView after playback request")
             val player = createPlayerWebView()
             playerWebView = player
             webViewContainer.addView(player)
             player.bringToFront()
             player.requestFocus()
+            logViewState("player WebView attached")
             player.loadUrl(uri.toString())
         }
     }
@@ -206,6 +401,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun chromeClientFor(owner: WebView) = object : WebChromeClient() {
+        override fun onConsoleMessage(message: ConsoleMessage?): Boolean {
+            message ?: return false
+            Log.d(
+                TAG,
+                "WebView console ${message.messageLevel()}: ${message.message()} " +
+                    "(${message.sourceId()}:${message.lineNumber()})",
+            )
+            return true
+        }
+
         override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
             if (view == null || callback == null) return
             if (customView != null) hideCustomView()
@@ -258,6 +463,8 @@ class MainActivity : ComponentActivity() {
             destroy()
         }
         playerWebView = null
+        Log.i(TAG, "player WebView destroyed")
+        logViewState("after player removal")
     }
 
     private fun hideCustomView() {
@@ -336,10 +543,49 @@ class MainActivity : ComponentActivity() {
         false
     }
 
-    private fun showNetworkError(reason: String?) {
+    private fun showStartupFailure() {
+        startupHandler.removeCallbacks(startupTimeout)
         splashOverlay.visibility = View.GONE
+        browseWebView?.visibility = View.VISIBLE
+        errorTitle.text = if (isDebugBuild) {
+            "DAITIGN TV failed to load"
+        } else {
+            getString(R.string.app_name)
+        }
+        errorText.text = if (isDebugBuild) {
+            buildString {
+                appendLine("URL: ${browseWebView?.url ?: APP_URL}")
+                appendLine("WebView created: ${if (browseWebView != null) "yes" else "no"}")
+                appendLine("Page started: ${if (pageStarted) "yes" else "no"}")
+                appendLine("Page finished: ${if (pageFinished) "yes" else "no"}")
+                appendLine("App rendered: ${if (pageRendered) "yes" else "no"}")
+                appendLine("Last error: ${lastLoadError ?: "none"}")
+                append("HTTP status: ${lastHttpStatus?.toString() ?: "none"}")
+            }
+        } else {
+            getString(R.string.error_network)
+        }
         errorView.visibility = View.VISIBLE
-        errorText.text = reason?.takeIf { it.isNotBlank() } ?: getString(R.string.error_network)
+        errorView.bringToFront()
+        retryButton.requestFocus()
+        logViewState("startup failure visible")
+    }
+
+    private fun logViewState(event: String) {
+        val browse = browseWebView
+        val player = playerWebView
+        Log.i(
+            TAG,
+            "$event: current URL=${browse?.url ?: "none"}, " +
+                "browse visibility=${browse?.visibility ?: -1}, player visibility=${player?.visibility ?: -1}, " +
+                "browse index=${browse?.let(webViewContainer::indexOfChild) ?: -1}, " +
+                "player index=${player?.let(webViewContainer::indexOfChild) ?: -1}, " +
+                "web container index=${rootContainer.indexOfChild(webViewContainer)}, " +
+                "splash index=${rootContainer.indexOfChild(splashOverlay)}, " +
+                "error index=${rootContainer.indexOfChild(errorView)}, " +
+                "custom fullscreen visibility=${customViewContainer.visibility}, " +
+                "hardwareAccelerated=${browse?.isHardwareAccelerated ?: false}, layerType=${browse?.layerType ?: -1}",
+        )
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -376,6 +622,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        startupHandler.removeCallbacks(startupTimeout)
         destroyPlayerWebView()
         browseWebView?.run {
             webViewContainer.removeView(this)
