@@ -25,14 +25,14 @@ export function shouldAutoplayHeroTrailer({
 
 function getHeroEligibility(): boolean {
   if (typeof window === 'undefined') return false;
+  const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+  if (prefersReducedMotion) return false;
   if (isTVMode()) return true;
 
   const nav = navigator as unknown as { connection?: { effectiveType?: string; saveData?: boolean } };
   const connection = nav.connection;
   const isLowBandwidth = connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g';
   const saveData = connection?.saveData === true;
-  const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
-
   return shouldAutoplayHeroTrailer({
     isLowBandwidth,
     prefersReducedMotion,

@@ -156,6 +156,7 @@ export function ModalShell({
           `modal-shell__panel--${variant}`,
           className,
         )}
+        data-tv-focus-scope="modal"
         ref={panelRef}
         role="dialog"
         tabIndex={-1}

@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BrandMark } from '../../components/brand/BrandMark';
 import { Icon } from '../../components/icons/Icon';
-import { VidStuckPlayer, type VidStuckPlayerHandle } from '../../components/player';
+import { VidStuckPlayer } from '../../components/player';
 import { IconButton } from '../../components/primitives/IconButton';
 import { Skeleton } from '../../components/primitives/Skeleton';
 import { navigateHome, type WatchNavigationState, type WatchRoute } from '../../lib/navigation/watchRoutes';
 import { getMediaDetails } from '../../lib/tmdb';
-import { buildVidStuckUrl, type VidStuckPlayerOptions } from '../../lib/vidstuck/index.ts';
-import { isTVMode, saveTvBrowseState } from '../../lib/tv/index.ts';
+import type { VidStuckPlayerOptions } from '../../lib/vidstuck';
 import './WatchPage.css';
 
 interface WatchPageProps {
@@ -17,50 +16,20 @@ interface WatchPageProps {
 }
 
 export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
-  const [activeRoute, setActiveRoute] = useState<WatchRoute>(route);
   const [resolvedTitle, setResolvedTitle] = useState(navigationState?.title ?? '');
   const [titleLoading, setTitleLoading] = useState(!navigationState?.title);
   const [isRouteValid, setIsRouteValid] = useState(Boolean(navigationState?.title));
   const [validationComplete, setValidationComplete] = useState(Boolean(navigationState?.title));
-  const [server] = useState<string>('default');
-  const [subtitle] = useState<string>('english');
-
-  const playerHandleRef = useRef<VidStuckPlayerHandle>(null);
-  const stageRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    setActiveRoute(route);
-  }, [route]);
-
-  const playerOptions = useMemo<VidStuckPlayerOptions>(() => {
-    const base = activeRoute.type === 'movie'
-      ? { tmdbId: activeRoute.tmdbId, type: 'movie' as const }
+  const playerOptions = useMemo<VidStuckPlayerOptions>(() => (
+    route.type === 'movie'
+      ? { tmdbId: route.tmdbId, type: 'movie' as const }
       : {
-        episode: activeRoute.episode,
-        season: activeRoute.season,
-        tmdbId: activeRoute.tmdbId,
+        episode: route.episode,
+        season: route.season,
+        tmdbId: route.tmdbId,
         type: 'tv' as const,
-      };
-    return {
-      ...base,
-      server: server !== 'default' ? server : undefined,
-      subtitle: subtitle !== 'off' ? subtitle : undefined,
-    };
-  }, [activeRoute, server, subtitle]);
-
-  useEffect(() => {
-    if (isTVMode()) {
-      document.documentElement.classList.add('daitign-tv-watching');
-      if (typeof window !== 'undefined' && window.AndroidTVBridge?.startTvPlayer) {
-        saveTvBrowseState();
-        const vidstuckUrl = buildVidStuckUrl(playerOptions);
-        window.AndroidTVBridge.startTvPlayer(vidstuckUrl, JSON.stringify(activeRoute));
       }
-      return () => {
-        document.documentElement.classList.remove('daitign-tv-watching');
-      };
-    }
-  }, [activeRoute, playerOptions]);
+  ), [route]);
 
   useEffect(() => {
     if (navigationState?.title) {
@@ -74,7 +43,7 @@ export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
     let active = true;
     setTitleLoading(true);
     setValidationComplete(false);
-    getMediaDetails({ catalogCategory: activeRoute.type, playbackType: activeRoute.type, tmdbId: activeRoute.tmdbId })
+    getMediaDetails({ catalogCategory: route.type, playbackType: route.type, tmdbId: route.tmdbId })
       .then((details) => {
         if (active) {
           setResolvedTitle(details.title);
@@ -94,10 +63,10 @@ export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
         }
       });
     return () => { active = false; };
-  }, [navigationState?.title, activeRoute.tmdbId, activeRoute.type]);
+  }, [navigationState?.title, route.tmdbId, route.type]);
 
-  const episodeLabel = activeRoute.type === 'tv'
-    ? navigationState?.episodeLabel ?? `Season ${activeRoute.season} · Episode ${activeRoute.episode}`
+  const episodeLabel = route.type === 'tv'
+    ? navigationState?.episodeLabel ?? `Season ${route.season} · Episode ${route.episode}`
     : 'Feature presentation';
 
   const handleBack = () => {
@@ -111,8 +80,7 @@ export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
 
   return (
     <main className="watch-page">
-      {!isTVMode() && (
-        <header className="watch-page__header">
+      <header className="watch-page__header">
           <IconButton aria-label="Back to browse" onClick={handleBack} size="md" tone="glass" tooltip="Back">
             <Icon name="chevronLeft" size={23} />
           </IconButton>
@@ -121,17 +89,12 @@ export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
             {titleLoading ? <Skeleton height="1.2rem" width="12rem" /> : <h1>{resolvedTitle}</h1>}
             <p>{episodeLabel}</p>
           </div>
-        </header>
-      )}
-      <section aria-label="Video playback" className="watch-page__stage" ref={stageRef}>
+      </header>
+      <section aria-label="Video playback" className="watch-page__stage">
         {!validationComplete ? (
           <Skeleton className="watch-page__player-skeleton" radius="lg" />
         ) : isRouteValid ? (
-          <VidStuckPlayer
-            options={playerOptions}
-            ref={playerHandleRef}
-            title={resolvedTitle || 'DAITIGN title'}
-          />
+          <VidStuckPlayer options={playerOptions} title={resolvedTitle || 'DAITIGN title'} />
         ) : (
           <div className="watch-page__invalid" role="alert">
             <span>Playback unavailable</span>
@@ -142,4 +105,3 @@ export function WatchPage({ navigationState, onExit, route }: WatchPageProps) {
     </main>
   );
 }
-

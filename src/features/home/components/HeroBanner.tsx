@@ -117,7 +117,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
           {item.overview && <p className="hero-banner__overview">{item.overview}</p>}
 
           {/* Action Buttons */}
-          <div className="hero-banner__actions">
+          <div className="hero-banner__actions" data-tv-row>
             <Button
               className="hero-banner__play-button"
               data-tv-focusable="true"
@@ -173,4 +173,3 @@ export function HeroBanner({ item }: HeroBannerProps) {
     </section>
   );
 }
-

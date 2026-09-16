@@ -22,6 +22,7 @@ export function shouldAutoplayHoverPreview({
 }
 
 function getEligibility() {
+  if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return false;
   if (isTVMode()) return true;
   return shouldAutoplayHoverPreview({
     hasFinePointer: window.matchMedia(FINE_POINTER_QUERY).matches,
@@ -31,7 +32,7 @@ function getEligibility() {
 }
 
 export function usePreviewPlaybackEligibility() {
-  const [isEligible, setIsEligible] = useState(() => (typeof window !== 'undefined' ? isTVMode() : false));
+  const [isEligible, setIsEligible] = useState(() => (typeof window !== 'undefined' ? getEligibility() : false));
 
   useEffect(() => {
     const finePointer = window.matchMedia(FINE_POINTER_QUERY);

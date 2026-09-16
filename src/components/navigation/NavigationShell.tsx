@@ -168,7 +168,7 @@ export function NavigationShell({
         className={cx('top-navigation', isScrolled && 'top-navigation--scrolled')}
         ref={navRef}
       >
-        <div className="container top-navigation__inner">
+        <div className="container top-navigation__inner" data-tv-row>
           <div className="top-navigation__start">
             <BrandMark />
 

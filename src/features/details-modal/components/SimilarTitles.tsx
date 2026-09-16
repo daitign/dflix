@@ -94,6 +94,7 @@ export function SimilarTitles({ items, onSelect }: SimilarTitlesProps) {
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Show fewer titles' : 'Show more titles'}
             className="similar-expand-button"
+            data-tv-focusable="true"
             onClick={() => setIsExpanded((current) => !current)}
             type="button"
           >

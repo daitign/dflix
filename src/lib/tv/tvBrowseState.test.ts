@@ -8,26 +8,26 @@ test('1. TV Browse State: saves and retrieves custom browse state in memory', ()
   assert.equal(getTvBrowseState(), null);
 
   const saved = saveTvBrowseState({
-    route: '/shows',
+    route: '/?tv=1#shows',
     scrollY: 450,
-    activeRowId: 'trending-tv',
-    rowScrollLeft: 320,
-    focusedMediaId: 105,
+    focusedRowId: 'trending-tv',
+    rowScrollPositions: { 'trending-tv': 320 },
+    focusedMediaId: '105',
     focusedCardIndex: 2,
   });
 
-  assert.equal(saved.route, '/shows');
+  assert.equal(saved.route, '/?tv=1#shows');
   assert.equal(saved.scrollY, 450);
-  assert.equal(saved.activeRowId, 'trending-tv');
-  assert.equal(saved.rowScrollLeft, 320);
-  assert.equal(saved.focusedMediaId, 105);
+  assert.equal(saved.focusedRowId, 'trending-tv');
+  assert.equal(saved.rowScrollPositions['trending-tv'], 320);
+  assert.equal(saved.focusedMediaId, '105');
   assert.equal(saved.focusedCardIndex, 2);
 
   const retrieved = getTvBrowseState();
   assert.ok(retrieved);
-  assert.equal(retrieved?.route, '/shows');
+  assert.equal(retrieved?.route, '/?tv=1#shows');
   assert.equal(retrieved?.scrollY, 450);
-  assert.equal(retrieved?.focusedMediaId, 105);
+  assert.equal(retrieved?.focusedMediaId, '105');
 });
 
 test('2. TV Browse State: clearTvBrowseState cleans up saved state', () => {

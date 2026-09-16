@@ -47,8 +47,8 @@ export function MediaRow({ items, mode = 'standard', row, title }: MediaRowProps
         >
           {resolvedItems.map((item, index) => {
             if (isRanked) return <RankedMediaCard item={item} key={item.id} rank={index + 1} />;
-            if (isContinue) return <ContinueWatchingCard item={item} key={item.id} />;
-            return <MediaCard item={item} key={item.id} />;
+            if (isContinue) return <ContinueWatchingCard cardIndex={index} item={item} key={item.id} />;
+            return <MediaCard cardIndex={index} item={item} key={item.id} />;
           })}
         </CarouselShell>
       </Container>

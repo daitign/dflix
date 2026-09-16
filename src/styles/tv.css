@@ -1,790 +1,348 @@
-/**
- * Google TV / Android TV Refined Styles
- * Scoped strictly to html.daitign-tv to guarantee zero impact on desktop, tablet, and mobile.
- */
-
-/* ==========================================================================
-   1. 10-Foot Responsive Viewing Distance Typography & Layout
-   ========================================================================== */
-
-/* 720p HD base */
+/* DAITIGN TV is an explicit presentation mode. Every override is scoped here. */
 html.daitign-tv {
-  font-size: 15px;
+  --tv-gutter: clamp(2rem, 3.2vw, 7rem);
+  --tv-gap: clamp(0.55rem, 0.75vw, 1.5rem);
+  --container-gutter: var(--tv-gutter);
+  --items-per-page: 6;
+  font-size: clamp(14px, 0.9vw, 34px);
   overflow-x: hidden;
   user-select: none;
-  -webkit-user-select: none;
-  --items-per-page: 6;
-  --carousel-gap: clamp(10px, 1.2vw, 16px);
-}
-
-/* 1080p Full HD (Sharp Google TV standard: calibrated 12.5% reduction from 20px) */
-@media (min-width: 1600px) {
-  html.daitign-tv {
-    font-size: 17.5px;
-    --items-per-page: 6;
-    --carousel-gap: clamp(10px, 1.2vw, 16px);
-  }
-}
-
-/* 1440p QHD displays */
-@media (min-width: 2560px) {
-  html.daitign-tv {
-    font-size: 24px;
-    --items-per-page: 6;
-    --carousel-gap: clamp(12px, 1.2vw, 18px);
-  }
-}
-
-/* 4K UHD displays */
-@media (min-width: 3840px) {
-  html.daitign-tv {
-    font-size: 32px;
-    --items-per-page: 7;
-    --carousel-gap: clamp(14px, 1.2vw, 20px);
-  }
 }
 
 html.daitign-tv body {
-  /* Safe overscan margins for TV displays (prevents bezel clipping on home & browse) */
-  padding: 1.5vh 2.5vw;
-  box-sizing: border-box;
-  background-color: #141414;
+  min-width: 0;
+  overflow-x: hidden;
+  background: #141414;
 }
 
-/* ==========================================================================
-   2. Premium Minimal DAITIGN TV Focus Treatment
-   ========================================================================== */
-
-/* Universal focus-visible for interactive TV controls */
-html.daitign-tv button:focus-visible,
-html.daitign-tv a:focus-visible,
-html.daitign-tv input:focus-visible,
-html.daitign-tv select:focus-visible,
-html.daitign-tv [tabindex="0"]:focus-visible {
-  outline: none !important;
-  border-color: transparent !important;
+/* Only explicitly registered controls receive the 10-foot focus treatment. */
+html.daitign-tv [data-tv-focusable='true']:focus-visible {
+  z-index: 20;
+  outline: 0 !important;
+  filter: brightness(1.06);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 14px rgb(255 255 255 / 14%) !important;
   transform: scale(1.02) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 14px rgba(225, 190, 105, 0.22) !important;
-  filter: brightness(1.07);
-  border-radius: 6px;
-  will-change: transform;
-  transition: transform 0.14s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.14s ease, filter 0.14s ease;
-}
-
-/* Player iframe in watch mode must NEVER have focus outlines or transforms */
-html.daitign-tv iframe:focus-visible,
-html.daitign-tv [data-tv-player]:focus-visible,
-html.daitign-tv .vidstuck-frame iframe:focus-visible {
-  outline: none !important;
-  transform: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-/* Prevent container double-scale while elevating focused card above neighbors */
-html.daitign-tv .media-card,
-html.daitign-tv .ranked-card,
-html.daitign-tv .continue-card {
-  transform: none !important;
-  transition: z-index 0.14s ease;
+  transition: filter 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
 html.daitign-tv .media-card:focus-within,
 html.daitign-tv .ranked-card:focus-within,
 html.daitign-tv .continue-card:focus-within {
-  z-index: 25 !important;
   position: relative;
+  z-index: 20;
 }
 
-/* Interactive card surface focus: borderless subtle scale + brightness elevation */
 html.daitign-tv .media-card__surface:focus-visible,
 html.daitign-tv .ranked-card__poster-anchor:focus-visible,
 html.daitign-tv .continue-card__surface:focus-visible {
-  outline: none !important;
-  border: none !important;
-  border-color: transparent !important;
-  transform: scale(1.018) !important;
-  filter: brightness(1.06) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(255, 255, 255, 0.12) !important;
-  border-radius: 6px !important;
+  border: 0 !important;
+  border-radius: 5px;
+  filter: brightness(1.06);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 14px rgb(255 255 255 / 12%) !important;
+  transform: scale(1.02) !important;
 }
 
-html.daitign-tv .media-card:focus-within .media-card__shade,
-html.daitign-tv .ranked-card:focus-within .ranked-card__shade,
-html.daitign-tv .continue-card:focus-within .continue-card__shade {
-  opacity: 0.12 !important;
-}
-
-/* ==========================================================================
-   2b. TV Hover Preview Card Timing & Presentation
-   Authentic Netflix TV 16:9 cinematic landscape preview tile (no body popup)
-   ========================================================================== */
-
-html.daitign-tv .hover-preview-card {
-  border-radius: 8px !important;
-  outline: none !important;
-  border: none !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 16px rgba(0, 0, 0, 0.5) !important;
-  background: #141414 !important;
-  overflow: hidden !important;
-  cursor: pointer !important;
-  transition: transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1), opacity 200ms ease !important;
-}
-
-html.daitign-tv .hover-preview-card--open {
-  animation: tv-hover-preview-enter 240ms cubic-bezier(0.2, 0.9, 0.3, 1) both !important;
-}
-
-@keyframes tv-hover-preview-enter {
-  0% {
-    opacity: 0.82;
-    transform: scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-html.daitign-tv .hover-preview-card__body {
-  display: none !important;
-}
-
-html.daitign-tv .hover-preview-card__media {
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: inherit !important;
-  position: relative !important;
-}
-
-html.daitign-tv .hover-preview-card__media .responsive-image {
-  width: 100% !important;
-  height: 100% !important;
-  aspect-ratio: 16 / 9 !important;
-}
-
-/* TV Modest Preview: title + single metadata line overlay at bottom */
-html.daitign-tv .hover-preview-card__media > h2 {
-  display: none !important;
-}
-
-html.daitign-tv .hover-preview-card__tv-info {
-  position: absolute !important;
-  z-index: 4 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  padding: clamp(0.4rem, 1vh, 0.65rem) clamp(0.6rem, 1.2vw, 0.9rem) !important;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.65) 55%, transparent 100%) !important;
-  pointer-events: none !important;
-}
-
-html.daitign-tv .hover-preview-card__tv-title {
-  font-size: clamp(0.88rem, 1.2vw, 1.05rem) !important;
-  font-weight: 700 !important;
-  color: #ffffff !important;
-  margin: 0 0 0.2rem 0 !important;
-  line-height: 1.2 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9) !important;
-}
-
-html.daitign-tv .hover-preview-card__tv-meta {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.35rem !important;
-  font-size: 0.74rem !important;
-  font-weight: 500 !important;
-  color: rgba(255, 255, 255, 0.78) !important;
-  white-space: nowrap !important;
-}
-
-html.daitign-tv .hover-preview-card__tv-dot {
-  color: rgba(255, 255, 255, 0.45) !important;
-}
-
-html.daitign-tv .hover-preview-card__tv-rating {
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  border-radius: 2px !important;
-  padding: 0 0.25rem !important;
-  font-size: 0.66rem !important;
-  line-height: 1.3 !important;
-}
-
-/* ==========================================================================
-   3. Slim Top Navigation Bar
-   ========================================================================== */
-
+/* Slim top navigation. */
 html.daitign-tv .top-navigation {
-  height: clamp(2.6rem, 4.4vh, 3.2rem) !important;
-}
-
-html.daitign-tv .navigation-shell__header {
-  padding-top: 0.2rem !important;
-  padding-bottom: 0.2rem !important;
+  height: clamp(3.25rem, 6vh, 4.4rem);
 }
 
 html.daitign-tv .top-navigation__inner {
-  gap: clamp(1.2rem, 2.2vw, 2.2rem) !important;
+  gap: clamp(1rem, 1.8vw, 2.8rem);
 }
 
 html.daitign-tv .brand-mark__wordmark {
-  width: clamp(5.4rem, 6.4vw, 6.8rem) !important;
-  height: auto !important;
-}
-
-html.daitign-tv .brand-mark__monogram {
-  width: 1.15rem !important;
-  height: 1.55rem !important;
+  width: clamp(6.5rem, 8vw, 13rem);
 }
 
 html.daitign-tv .top-navigation__links {
-  gap: clamp(0.25rem, 0.6vw, 0.6rem) !important;
+  gap: clamp(0.1rem, 0.35vw, 0.65rem);
 }
 
 html.daitign-tv .top-navigation__link {
-  font-size: 0.82rem !important;
-  padding: 0.22rem 0.65rem !important;
-  border-radius: 6px !important;
+  padding: 0.35rem 0.6rem;
+  font-size: clamp(0.78rem, 0.85vw, 1.1rem);
 }
 
-html.daitign-tv .top-navigation__link[aria-current='page'],
-html.daitign-tv .top-navigation__link--active {
-  background: rgba(60, 60, 60, 0.85) !important;
-}
-
-html.daitign-tv .top-navigation__vip-btn {
-  height: 1.65rem !important;
-  padding: 0 0.6rem !important;
-  font-size: 0.74rem !important;
-}
-
-/* ==========================================================================
-   4. Hero Banner: Ultra-Compact Panoramic 50–54vh Netflix-Style Layout
-   ========================================================================== */
-
-html.daitign-tv .hero-banner {
-  min-height: clamp(18rem, 48vh, 26rem) !important;
-  max-height: 54vh !important;
-  height: 50vh !important;
+/* Compact cinematic hero: 48–55vh at every TV resolution. */
+html.daitign-tv .hero-banner,
+html.daitign-tv .hero-banner__content,
+html.daitign-tv .browse-loading__hero {
+  width: 100%;
+  height: clamp(21rem, 54vh, 42rem);
+  min-height: clamp(21rem, 54vh, 42rem);
+  max-height: 55vh;
 }
 
 html.daitign-tv .hero-banner__content {
-  min-height: clamp(18rem, 48vh, 26rem) !important;
-  max-height: 54vh !important;
-  height: 50vh !important;
-  padding-top: clamp(1.6rem, 3.2vh, 2.4rem) !important;
-  padding-bottom: clamp(0.75rem, 1.5vh, 1.25rem) !important;
-  align-items: flex-end !important;
+  align-items: flex-end;
+  padding-top: clamp(3.25rem, 6vh, 4.4rem);
+  padding-bottom: clamp(1.2rem, 2.4vh, 2.2rem);
 }
 
 html.daitign-tv .hero-banner__copy {
-  padding-top: 0 !important;
-  margin-bottom: 0.45rem !important;
-  width: min(100%, 46rem) !important;
-  max-width: 46rem !important;
+  width: min(43vw, 42rem);
+  padding-top: 0;
 }
 
-html.daitign-tv .hero-banner__badge {
-  gap: 0.35rem !important;
-  margin-bottom: 0.25rem !important;
-}
-
-html.daitign-tv .hero-banner__n-glyph {
-  font-size: 1.12rem !important;
-}
-
-html.daitign-tv .hero-banner__format-label {
-  font-size: 0.68rem !important;
-  letter-spacing: 0.20em !important;
-}
-
-html.daitign-tv .hero-banner__title,
-html.daitign-tv .hero-banner__logo-title {
-  margin-bottom: 0.30rem !important;
+html.daitign-tv .hero-banner__badge,
+html.daitign-tv .hero-banner__top-ten {
+  margin-bottom: clamp(0.25rem, 0.55vh, 0.6rem);
 }
 
 html.daitign-tv .hero-banner__logo-title {
-  width: min(100%, 19.5rem) !important;
+  width: min(24vw, 23rem);
+  margin-bottom: clamp(0.35rem, 0.75vh, 0.75rem);
 }
 
 html.daitign-tv .hero-banner__logo-title img {
-  max-height: 5.2rem !important; /* Scaled down ~25% from 7rem */
+  max-height: clamp(4rem, 9vh, 7rem);
 }
 
 html.daitign-tv .hero-banner__text-title {
-  font-size: clamp(1.55rem, 2.6vw, 2.25rem) !important;
-  line-height: 1.12 !important;
-  margin-bottom: 0.30rem !important;
+  margin-bottom: 0.5rem;
+  font-size: clamp(2rem, 3.2vw, 4.8rem);
 }
 
-html.daitign-tv .hero-banner__top-ten {
-  gap: 0.4rem !important;
-  margin-bottom: 0.30rem !important;
-}
-
-html.daitign-tv .hero-banner__top-ten-badge {
-  width: 1.2rem !important;
-  height: 1.2rem !important;
-}
-
-html.daitign-tv .hero-banner__top-ten-text {
-  font-size: 0.85rem !important;
-}
-
-html.daitign-tv .hero-banner__synopsis,
 html.daitign-tv .hero-banner__overview {
-  font-size: 0.88rem !important;
-  line-height: 1.34 !important;
-  max-width: 50ch !important;
-  -webkit-line-clamp: 2 !important;
-  display: -webkit-box !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  margin-bottom: 0.45rem !important;
+  max-width: 48ch;
+  margin-bottom: clamp(0.55rem, 1.1vh, 1rem);
+  font-size: clamp(0.84rem, 0.9vw, 1.25rem);
+  line-height: 1.36;
+  -webkit-line-clamp: 2;
 }
 
 html.daitign-tv .hero-banner__actions {
-  gap: 0.65rem !important;
-  margin-top: 0.45rem !important;
+  gap: clamp(0.45rem, 0.6vw, 0.8rem);
 }
 
-html.daitign-tv .hero-banner__actions button,
-html.daitign-tv .hero-banner__actions a {
-  font-size: 0.86rem !important;
-  padding: 0.38rem 1.15rem !important;
-  border-radius: 6px !important;
+html.daitign-tv .hero-banner__actions .button {
+  min-height: 2.25rem;
+  padding: 0.45rem 1rem;
+  font-size: clamp(0.8rem, 0.85vw, 1.1rem);
 }
 
 html.daitign-tv .hero-banner__rail {
-  bottom: clamp(1.8rem, 3.6vh, 2.6rem) !important;
-  right: 2vw !important;
-  gap: 0.55rem !important;
+  right: var(--tv-gutter);
+  bottom: clamp(1.4rem, 3vh, 2.5rem);
 }
 
-html.daitign-tv .hero-banner__audio-toggle {
-  width: 2.2rem !important;
-  height: 2.2rem !important;
-}
-
-html.daitign-tv .hero-banner__rating-strip {
-  padding: 0.22rem 0.60rem 0.22rem 0.45rem !important;
-  font-size: 0.78rem !important;
-}
-
-/* Seamless bottom fade into the first content row */
 html.daitign-tv .hero-banner__wash {
   background:
-    linear-gradient(77deg, rgba(20, 20, 20, 0.92) 0%, rgba(20, 20, 20, 0.52) 42%, transparent 72%),
-    linear-gradient(180deg,
-      rgba(20, 20, 20, 0.65) 0%,
-      transparent 18%,
-      transparent 45%,
-      rgba(20, 20, 20, 0.62) 68%,
-      #141414 90%,
-      #141414 100%
-    ) !important;
+    linear-gradient(77deg, rgb(20 20 20 / 90%) 0%, rgb(20 20 20 / 48%) 43%, transparent 73%),
+    linear-gradient(180deg, rgb(20 20 20 / 55%) 0%, transparent 24%, transparent 60%, #141414 100%);
 }
 
-/* Panoramic trailer video framing across compact 50–54vh Hero */
 html.daitign-tv .hero-banner__trailer-mount,
 html.daitign-tv .hero-banner__trailer iframe {
-  width: 100vw !important;
-  height: 56.25vw !important;
-  min-width: 100% !important;
-  min-height: 100% !important;
-  transform: translate(-50%, -46%) scale(1.15) !important;
+  transform: translate(-50%, -50%) scale(1.16);
 }
 
-/* First Row Proximity: clean spacing without negative overlap into Hero */
-html.daitign-tv .browse-catalog {
-  margin-top: clamp(0.25rem, 0.8vh, 0.75rem) !important;
+/* Rows sit naturally below the hero; no overlap or negative spacing. */
+html.daitign-tv .browse-catalog,
+html.daitign-tv .browse-loading__catalog {
+  margin-top: 0;
+  padding-top: clamp(0.6rem, 1.2vh, 1rem);
 }
 
 html.daitign-tv .top-ten-feature {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
+  margin-bottom: 0;
+  padding-bottom: 3vh;
 }
-
-html.daitign-tv .top-ten-feature .section-header,
-html.daitign-tv .top-ten-feature .media-row .section-header {
-  margin-bottom: 0.30rem !important;
-}
-
-/* ==========================================================================
-   5. Rows & Carousels Sizing on TV (Compact, 5-7 Cards Visible per Row)
-   ========================================================================== */
 
 html.daitign-tv .media-row,
 html.daitign-tv .media-row--featured,
-html.daitign-tv .media-row--compact,
-html.daitign-tv .carousel-shell {
-  margin-bottom: clamp(1.2rem, 2.2vh, 1.6rem) !important;
+html.daitign-tv .media-row--compact {
+  margin-bottom: clamp(1.1rem, 2.4vh, 2.2rem);
 }
 
-html.daitign-tv .section-header,
-html.daitign-tv .media-row .section-header {
-  margin-bottom: 0.35rem !important;
-}
-
-html.daitign-tv .section-header__title,
-html.daitign-tv .media-row .section-header__title,
-html.daitign-tv .carousel-shell__heading {
-  font-size: clamp(1.05rem, 1.45vw, 1.25rem) !important;
-  font-weight: 700 !important;
-  margin-bottom: 0.35rem !important;
-  letter-spacing: -0.01em !important;
-}
-
-/* Ensure row containers, carousels, tracks, and headings never receive focus styling or outlines */
-html.daitign-tv .media-row,
-html.daitign-tv .media-row:focus,
-html.daitign-tv .media-row:focus-visible,
-html.daitign-tv .carousel-shell,
-html.daitign-tv .carousel-shell:focus,
-html.daitign-tv .carousel-shell:focus-visible,
-html.daitign-tv .carousel-shell__track,
-html.daitign-tv .carousel-shell__track:focus,
-html.daitign-tv .carousel-shell__track:focus-visible,
-html.daitign-tv .carousel-shell__item,
-html.daitign-tv .carousel-shell__item:focus,
-html.daitign-tv .carousel-shell__item:focus-visible,
-html.daitign-tv .section-header,
-html.daitign-tv .section-header:focus,
-html.daitign-tv .section-header:focus-visible,
-html.daitign-tv .section-header__title,
-html.daitign-tv .section-header__title:focus,
-html.daitign-tv .section-header__title:focus-visible,
-html.daitign-tv .netflix-badge,
-html.daitign-tv .netflix-badge:focus,
-html.daitign-tv .netflix-badge:focus-visible,
-html.daitign-tv h1,
-html.daitign-tv h2,
-html.daitign-tv h3,
-html.daitign-tv h4,
-html.daitign-tv h5,
-html.daitign-tv h6 {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  user-select: none !important;
+html.daitign-tv .section-header {
+  margin-bottom: clamp(0.25rem, 0.5vh, 0.5rem);
 }
 
 html.daitign-tv .section-header__title,
-html.daitign-tv .section-header,
-html.daitign-tv .section-header__explore {
-  cursor: default !important;
-  pointer-events: none !important;
+html.daitign-tv .media-row .section-header__title {
+  font-size: clamp(1.05rem, 1.25vw, 1.8rem);
 }
 
-/* Hide desktop-only hover carousel arrows on TV */
 html.daitign-tv .carousel-shell__paddle,
-html.daitign-tv .carousel-shell__control {
-  display: none !important;
-}
-
-/* Smooth track scrolling for D-pad navigation */
-html.daitign-tv .carousel-shell__track {
-  gap: var(--carousel-gap, clamp(10px, 1.2vw, 16px)) !important;
-  grid-auto-columns: calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 14px))) / var(--items-per-page, 6)) !important;
-  scroll-behavior: smooth !important;
-  overflow-x: hidden !important;
-  scrollbar-width: none;
-}
-
-html.daitign-tv .carousel-shell__track::-webkit-scrollbar {
+html.daitign-tv .carousel-shell__pagination {
   display: none;
 }
 
-/* Scaled Top 10 Ranked Cards on TV: proportional number + poster composition */
+html.daitign-tv .carousel-shell__track {
+  gap: var(--tv-gap);
+  grid-auto-columns: calc((100% - (5 * var(--tv-gap))) / 6);
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: none;
+}
+
 html.daitign-tv .carousel-shell--ranked {
-  --carousel-gap: clamp(10px, 1.2vw, 16px) !important;
-  --rank-card-height: clamp(8.5rem, 11.5vw, 11.5rem) !important;
-}
-
-html.daitign-tv .carousel-shell--ranked .carousel-shell__track {
-  grid-auto-columns: max-content !important;
-}
-
-/* Loading skeleton layout density parity with real catalog */
-html.daitign-tv .browse-loading__hero {
-  min-height: clamp(18rem, 48vh, 26rem) !important;
-  max-height: 54vh !important;
-  height: 50vh !important;
-}
-
-html.daitign-tv .browse-loading__hero-container {
-  padding-top: clamp(1.6rem, 3.2vh, 2.4rem) !important;
-  padding-bottom: clamp(0.75rem, 1.5vh, 1.25rem) !important;
-}
-
-html.daitign-tv .browse-loading__catalog {
-  gap: clamp(1.2rem, 2.2vh, 1.6rem) !important;
-  margin-top: clamp(0.25rem, 0.8vh, 0.75rem) !important;
+  --rank-card-height: clamp(9rem, 19vh, 15rem);
+  --carousel-gap: var(--tv-gap);
 }
 
 html.daitign-tv .browse-loading__track {
-  gap: var(--carousel-gap, clamp(10px, 1.2vw, 16px)) !important;
-  grid-auto-columns: calc((100% - ((var(--items-per-page, 6) - 1) * var(--carousel-gap, 14px))) / var(--items-per-page, 6)) !important;
+  gap: var(--tv-gap);
+  grid-auto-columns: calc((100% - (5 * var(--tv-gap))) / 6);
 }
 
-/* ==========================================================================
-   6. TV Details Modal: Centered Desktop Cinematic Layout & Compact Density
-   ========================================================================== */
+/* Focus preview: 16:9, modest expansion, no metadata panel. */
+html.daitign-tv .hover-preview-card {
+  overflow: hidden;
+  border: 0;
+  border-radius: 7px;
+  background: #141414;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 78%);
+}
 
-html.daitign-tv .modal-shell--center,
+html.daitign-tv .hover-preview-card--open {
+  animation: tv-preview-in 200ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+html.daitign-tv .hover-preview-card__media,
+html.daitign-tv .hover-preview-card__media .responsive-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+html.daitign-tv .hover-preview-card__body {
+  display: none;
+}
+
+html.daitign-tv .hover-preview-card__tv-info {
+  position: absolute;
+  z-index: 4;
+  inset: auto 0 0;
+  padding: clamp(0.55rem, 1vw, 1rem);
+  background: linear-gradient(to top, rgb(0 0 0 / 92%), transparent);
+  pointer-events: none;
+}
+
+html.daitign-tv .hover-preview-card__tv-title {
+  margin: 0 0 0.15rem;
+  overflow: hidden;
+  color: #fff;
+  font-size: clamp(0.85rem, 1vw, 1.35rem);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.daitign-tv .hover-preview-card__tv-meta {
+  display: flex;
+  gap: 0.35rem;
+  color: rgb(255 255 255 / 76%);
+  font-size: clamp(0.68rem, 0.72vw, 0.95rem);
+}
+
+@keyframes tv-preview-in {
+  from { opacity: .72; transform: scale(.96); }
+}
+
+/* Reuse the web details modal at TV density. */
 html.daitign-tv .modal-shell--cinematic {
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 2vh 3vw !important;
-  background: rgba(0, 0, 0, 0.84) !important;
-  overflow: hidden !important;
+  align-items: center;
+  padding: 4vh 3vw;
+  background: rgb(0 0 0 / 84%);
 }
 
 html.daitign-tv .modal-shell__panel--cinematic {
-  width: min(76vw, 56rem) !important;
-  max-width: 76vw !important;
-  height: auto !important;
-  max-height: 85vh !important;
-  margin: auto !important;
-  border-radius: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  background: #0f1216 !important;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  animation-name: modal-panel-in !important;
-  transform: none !important;
-  overflow: hidden !important;
+  width: min(78vw, 92rem);
+  max-height: 86vh;
+  border-radius: clamp(0.6rem, 0.8vw, 1.2rem);
 }
 
 html.daitign-tv .modal-shell__panel--cinematic .modal-shell__body,
 html.daitign-tv .details-modal {
-  max-height: 85vh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-width: none !important;
+  max-height: 86vh;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
 html.daitign-tv .modal-shell__panel--cinematic .modal-shell__body::-webkit-scrollbar,
 html.daitign-tv .details-modal::-webkit-scrollbar {
-  display: none !important;
+  display: none;
 }
 
-/* Details Hero inside Modal */
-html.daitign-tv .details-hero {
-  min-height: clamp(12rem, 30vh, 18rem) !important;
-  max-height: 32vh !important;
+html.daitign-tv .details-hero,
+html.daitign-tv .details-loading__hero {
+  min-height: clamp(14rem, 33vh, 27rem);
+  max-height: 35vh;
 }
 
 html.daitign-tv .details-hero__content {
-  right: clamp(1.2rem, 3vw, 2.5rem) !important;
-  bottom: clamp(1rem, 2vh, 1.8rem) !important;
-  left: clamp(1.2rem, 3vw, 2.5rem) !important;
-}
-
-html.daitign-tv .details-hero__title {
-  font-size: clamp(1.4rem, 2.2vw, 1.85rem) !important;
-  font-weight: 800 !important;
-  line-height: 1.1 !important;
-  margin-bottom: 0.4rem !important;
+  right: clamp(1.5rem, 3vw, 3.5rem);
+  bottom: clamp(1rem, 2.2vh, 2rem);
+  left: clamp(1.5rem, 3vw, 3.5rem);
 }
 
 html.daitign-tv .details-hero__logo {
-  max-height: 4.5rem !important;
-  margin-bottom: 0.4rem !important;
+  max-height: clamp(3.5rem, 8vh, 6rem);
+  margin-bottom: 0.6rem;
 }
 
-html.daitign-tv .details-hero__actions {
-  gap: 0.65rem !important;
-}
-
-html.daitign-tv .details-hero__actions button {
-  font-size: 0.85rem !important;
-  padding: 0.4rem 1.1rem !important;
-}
-
-/* Details Content & Metadata */
 html.daitign-tv .details-modal__content {
-  padding: 0 clamp(1.2rem, 2.5vw, 2rem) clamp(1.2rem, 3vh, 2.2rem) !important;
+  padding: 0 clamp(1.5rem, 3vw, 3.5rem) clamp(1.5rem, 3vh, 3rem);
 }
 
 html.daitign-tv .details-metadata {
-  grid-template-columns: minmax(0, 1.65fr) minmax(12rem, 0.85fr) !important;
-  gap: clamp(1rem, 2vw, 1.6rem) !important;
-  padding: 0.4rem 0 clamp(1rem, 2vh, 1.5rem) !important;
-}
-
-html.daitign-tv .details-metadata__facts {
-  min-height: 1.35rem !important;
-  font-size: 0.88rem !important;
-  gap: 0.45rem !important;
-}
-
-html.daitign-tv .details-metadata__match {
-  font-size: 0.92rem !important;
-}
-
-html.daitign-tv .details-metadata__synopsis {
-  font-size: 0.86rem !important;
-  line-height: 1.42 !important;
-  max-width: 52ch !important;
-  margin-top: 0.6rem !important;
-}
-
-html.daitign-tv .details-metadata__credits {
-  font-size: 0.78rem !important;
-  line-height: 1.42 !important;
-  gap: 0.45rem !important;
-}
-
-html.daitign-tv .details-section {
-  margin-top: 1rem !important;
-  margin-bottom: 1rem !important;
-}
-
-html.daitign-tv .details-section h3 {
-  font-size: 1.05rem !important;
-  font-weight: 700 !important;
-  margin-bottom: 0.55rem !important;
-}
-
-/* Compact Episode Rows (10–15% height reduction) */
-html.daitign-tv .episode-row {
-  padding: 0 !important;
-  border-radius: 6px !important;
+  gap: clamp(1rem, 2vw, 2.5rem);
+  padding-block: clamp(0.65rem, 1.5vh, 1.5rem);
 }
 
 html.daitign-tv .episode-row > button {
-  padding: 0.45rem 0.75rem !important;
-  gap: 0.75rem !important;
-  grid-template-columns: 1.8rem clamp(7.5rem, 14vw, 9.5rem) minmax(0, 1fr) !important;
-  border-radius: 6px !important;
-}
-
-html.daitign-tv .episode-row > button:focus-visible {
-  outline: none !important;
-  transform: scale(1.02) !important;
-  filter: brightness(1.07) !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(225, 190, 105, 0.22) !important;
-  background: rgba(255, 255, 255, 0.09) !important;
-  border-radius: 6px !important;
-}
-
-html.daitign-tv .episode-row__still {
-  border-radius: 4px !important;
-}
-
-html.daitign-tv .episode-row__title {
-  font-size: 0.95rem !important;
-  font-weight: 700 !important;
-}
-
-html.daitign-tv .episode-row__overview {
-  font-size: 0.85rem !important;
-  line-height: 1.4 !important;
-  -webkit-line-clamp: 2 !important;
-  display: -webkit-box !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-}
-
-html.daitign-tv .season-selector select {
-  font-size: 0.95rem !important;
-  padding: 0.4rem 1rem !important;
-  border-radius: 6px !important;
-}
-
-html.daitign-tv .season-selector select:focus-visible {
-  outline: none !important;
-  transform: scale(1.02) !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 12px rgba(225, 190, 105, 0.22) !important;
+  padding: clamp(0.45rem, 0.8vh, 0.75rem);
 }
 
 html.daitign-tv .similar-grid,
 html.daitign-tv .trailers-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: clamp(0.75rem, 1.2vw, 1.25rem) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-html.daitign-tv .similar-card,
-html.daitign-tv .trailer-card {
-  border-radius: 6px !important;
+/* Native TV playback does not use the nested web player. */
+html.daitign-tv.daitign-tv-watching body {
+  overflow: hidden;
+  background: #000;
 }
 
-html.daitign-tv .similar-card__content {
-  padding: 0.75rem !important;
+@media (max-width: 1400px) {
+  html.daitign-tv {
+    --tv-gutter: clamp(1.5rem, 3vw, 3rem);
+    --items-per-page: 5;
+    font-size: clamp(13px, 1.05vw, 16px);
+  }
+
+  html.daitign-tv .carousel-shell__track,
+  html.daitign-tv .browse-loading__track {
+    grid-auto-columns: calc((100% - (4 * var(--tv-gap))) / 5);
+  }
+
+  html.daitign-tv .hero-banner,
+  html.daitign-tv .hero-banner__content,
+  html.daitign-tv .browse-loading__hero {
+    height: 54vh;
+    min-height: 54vh;
+  }
 }
 
-html.daitign-tv .details-modal__close-wrap {
-  top: 1.25rem !important;
-  right: 1.25rem !important;
+@media (min-width: 3000px) {
+  html.daitign-tv {
+    --items-per-page: 7;
+  }
+
+  html.daitign-tv .carousel-shell__track,
+  html.daitign-tv .browse-loading__track {
+    grid-auto-columns: calc((100% - (6 * var(--tv-gap))) / 7);
+  }
 }
 
-html.daitign-tv .details-modal__close {
-  width: 2.25rem !important;
-  height: 2.25rem !important;
-}
-
-/* ==========================================================================
-   7. TV Watch Mode: Automatic 100vw x 100vh Borderless Fullscreen
-   ========================================================================== */
-
-html.daitign-tv.daitign-tv-watching body,
-html.daitign-tv:has(.watch-page) body {
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-  background: #000000 !important;
-}
-
-html.daitign-tv .watch-page {
-  width: 100vw !important;
-  height: 100vh !important;
-  min-height: 100vh !important;
-  max-height: 100vh !important;
-  grid-template-rows: 1fr !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-/* Hide navigation and top watch header on TV playback */
-html.daitign-tv .watch-page__header {
-  display: none !important;
-}
-
-html.daitign-tv .watch-page__stage {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  align-content: stretch !important;
-}
-
-html.daitign-tv .watch-page__stage .vidstuck-frame {
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-html.daitign-tv .vidstuck-frame iframe {
-  width: 100vw !important;
-  height: 100vh !important;
-  border: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  outline: none !important;
-}
-
-/* Prevent text selection and blue tap highlight on TV */
-html.daitign-tv * {
-  -webkit-tap-highlight-color: transparent;
+@media (prefers-reduced-motion: reduce) {
+  html.daitign-tv [data-tv-focusable='true'],
+  html.daitign-tv .hover-preview-card {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

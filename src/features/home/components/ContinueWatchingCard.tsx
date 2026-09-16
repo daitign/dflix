@@ -5,10 +5,11 @@ import { toMediaPreviewData, useHoverPreviewAnchor } from '../../hover-preview';
 import './ContinueWatchingCard.css';
 
 interface ContinueWatchingCardProps {
+  cardIndex?: number;
   item: MediaItem;
 }
 
-export function ContinueWatchingCard({ item }: ContinueWatchingCardProps) {
+export function ContinueWatchingCard({ cardIndex, item }: ContinueWatchingCardProps) {
   const progress = Math.min(100, Math.max(0, item.progress ?? 0));
   const { anchorProps, anchorRef, referenceRef } = useHoverPreviewAnchor<HTMLElement>({
     data: toMediaPreviewData(item),
@@ -17,6 +18,7 @@ export function ContinueWatchingCard({ item }: ContinueWatchingCardProps) {
   return (
     <article
       className="continue-card"
+      data-card-index={cardIndex}
       data-media-id={item.id}
       ref={referenceRef}
     >
@@ -24,6 +26,7 @@ export function ContinueWatchingCard({ item }: ContinueWatchingCardProps) {
         {...anchorProps}
         aria-label={`Resume ${item.title}`}
         className="continue-card__surface"
+        data-card-index={cardIndex}
         data-media-id={item.id}
         data-tv-card="true"
         data-tv-focusable="true"

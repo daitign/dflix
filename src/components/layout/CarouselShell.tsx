@@ -145,7 +145,10 @@ export function CarouselShell({
       {/* Track */}
       <div
         className="carousel-shell__track"
+        data-tv-row
+        data-tv-row-scroll
         onKeyDown={(event) => {
+          if (document.documentElement.classList.contains('daitign-tv')) return;
           if (event.key === 'ArrowLeft') move(-1);
           if (event.key === 'ArrowRight') move(1);
         }}

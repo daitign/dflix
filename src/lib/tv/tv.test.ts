@@ -177,3 +177,35 @@ test('9. Component audit: Media cards and interactive controls are tagged with d
   assert.ok(detailsHero.includes('data-tv-focusable="true"'));
 });
 
+test('10. TV player uses the four-state native model and keeps the browse WebView alive', () => {
+  const activity = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
+    'utf-8',
+  );
+  for (const state of ['PLAYER_HIDDEN', 'PLAYER_CONTROLS', 'PLAYER_TIMELINE', 'PLAYER_MENU']) {
+    assert.ok(activity.includes(state));
+  }
+  assert.ok(activity.includes('browseWebView?.visibility = View.INVISIBLE'));
+  assert.ok(activity.includes('player.loadUrl(uri.toString())'));
+  assert.ok(!activity.includes('injectTvPlayerFocusController'));
+});
+
+test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar', () => {
+  const controller = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/assets/tv-player-controller.js'),
+    'utf-8',
+  );
+  for (const control of ['play-pause', 'next', 'volume', 'timeline', 'fit', 'subtitle', 'quality', 'server', 'settings', 'fullscreen']) {
+    assert.ok(controller.includes(`'${control}'`));
+  }
+  assert.ok(controller.includes("[role=\"slider\"]"));
+  assert.ok(!controller.includes('toolbar'));
+});
+
+test('12. TV layout remains isolated and defines the three responsive density bands', () => {
+  const styles = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/tv.css'), 'utf-8');
+  assert.ok(styles.includes('html.daitign-tv'));
+  assert.ok(styles.includes('@media (max-width: 1400px)'));
+  assert.ok(styles.includes('@media (min-width: 3000px)'));
+  assert.ok(styles.includes('54vh'));
+});

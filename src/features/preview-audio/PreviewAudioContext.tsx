@@ -42,20 +42,11 @@ function getInitialSoundPreference(): boolean {
   return true;
 }
 
-let hasEverInteractedOnTv = false;
-
 export function PreviewAudioProvider({ children }: { children: React.ReactNode }) {
   const [soundEnabled, setSoundEnabledState] = useState<boolean>(getInitialSoundPreference);
   const [autoplaySoundAllowed, setAutoplaySoundAllowed] = useState<boolean>(true);
   const [isHoverActive, setHoverActive] = useState<boolean>(false);
   const [isModalActive, setModalActive] = useState<boolean>(false);
-
-  // On TV initial cold launch, mute until first user interaction
-  useEffect(() => {
-    if (isTVMode() && !hasEverInteractedOnTv) {
-      setAutoplaySoundAllowed(false);
-    }
-  }, []);
 
   const setSoundEnabled = useCallback((enabled: boolean) => {
     setSoundEnabledState(enabled);
@@ -66,7 +57,6 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
     }
     // Explicitly enabling sound represents user intent/gesture
     if (enabled) {
-      hasEverInteractedOnTv = true;
       setAutoplaySoundAllowed(true);
     }
   }, []);
@@ -80,7 +70,6 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
     if (autoplaySoundAllowed) return;
 
     const handleUserInteraction = () => {
-      hasEverInteractedOnTv = true;
       setAutoplaySoundAllowed(true);
       removeListeners();
     };

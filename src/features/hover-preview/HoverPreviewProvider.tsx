@@ -79,13 +79,11 @@ function getPreviewPosition(anchorElement: HTMLElement, referenceElement: HTMLEl
       : 'center';
 
   if (isTVMode()) {
-    // TV mode: Modest 16:9 cinematic preview tile (~125%–130% of card width, 400–490px at 1080p)
+    // TV mode: restrained 16:9 tile, 120–130% of the focused card width.
     const baseCardWidth = anchor.width || reference.width || (viewportWidth / 6);
-    const targetScale = 1.28;
+    const targetScale = 1.25;
     const rawWidth = Math.round(baseCardWidth * targetScale);
-    const minTvWidth = Math.round(viewportWidth * 0.21); // ~403px at 1080p
-    const maxTvWidth = Math.round(viewportWidth * 0.255); // ~490px at 1080p
-    const tvWidth = clamp(rawWidth, Math.min(380, minTvWidth), Math.max(460, maxTvWidth));
+    const tvWidth = clamp(rawWidth, baseCardWidth * 1.2, viewportWidth * 0.27);
     const tvHeight = Math.round(tvWidth * (9 / 16));
     const proposedLeft = placement === 'left'
       ? anchor.left
@@ -220,7 +218,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
 
     if (request.source === 'keyboard') {
       if (isTVMode()) {
-        openTimerRef.current = window.setTimeout(activate, 500);
+        openTimerRef.current = window.setTimeout(activate, 575);
         return;
       }
       activate();
@@ -269,6 +267,13 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
       const current = activePreviewRef.current;
       const isCarouselScroll = event.target instanceof Element
         && Boolean(event.target.closest('.carousel-shell__track'));
+      const focusedCard = document.activeElement instanceof HTMLElement
+        ? document.activeElement.closest<HTMLElement>('[data-tv-card="true"]')
+        : null;
+
+      // A D-pad focus move may auto-scroll its new card into view. The old preview
+      // has already unmounted on blur; keep the new card's delayed open request.
+      if (isTVMode() && !current && openTimerRef.current && focusedCard) return;
       const isInitialKeyboardFocusScroll = current?.source === 'keyboard'
         && document.activeElement === current.anchorElement
         && window.performance.now() - current.openedAt < 180

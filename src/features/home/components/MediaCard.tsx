@@ -5,10 +5,11 @@ import { FreshnessBadge } from './StatusBadge';
 import './MediaCard.css';
 
 interface MediaCardProps {
+  cardIndex?: number;
   item: MediaItem;
 }
 
-export function MediaCard({ item }: MediaCardProps) {
+export function MediaCard({ cardIndex, item }: MediaCardProps) {
   const artwork = item.backdrop;
   const { anchorProps, anchorRef, referenceRef } = useHoverPreviewAnchor<HTMLElement>({
     data: toMediaPreviewData(item),
@@ -20,6 +21,7 @@ export function MediaCard({ item }: MediaCardProps) {
   return (
     <article
       className={`media-card${hasBadge ? ' media-card--has-badge' : ''}`}
+      data-card-index={cardIndex}
       data-media-id={item.id}
       ref={referenceRef}
     >
@@ -27,6 +29,7 @@ export function MediaCard({ item }: MediaCardProps) {
         {...anchorProps}
         aria-label={`View ${item.title}`}
         className="media-card__surface"
+        data-card-index={cardIndex}
         data-media-id={item.id}
         data-tv-card="true"
         data-tv-focusable="true"

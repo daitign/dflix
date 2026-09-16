@@ -1,440 +1,180 @@
-import { executeTVBack, isTVMode, isTvWatchMode } from './tvDetection.ts';
+import { executeTVBack, isTVMode } from './tvDetection.ts';
 
 export const TV_FOCUSABLE_SELECTOR = '[data-tv-focusable="true"]:not([disabled]):not([aria-hidden="true"])';
 
-const EXCLUDED_TAGS = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'SECTION', 'ARTICLE']);
+type Direction = 'down' | 'left' | 'right' | 'up';
 
-export function isFocusCandidate(el: HTMLElement): boolean {
-  if (EXCLUDED_TAGS.has(el.tagName)) return false;
-  if (el.getAttribute('role') === 'heading') return false;
-  if (
-    el.matches(
-      '.section-header, .section-header__title, .section-header__explore, .media-row, .carousel-shell, .carousel-shell__track, .carousel-shell__item, .carousel-shell__viewport, .netflix-badge'
-    )
-  ) {
-    return false;
-  }
-  return true;
+interface FocusRow {
+  elements: HTMLElement[];
+  centerY: number;
 }
 
-export function isVisible(el: HTMLElement): boolean {
-  if (!el.isConnected) return false;
-  if (el.offsetParent === null && el.offsetWidth === 0 && el.offsetHeight === 0) return false;
-  const style = window.getComputedStyle(el);
+let preferredX: number | null = null;
+
+export function isVisible(element: HTMLElement): boolean {
+  if (!element.isConnected) return false;
+  const style = window.getComputedStyle(element);
   if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-  const rect = el.getBoundingClientRect();
+  const rect = element.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
 }
 
-export function getActiveScope(): HTMLElement {
-  // If a modal/dialog is open, trap focus inside it
-  const modal = document.querySelector<HTMLElement>(
-    '.modal-shell__panel, .modal-shell, .details-modal-overlay, [role="dialog"], .details-modal'
-  );
-  if (modal && isVisible(modal)) {
-    return modal;
-  }
-  return document.body;
+export function isFocusCandidate(element: HTMLElement): boolean {
+  if (element.getAttribute('data-tv-focusable') !== 'true') return false;
+  if (element.getAttribute('disabled') !== null || element.getAttribute('aria-hidden') === 'true') return false;
+  if (/^(H[1-6]|HEADER|SECTION|ARTICLE)$/.test(element.tagName)) return false;
+  return element.getAttribute('role') !== 'heading';
+}
+
+function getActiveScope(): HTMLElement {
+  const scopes = Array.from(document.querySelectorAll<HTMLElement>('[data-tv-focus-scope="modal"]'));
+  return scopes.reverse().find(isVisible) ?? document.body;
 }
 
 export function getFocusableElements(scope: HTMLElement = getActiveScope()): HTMLElement[] {
-  const elements = Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR));
-  return elements.filter((el) => isFocusCandidate(el) && isVisible(el));
+  return Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR)).filter(isVisible);
 }
 
-export function getElementCenter(el: HTMLElement) {
-  const rect = el.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-    top: rect.top,
-    bottom: rect.bottom,
-    left: rect.left,
-    right: rect.right,
-    width: rect.width,
-    height: rect.height,
-  };
+function center(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
 }
 
-/**
- * Automatically scrolls carousel track horizontally and window vertically to ensure
- * focused element and its row heading are visible comfortably without violent jumps.
- */
-export function scrollElementIntoOptimalView(el: HTMLElement) {
-  const modalScroll = el.closest<HTMLElement>('.detailsModalScroll, .modal-shell__body');
-  if (modalScroll) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    return;
-  }
+function rowsFor(elements: HTMLElement[]): FocusRow[] {
+  const explicit = new Map<HTMLElement, HTMLElement[]>();
+  const loose: HTMLElement[] = [];
 
-  // If focused on Hero Banner, Category Header, or Top Navigation, smoothly scroll page to top
-  if (el.closest('.hero-banner, .navigation-shell, .category-header')) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
-
-  // 1. Horizontal track scrolling: smoothly scroll track if focused card reaches margins
-  const track = el.closest<HTMLElement>('.carousel-shell__track');
-  if (track) {
-    const trackRect = track.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    const margin = 48; // comfortable horizontal margin
-
-    if (elRect.left < trackRect.left + margin) {
-      const scrollNeeded = elRect.left - (trackRect.left + margin);
-      track.scrollBy({ left: scrollNeeded, behavior: 'smooth' });
-    } else if (elRect.right > trackRect.right - margin) {
-      const scrollNeeded = elRect.right - (trackRect.right - margin);
-      track.scrollBy({ left: scrollNeeded, behavior: 'smooth' });
+  elements.forEach((element) => {
+    const row = element.closest<HTMLElement>('[data-tv-row]');
+    if (!row) {
+      loose.push(element);
+      return;
     }
-  }
+    explicit.set(row, [...(explicit.get(row) ?? []), element]);
+  });
 
-  // 2. Vertical page scrolling: ensure row heading + card are visible with comfortable margins
-  const mediaRow = el.closest<HTMLElement>('.media-row');
-  const targetElement = mediaRow || el;
-  const targetRect = targetElement.getBoundingClientRect();
-  const elRect = el.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const topNavOffset = 80; // height of top navigation + padding
-  const bottomMargin = 40;
+  const rows: FocusRow[] = Array.from(explicit.values()).map((rowElements) => ({
+    centerY: rowElements.reduce((sum, item) => sum + center(item).y, 0) / rowElements.length,
+    elements: rowElements.sort((a, b) => center(a).x - center(b).x),
+  }));
 
-  if (targetRect.top < topNavOffset) {
-    const scrollNeeded = targetRect.top - topNavOffset;
-    window.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
-  } else if (elRect.bottom > vh - bottomMargin) {
-    const scrollNeeded = elRect.bottom - (vh - bottomMargin);
-    window.scrollBy({ top: scrollNeeded, behavior: 'smooth' });
-  }
+  loose.sort((a, b) => center(a).y - center(b).y || center(a).x - center(b).x);
+  loose.forEach((element) => {
+    const point = center(element);
+    const row = rows.find((candidate) => Math.abs(candidate.centerY - point.y) <= 28);
+    if (row) {
+      row.elements.push(element);
+      row.elements.sort((a, b) => center(a).x - center(b).x);
+      row.centerY = row.elements.reduce((sum, item) => sum + center(item).y, 0) / row.elements.length;
+    } else {
+      rows.push({ centerY: point.y, elements: [element] });
+    }
+  });
+
+  return rows.sort((a, b) => a.centerY - b.centerY);
 }
 
-/**
- * Finds the candidate element in a list closest to a target X coordinate
- */
 export function findClosestInRow(elements: HTMLElement[], targetX: number): HTMLElement | null {
-  if (elements.length === 0) return null;
-  let bestEl: HTMLElement | null = null;
-  let minDiff = Number.POSITIVE_INFINITY;
-
-  for (const el of elements) {
-    const center = getElementCenter(el);
-    const diff = Math.abs(center.x - targetX);
-    if (diff < minDiff) {
-      minDiff = diff;
-      bestEl = el;
-    }
-  }
-
-  return bestEl;
+  return elements.reduce<HTMLElement | null>((closest, element) => {
+    if (!closest) return element;
+    return Math.abs(center(element).x - targetX) < Math.abs(center(closest).x - targetX) ? element : closest;
+  }, null);
 }
 
-/**
- * Handles directional navigation between carousel rows while preserving horizontal coordinate.
- * Completely skips row headings and non-interactive text.
- */
-export function navigateBetweenRows(
-  currentEl: HTMLElement,
-  direction: 'up' | 'down'
-): HTMLElement | null {
-  const currentCenter = getElementCenter(currentEl);
-  const currentRow = currentEl.closest<HTMLElement>('.media-row');
+export function findNextSpatialElement(current: HTMLElement, direction: Direction): HTMLElement | null {
+  const rows = rowsFor(getFocusableElements());
+  const rowIndex = rows.findIndex((row) => row.elements.includes(current));
+  if (rowIndex < 0) return null;
 
-  // If inside a row
-  if (currentRow) {
-    const allRows = Array.from(document.querySelectorAll<HTMLElement>('.media-row')).filter((r) => isVisible(r));
-    const currentRowIndex = allRows.indexOf(currentRow);
-    if (currentRowIndex === -1) return null;
-
-    const targetRowIndex = direction === 'down' ? currentRowIndex + 1 : currentRowIndex - 1;
-
-    if (targetRowIndex >= 0 && targetRowIndex < allRows.length) {
-      const targetRow = allRows[targetRowIndex];
-      const candidateCards = getFocusableElements(targetRow);
-      const closest = findClosestInRow(candidateCards, currentCenter.x);
-      if (closest) return closest;
-    }
-
-    // Moving UP from Row 0: jump to Hero banner or Category header or Top Navigation
-    if (direction === 'up' && targetRowIndex < 0) {
-      const heroBanner = document.querySelector<HTMLElement>('.hero-banner');
-      if (heroBanner && isVisible(heroBanner)) {
-        const heroControls = getFocusableElements(heroBanner);
-        if (heroControls.length > 0) {
-          return findClosestInRow(heroControls, currentCenter.x) || heroControls[0];
-        }
-      }
-
-      const catHeader = document.querySelector<HTMLElement>('.category-header');
-      if (catHeader && isVisible(catHeader)) {
-        const catControls = getFocusableElements(catHeader);
-        if (catControls.length > 0) {
-          return findClosestInRow(catControls, currentCenter.x) || catControls[0];
-        }
-      }
-
-      const navShell = document.querySelector<HTMLElement>('.navigation-shell');
-      if (navShell && isVisible(navShell)) {
-        const navControls = getFocusableElements(navShell);
-        if (navControls.length > 0) {
-          return findClosestInRow(navControls, currentCenter.x) || navControls[0];
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-/**
- * Handles horizontal movement within a carousel row
- */
-export function navigateWithinRow(
-  currentEl: HTMLElement,
-  direction: 'left' | 'right'
-): HTMLElement | null {
-  const track = currentEl.closest<HTMLElement>('.carousel-shell__track');
-  if (!track) return null;
-
-  const cardsInTrack = getFocusableElements(track);
-  const currentIndex = cardsInTrack.indexOf(currentEl);
-  if (currentIndex === -1) return null;
-
-  const nextIndex = direction === 'right' ? currentIndex + 1 : currentIndex - 1;
-  if (nextIndex >= 0 && nextIndex < cardsInTrack.length) {
-    return cardsInTrack[nextIndex];
-  }
-
-  return null;
-}
-
-/**
- * Universal 2D geometric spatial navigation algorithm
- */
-export function findNextSpatialElement(
-  currentEl: HTMLElement,
-  direction: 'up' | 'down' | 'left' | 'right'
-): HTMLElement | null {
-  const current = getElementCenter(currentEl);
-
-  // 1. Check specialized row navigation first
+  const row = rows[rowIndex];
+  const index = row.elements.indexOf(current);
   if (direction === 'left' || direction === 'right') {
-    const rowNext = navigateWithinRow(currentEl, direction);
-    if (rowNext) return rowNext;
-  } else if (direction === 'up' || direction === 'down') {
-    const rowNext = navigateBetweenRows(currentEl, direction);
-    if (rowNext) return rowNext;
+    const nextIndex = index + (direction === 'right' ? 1 : -1);
+    return row.elements[nextIndex] ?? null;
   }
 
-  // 2. Specialized transitions: NavigationShell -> Hero / CategoryHeader / Row 0
-  if (currentEl.closest('.navigation-shell') && direction === 'down') {
-    const heroBanner = document.querySelector<HTMLElement>('.hero-banner');
-    if (heroBanner && isVisible(heroBanner)) {
-      const heroControls = getFocusableElements(heroBanner);
-      if (heroControls.length > 0) {
-        return findClosestInRow(heroControls, current.x) || heroControls[0];
-      }
-    }
-
-    const catHeader = document.querySelector<HTMLElement>('.category-header');
-    if (catHeader && isVisible(catHeader)) {
-      const catControls = getFocusableElements(catHeader);
-      if (catControls.length > 0) {
-        return findClosestInRow(catControls, current.x) || catControls[0];
-      }
-    }
-
-    const allRows = Array.from(document.querySelectorAll<HTMLElement>('.media-row')).filter((r) => isVisible(r));
-    if (allRows.length > 0) {
-      const topRow = allRows[0];
-      const candidates = getFocusableElements(topRow);
-      const closest = findClosestInRow(candidates, current.x);
-      if (closest) return closest;
-    }
-  }
-
-  // 3. Specialized transitions: HeroBanner -> NavigationShell / Row 0
-  if (currentEl.closest('.hero-banner')) {
-    if (direction === 'up') {
-      const navShell = document.querySelector<HTMLElement>('.navigation-shell');
-      if (navShell && isVisible(navShell)) {
-        const navControls = getFocusableElements(navShell);
-        if (navControls.length > 0) {
-          return findClosestInRow(navControls, current.x) || navControls[0];
-        }
-      }
-    } else if (direction === 'down') {
-      const allRows = Array.from(document.querySelectorAll<HTMLElement>('.media-row')).filter((r) => isVisible(r));
-      if (allRows.length > 0) {
-        const topRow = allRows[0];
-        const candidates = getFocusableElements(topRow);
-        const closest = findClosestInRow(candidates, current.x);
-        if (closest) return closest;
-      }
-    }
-  }
-
-  // 4. Specialized transitions: CategoryHeader -> NavigationShell / Row 0
-  if (currentEl.closest('.category-header')) {
-    if (direction === 'up') {
-      const navShell = document.querySelector<HTMLElement>('.navigation-shell');
-      if (navShell && isVisible(navShell)) {
-        const navControls = getFocusableElements(navShell);
-        if (navControls.length > 0) {
-          return findClosestInRow(navControls, current.x) || navControls[0];
-        }
-      }
-    } else if (direction === 'down') {
-      const allRows = Array.from(document.querySelectorAll<HTMLElement>('.media-row')).filter((r) => isVisible(r));
-      if (allRows.length > 0) {
-        const topRow = allRows[0];
-        const candidates = getFocusableElements(topRow);
-        const closest = findClosestInRow(candidates, current.x);
-        if (closest) return closest;
-      }
-    }
-  }
-
-  // 5. General 2D geometric navigation fallback (for Modals, Grids, etc.)
-  const scope = getActiveScope();
-  const candidates = getFocusableElements(scope).filter((el) => el !== currentEl);
-
-  let bestCandidate: HTMLElement | null = null;
-  let lowestScore = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const cand = getElementCenter(candidate);
-    const dx = cand.x - current.x;
-    const dy = cand.y - current.y;
-
-    let isEligible = false;
-    let primaryDist = 0;
-    let secondaryDist = 0;
-
-    switch (direction) {
-      case 'left':
-        isEligible = cand.right <= current.left + 10;
-        primaryDist = -dx;
-        secondaryDist = Math.abs(dy);
-        break;
-      case 'right':
-        isEligible = cand.left >= current.right - 10;
-        primaryDist = dx;
-        secondaryDist = Math.abs(dy);
-        break;
-      case 'up':
-        isEligible = cand.bottom <= current.top + 10;
-        primaryDist = -dy;
-        secondaryDist = Math.abs(dx);
-        break;
-      case 'down':
-        isEligible = cand.top >= current.bottom - 10;
-        primaryDist = dy;
-        secondaryDist = Math.abs(dx);
-        break;
-    }
-
-    if (!isEligible || primaryDist < 0) continue;
-
-    // Weight primary direction more heavily, penalize orthogonal distance
-    const score = primaryDist * 1.2 + secondaryDist * 2.5;
-
-    if (score < lowestScore) {
-      lowestScore = score;
-      bestCandidate = candidate;
-    }
-  }
-
-  return bestCandidate;
+  const nextRow = rows[rowIndex + (direction === 'down' ? 1 : -1)];
+  if (!nextRow) return null;
+  return findClosestInRow(nextRow.elements, preferredX ?? center(current).x);
 }
 
-/**
- * Initializes spatial navigation listeners for TV mode
- */
+export function scrollElementIntoOptimalView(element: HTMLElement) {
+  element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+}
+
+function focusElement(element: HTMLElement, preserveX = false) {
+  element.focus({ preventScroll: true });
+  if (!preserveX) preferredX = center(element).x;
+  scrollElementIntoOptimalView(element);
+}
+
+function focusInitial() {
+  const elements = getFocusableElements();
+  const preferred = elements.find((element) => element.matches('.hero-banner__play-button')) ?? elements[0];
+  if (preferred) focusElement(preferred);
+}
+
 export function initSpatialNavigation(): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined' || !isTVMode()) return () => {};
 
-  let isInitialized = false;
+  const initialTimer = window.setTimeout(() => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || active === document.body || !isFocusCandidate(active) || !isVisible(active)) focusInitial();
+  }, 250);
 
-  // Initial focus on startup if nothing is active
-  const initialFocusTimer = window.setTimeout(() => {
-    if (!document.activeElement || document.activeElement === document.body) {
-      const candidates = getFocusableElements();
-      if (candidates.length > 0) {
-        const heroPlay = candidates.find((c) => c.classList.contains('hero-banner__play-button'));
-        (heroPlay || candidates[0]).focus();
-      }
-    }
-  }, 350);
+  const handleFocus = (event: FocusEvent) => {
+    const target = event.target;
+    if (target instanceof HTMLElement && isFocusCandidate(target) && isVisible(target)) preferredX = center(target).x;
+  };
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKey = (event: KeyboardEvent) => {
     if (!isTVMode()) return;
-
-    // Handle Back / Escape keys
     if (event.key === 'Escape' || event.key === 'Backspace') {
-      const activeEl = document.activeElement;
-      // If typing inside an input and user presses back, allow default if input has value
-      if (activeEl instanceof HTMLInputElement && activeEl.value.length > 0 && event.key === 'Backspace') {
-        return;
-      }
-
+      if (event.target instanceof HTMLInputElement && event.key === 'Backspace' && event.target.value) return;
       if (executeTVBack()) {
         event.preventDefault();
-        event.stopPropagation();
-        return;
+        event.stopImmediatePropagation();
       }
-    }
-
-    const currentEl = document.activeElement as HTMLElement | null;
-
-    // TV PLAYER FOCUS MODE:
-    // When watching on TV or focused on the player iframe, do NOT intercept D-pad
-    // navigation or Enter/Space so all controls and events belong to the player!
-    if (isTvWatchMode() || currentEl?.closest('.vidstuck-frame') || currentEl instanceof HTMLIFrameElement) {
       return;
     }
 
-    const directionMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
-      ArrowUp: 'up',
-      ArrowDown: 'down',
-      ArrowLeft: 'left',
-      ArrowRight: 'right',
-    };
+    if ((event.key === 'Enter' || event.key === ' ') && document.activeElement instanceof HTMLElement) {
+      const active = document.activeElement;
+      if (isFocusCandidate(active) && isVisible(active) && active.tagName !== 'SELECT' && active.tagName !== 'INPUT') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        active.click();
+      }
+      return;
+    }
 
-    const direction = directionMap[event.key];
+    const directions: Record<string, Direction> = {
+      ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up',
+    };
+    const direction = directions[event.key];
     if (!direction) return;
 
-    // If nothing currently focused or focus is lost/detached, focus best eligible element
-    if (!currentEl || currentEl === document.body || !currentEl.isConnected || !isVisible(currentEl)) {
-      const candidates = getFocusableElements();
-      if (candidates.length > 0) {
-        const heroPlay = candidates.find((c) => c.classList.contains('hero-banner__play-button'));
-        const target = heroPlay || candidates[0];
-        target.focus();
-        scrollElementIntoOptimalView(target);
-        event.preventDefault();
-      }
-      return;
-    }
-
-    // Inside input field: allow left/right cursor movement
-    if (currentEl instanceof HTMLInputElement && (direction === 'left' || direction === 'right')) {
-      return;
-    }
-
-    const nextEl = findNextSpatialElement(currentEl, direction);
-    if (nextEl) {
+    const active = document.activeElement as HTMLElement | null;
+    if (active instanceof HTMLInputElement && (direction === 'left' || direction === 'right')) return;
+    if (!active || !isFocusCandidate(active) || !isVisible(active)) {
       event.preventDefault();
-      nextEl.focus();
-      scrollElementIntoOptimalView(nextEl);
+      focusInitial();
+      return;
     }
+
+    const next = findNextSpatialElement(active, direction);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!next) return;
+    focusElement(next, direction === 'up' || direction === 'down');
   };
 
-  window.addEventListener('keydown', handleKeyDown, { capture: true });
-  isInitialized = true;
-
+  document.addEventListener('focusin', handleFocus, true);
+  window.addEventListener('keydown', handleKey, true);
   return () => {
-    window.clearTimeout(initialFocusTimer);
-    if (isInitialized) {
-      window.removeEventListener('keydown', handleKeyDown, { capture: true });
-    }
+    window.clearTimeout(initialTimer);
+    document.removeEventListener('focusin', handleFocus, true);
+    window.removeEventListener('keydown', handleKey, true);
+    preferredX = null;
   };
 }
