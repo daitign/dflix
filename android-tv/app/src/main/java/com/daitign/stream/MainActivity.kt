@@ -14,7 +14,9 @@ import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -52,31 +54,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "DAITIGN-TV"
         private const val APP_URL = "https://daiflix.vercel.app/?tv=1"
-        private const val PLAYER_TEST_URL = "https://local.daitign.invalid/player-test"
         private const val TV_USER_AGENT = " DAITIGN-TV/3.0"
         private const val STARTUP_TIMEOUT_MS = 10_000L
         private const val EXIT_INTERVAL_MS = 2_000L
-
-        private const val PLAYER_TEST_HTML = """
-            <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-            <style>
-              body{margin:0;background:#111;color:#fff;font:24px sans-serif;display:grid;place-items:center;height:100vh}
-              .row{display:flex;gap:24px}.menu{display:none;position:fixed;inset:25% 30%;background:#222;padding:30px}
-              .menu.open{display:flex;flex-direction:column;gap:16px}button{font-size:24px;padding:18px 28px}
-            </style></head><body data-events="">
-              <div class="row"><button aria-label="Play">Play</button><button aria-label="Subtitle">Subtitle</button>
-              <button aria-label="Quality">Quality</button><button aria-label="Fullscreen">Fullscreen</button></div>
-              <div class="menu" role="menu"><button role="menuitem">English</button><button role="menuitem">Spanish</button></div>
-              <script>
-                var events=[];var menu=document.querySelector('.menu');
-                function record(value){events.push(value);document.body.dataset.events=events.join('>')}
-                document.querySelectorAll('button').forEach(function(button){button.addEventListener('click',function(){
-                  record(button.textContent.trim());
-                  if(button.textContent.trim()==='Subtitle')menu.classList.add('open');
-                  if(button.getAttribute('role')==='menuitem')menu.classList.remove('open');
-                })});
-              </script></body></html>
-        """
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -96,8 +76,6 @@ class MainActivity : ComponentActivity() {
     private var browseReady = false
     private var browseRendererGone = false
     private var pendingPlayerUrl: String? = null
-    private var runningSyntheticPlayerTest = false
-    private var syntheticPlayerTestCompleted = false
     private var lastBackAt = 0L
 
     @Volatile
@@ -312,14 +290,7 @@ class MainActivity : ComponentActivity() {
             Log.i(TAG, "player WebView attached; requestFocus=${player.hasFocus()}")
             player.post { Log.i(TAG, "player WebView focus after layout=${player.hasFocus()}, visibility=${player.visibility}") }
 
-            if (!syntheticPlayerTestCompleted) {
-                runningSyntheticPlayerTest = true
-                player.alpha = 0.02f
-                player.setBackgroundColor(Color.TRANSPARENT)
-                player.loadDataWithBaseURL(PLAYER_TEST_URL, PLAYER_TEST_HTML, "text/html", "UTF-8", null)
-            } else {
-                loadPendingVidstuck()
-            }
+            loadPendingVidstuck()
         }
     }
 
@@ -337,13 +308,9 @@ class MainActivity : ComponentActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 Log.i(TAG, "player onPageFinished: $url")
-                if (runningSyntheticPlayerTest && url?.startsWith(PLAYER_TEST_URL) == true) {
-                    injectPlayerAdapter(view) { runSyntheticPlayerTest(view) }
-                } else {
-                    injectPlayerAdapter(view) {
-                        view?.requestFocus()
-                        playerHandler.postDelayed({ logPlayerInventory(view, "VIDSTUCK initial") }, 700L)
-                    }
+                injectPlayerAdapter(view) {
+                    view?.requestFocus()
+                    playerHandler.postDelayed({ logPlayerInventory(view, "VIDSTUCK initial") }, 700L)
                 }
             }
 
@@ -357,44 +324,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun runSyntheticPlayerTest(webView: WebView?) {
-        val player = webView ?: return loadPendingVidstuck()
-        Log.i(TAG, "synthetic player-control test started")
-        playerHandler.postDelayed({ sendPlayerKey("OK") }, 180L)
-        playerHandler.postDelayed({ sendPlayerKey("RIGHT") }, 440L)
-        playerHandler.postDelayed({ sendPlayerKey("OK") }, 620L)
-        playerHandler.postDelayed({ sendPlayerKey("DOWN") }, 900L)
-        playerHandler.postDelayed({ sendPlayerKey("OK") }, 1_080L)
-        playerHandler.postDelayed({
-            player.evaluateJavascript(
-                "(function(){var snapshot=window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.snapshot();" +
-                    "var events=document.body.dataset.events||'';return Boolean(snapshot&&" +
-                    "snapshot.state==='PLAYER_CONTROLS'&&events==='Subtitle>Spanish');})()",
-            ) { result -> Log.i(TAG, "synthetic player-control navigation: ${if (result == "true") "PASS" else "FAIL ($result)"}") }
-            sendPlayerKey("BACK")
-        }, 1_300L)
-        playerHandler.postDelayed({
-            player.evaluateJavascript(
-                "Boolean(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.getState()==='PLAYER_HIDDEN')",
-            ) { result ->
-                val passed = result == "true"
-                Log.i(TAG, "synthetic player-control Back: ${if (passed) "PASS" else "FAIL ($result)"}")
-                runningSyntheticPlayerTest = false
-                syntheticPlayerTestCompleted = passed
-                playerState = PlayerState.PLAYER_HIDDEN
-                loadPendingVidstuck()
-            }
-        }, 1_520L)
-    }
-
     private fun loadPendingVidstuck() {
         val player = playerWebView ?: return
         val url = pendingPlayerUrl ?: return
-        runningSyntheticPlayerTest = false
-        player.alpha = 1f
         player.setBackgroundColor(Color.BLACK)
-        browseWebView?.visibility = View.INVISIBLE
-        browseWebView?.clearFocus()
+        browseWebView?.run {
+            visibility = View.INVISIBLE
+            clearFocus()
+            // Suspend browse-side hero/preview media while the dedicated player
+            // is active. Do not call pauseTimers(): that is process-wide and
+            // would also stop VIDSTUCK's control and playback timers.
+            onPause()
+        }
         player.visibility = View.VISIBLE
         player.onResume()
         player.resumeTimers()
@@ -450,7 +391,6 @@ class MainActivity : ComponentActivity() {
             destroy()
         }
         playerWebView = null
-        runningSyntheticPlayerTest = false
     }
 
     private fun sendPlayerKey(key: String, callback: ValueCallback<String>? = null) {
@@ -464,8 +404,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun wakePlayerControls() {
+        val player = playerWebView ?: return
+        if (player.width <= 0 || player.height <= 0) return
+        player.requestFocus()
+        val eventTime = android.os.SystemClock.uptimeMillis()
+        listOf(MotionEvent.ACTION_HOVER_ENTER, MotionEvent.ACTION_HOVER_MOVE).forEach { action ->
+            val event = MotionEvent.obtain(
+                eventTime,
+                eventTime,
+                action,
+                player.width * 0.5f,
+                player.height * 0.86f,
+                0,
+            ).apply { source = InputDevice.SOURCE_MOUSE }
+            try {
+                player.dispatchGenericMotionEvent(event)
+            } finally {
+                event.recycle()
+            }
+        }
+        Log.d(TAG, "native VIDSTUCK control wake dispatched; focus=${player.hasFocus()}")
+    }
+
     private fun routePlayerKey(key: String) {
-        if (playerState == PlayerState.PLAYER_HIDDEN && key != "OK") return
+        wakePlayerControls()
         sendPlayerKey(key)
     }
 
@@ -538,9 +501,17 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (playerWebView == null) return super.dispatchKeyEvent(event)
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            Log.i(
+                TAG,
+                "[PLAYER KEY RAW] ${KeyEvent.keyCodeToString(event.keyCode)} " +
+                    "code=${event.keyCode} scan=${event.scanCode} device=${event.deviceId}",
+            )
+        }
         val pair = when (event.keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER -> "CENTER" to "OK"
             KeyEvent.KEYCODE_ENTER -> "ENTER" to "OK"
+            KeyEvent.KEYCODE_NUMPAD_ENTER -> "NUMPAD_ENTER" to "OK"
             KeyEvent.KEYCODE_DPAD_LEFT -> "LEFT" to "LEFT"
             KeyEvent.KEYCODE_DPAD_RIGHT -> "RIGHT" to "RIGHT"
             KeyEvent.KEYCODE_DPAD_UP -> "UP" to "UP"

@@ -22,7 +22,7 @@ html.daitign-tv [data-tv-focusable='true']:focus-visible {
   filter: brightness(1.06);
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 14px rgb(255 255 255 / 14%) !important;
   transform: scale(1.02) !important;
-  transition: filter 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+  transition: filter 90ms ease, transform 90ms ease;
 }
 
 html.daitign-tv .media-card:focus-within,
@@ -176,6 +176,35 @@ html.daitign-tv .carousel-shell__track {
   overflow-x: hidden;
   scroll-behavior: smooth;
   scroll-snap-type: none;
+}
+
+html.daitign-tv .media-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto clamp(12rem, 25vh, 22rem);
+}
+
+html.daitign-tv .tv-deferred-row {
+  min-height: clamp(12rem, 25vh, 22rem);
+  contain: strict;
+}
+
+html.daitign-tv .top-navigation,
+html.daitign-tv .netflix-browse-popover,
+html.daitign-tv .hero-banner__audio-toggle,
+html.daitign-tv .hover-preview-card__audio-toggle {
+  backdrop-filter: none !important;
+}
+
+html.daitign-tv .top-navigation__vip-btn,
+html.daitign-tv .top-navigation__vip-icon {
+  animation: none !important;
+}
+
+html.daitign-tv .media-card__surface,
+html.daitign-tv .media-card__surface img,
+html.daitign-tv .ranked-card__art,
+html.daitign-tv .ranked-card__art img {
+  transition-duration: 90ms !important;
 }
 
 html.daitign-tv .carousel-shell--ranked {

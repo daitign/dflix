@@ -15,7 +15,7 @@ import { WatchPage } from '../features/watch';
 import { useCurrentRoute } from '../lib/navigation/routes';
 import { parseWatchPath, type WatchNavigationState } from '../lib/navigation/watchRoutes';
 import { searchMulti } from '../lib/tmdb';
-import { initSpatialNavigation, initTVMode, registerTVBackHandler } from '../lib/tv';
+import { initSpatialNavigation, initTVMode, isTVMode, registerTVBackHandler } from '../lib/tv';
 import './App.css';
 import '../styles/tv.css';
 
@@ -285,7 +285,9 @@ function BrowseCatalog({ catalog }: { catalog: HomeCatalog }) {
           <MediaRow items={catalog.topTen} mode="ranked" title="Top 10 Today" />
         </div>
 
-        {curatedRows.map((row) => <MediaRow key={row.id} row={row} />)}
+        {curatedRows.map((row, index) => (
+          <DeferredMediaRow eager={index === 0} key={row.id} row={row} />
+        ))}
 
         {discoveryRows.length > 0 && (
           <Container>
@@ -296,9 +298,41 @@ function BrowseCatalog({ catalog }: { catalog: HomeCatalog }) {
           </Container>
         )}
 
-        {discoveryRows.map((row) => <MediaRow key={row.id} row={row} />)}
+        {discoveryRows.map((row) => <DeferredMediaRow key={row.id} row={row} />)}
       </div>
     </main>
+  );
+}
+
+function DeferredMediaRow({ eager = false, row }: { eager?: boolean; row: HomeCatalog['rows'][number] }) {
+  const placeholderRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState(() => eager || !isTVMode());
+
+  useEffect(() => {
+    if (isMounted || !isTVMode()) return;
+    const target = placeholderRef.current;
+    if (!target || typeof IntersectionObserver === 'undefined') {
+      setIsMounted(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      setIsMounted(true);
+      observer.disconnect();
+    }, { rootMargin: '20% 0px' });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isMounted]);
+
+  if (isMounted) return <MediaRow row={row} />;
+  return (
+    <div
+      aria-hidden="true"
+      className="tv-deferred-row"
+      data-row-id={row.id}
+      ref={placeholderRef}
+    />
   );
 }
 

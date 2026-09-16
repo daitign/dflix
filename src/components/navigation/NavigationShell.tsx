@@ -7,6 +7,7 @@ import { NAV_ITEMS, navigateTo, useCurrentRoute } from '../../lib/navigation/rou
 import { useDetailsModal } from '../../features/details-modal';
 import { tmdbClient } from '../../lib/tmdb/client';
 import { normalizeTmdbMixed } from '../../lib/tmdb/adapters';
+import { isTVMode, registerTVBackHandler } from '../../lib/tv';
 import type { MediaItem } from '../../features/catalog/types';
 import './NavigationShell.css';
 
@@ -45,6 +46,8 @@ export function NavigationShell({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
+  const browseButtonRef = useRef<HTMLButtonElement>(null);
+  const browseMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,6 +60,7 @@ export function NavigationShell({
 
   // Fetch real notifications from TMDB catalog
   useEffect(() => {
+    if (isTVMode()) return;
     let active = true;
     Promise.allSettled([
       tmdbClient.getTrending(),
@@ -123,6 +127,31 @@ export function NavigationShell({
   }, []);
 
   useEffect(() => {
+    if (!isBrowseOpen || !isTVMode()) return;
+
+    const focusFirstItem = window.requestAnimationFrame(() => {
+      browseMenuRef.current
+        ?.querySelector<HTMLElement>('[data-tv-focusable="true"]')
+        ?.focus({ preventScroll: true });
+    });
+    const closeMenu = () => {
+      setIsBrowseOpen(false);
+      window.requestAnimationFrame(() => browseButtonRef.current?.focus({ preventScroll: true }));
+      return true;
+    };
+    const unregisterBack = registerTVBackHandler(closeMenu);
+    const menu = browseMenuRef.current;
+    const handleMenuBack = () => closeMenu();
+    menu?.addEventListener('daitign:tv-menu-back', handleMenuBack);
+
+    return () => {
+      window.cancelAnimationFrame(focusFirstItem);
+      unregisterBack();
+      menu?.removeEventListener('daitign:tv-menu-back', handleMenuBack);
+    };
+  }, [isBrowseOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (browseRef.current && !browseRef.current.contains(target)) {
@@ -181,6 +210,7 @@ export function NavigationShell({
                 className={cx('top-navigation__browse-btn', isBrowseOpen && 'top-navigation__browse-btn--open')}
                 data-tv-focusable="true"
                 onClick={() => setIsBrowseOpen((prev) => !prev)}
+                ref={browseButtonRef}
                 type="button"
               >
                 <span>Browse</span>
@@ -191,7 +221,12 @@ export function NavigationShell({
               </button>
 
               {isBrowseOpen && (
-                <div className="netflix-browse-popover" role="menu">
+                <div
+                  className="netflix-browse-popover"
+                  data-tv-focus-scope="menu"
+                  ref={browseMenuRef}
+                  role="menu"
+                >
                   <div className="netflix-browse-popover__items">
                     {NAV_ITEMS.map((item) => (
                       <a

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { isTVMode } from '../../lib/tv/tvDetection.ts';
 
 export interface HeroScrollPlaybackState {
   isHeroInView: boolean;
@@ -72,6 +73,15 @@ export function useHeroScrollPlayback(
       if (inView !== lastInViewRef.current) {
         lastInViewRef.current = inView;
         setIsHeroInView(inView);
+      }
+
+      if (isTVMode()) {
+        const tvFactor = inView ? 1 : 0;
+        if (tvFactor !== lastFactorRef.current) {
+          lastFactorRef.current = tvFactor;
+          setHeroVolumeFactor(tvFactor);
+        }
+        return;
       }
 
       // Scroll distance down from top of hero banner

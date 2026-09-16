@@ -79,8 +79,13 @@ function getPreviewPosition(anchorElement: HTMLElement, referenceElement: HTMLEl
       : 'center';
 
   if (isTVMode()) {
-    // TV mode: restrained 16:9 tile, 120–130% of the focused card width.
-    const baseCardWidth = anchor.width || reference.width || (viewportWidth / 6);
+    // Ranked anchors are narrow portrait posters. Use a normal landscape card as
+    // their cinematic sizing baseline while retaining the focused poster center.
+    const isRanked = Boolean(anchorElement.closest('.ranked-card'));
+    const landscapeCard = isRanked
+      ? document.querySelector<HTMLElement>('.media-card__surface')?.getBoundingClientRect()
+      : null;
+    const baseCardWidth = landscapeCard?.width || anchor.width || reference.width || (viewportWidth / 6);
     const targetScale = 1.25;
     const rawWidth = Math.round(baseCardWidth * targetScale);
     const tvWidth = clamp(rawWidth, baseCardWidth * 1.2, viewportWidth * 0.27);
@@ -340,7 +345,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
               <HoverPreviewCard
                 anchorElement={activePreview.anchorElement}
                 data={activePreview.data}
-                key={`${String(activePreview.data.id)}-${activePreview.left}-${activePreview.top}`}
+                key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}
                 onAction={performAction}
                 onCancelClose={cancelClose}
                 onClose={close}

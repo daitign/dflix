@@ -22,12 +22,13 @@ export function HeroBanner({ item }: HeroBannerProps) {
   const heroRef = useRef<HTMLElement>(null);
   const { isHeroInView, heroVolumeFactor } = useHeroScrollPlayback(heroRef);
   const { openDetails } = useDetailsModal();
-  const { isAudible, toggleSound } = usePreviewAudio();
+  const { isAudible, isHoverActive, isModalActive, toggleSound } = usePreviewAudio();
   const { isInList, toggleItem } = useMyList();
   const isListed = isInList(item.tmdbId ?? item.id);
   const [heroVideo, setHeroVideo] = useState<TmdbVideo | null>(null);
   const [heroCandidates, setHeroCandidates] = useState<TmdbVideo[]>([]);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
+  const [isHeroPlayerSuspended, setIsHeroPlayerSuspended] = useState(false);
   const canPlayVideo = useHeroPlaybackEligibility();
 
   const mediaFormat = item.type === 'tv' ? 'SERIES' : item.type === 'anime' ? 'ANIME SERIES' : 'FILM';
@@ -59,6 +60,17 @@ export function HeroBanner({ item }: HeroBannerProps) {
     return () => controller.abort();
   }, [canPlayVideo, item.playbackType, item.tmdbId, item.type]);
 
+  useEffect(() => {
+    setIsHeroPlayerSuspended(false);
+  }, [item.id]);
+
+  useEffect(() => {
+    if (isHoverActive || isModalActive) {
+      setIsHeroPlayerSuspended(true);
+      setIsTrailerPlaying(false);
+    }
+  }, [isHoverActive, isModalActive]);
+
   return (
     <section aria-labelledby="hero-title" className="hero-banner" id="home" ref={heroRef}>
       <ResponsiveImage
@@ -71,7 +83,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
         sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: item.backdrop.type }] : []}
         src={item.backdrop?.fallback ?? item.backdropUrl ?? '/media/fallback-landscape.svg'}
       />
-      {heroVideo && (
+      {heroVideo && !isHeroPlayerSuspended && !isHoverActive && !isModalActive && (
         <YouTubePreview
           heroVolumeFactor={heroVolumeFactor}
           isHeroInView={isHeroInView}

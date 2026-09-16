@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { cx } from '../../lib/cx';
 import { Icon } from '../icons/Icon';
+import { isTVMode } from '../../lib/tv';
 import './CarouselShell.css';
 
 interface CarouselShellProps {
@@ -28,6 +29,7 @@ export function CarouselShell({
   mobileItemWidth = '47vw',
   navigationMode = 'page',
 }: CarouselShellProps) {
+  const tvMode = isTVMode();
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollBack, setCanScrollBack] = useState(false);
   const [canScrollForward, setCanScrollForward] = useState(true);
@@ -63,6 +65,7 @@ export function CarouselShell({
   }, [navigationMode]);
 
   useEffect(() => {
+    if (tvMode) return;
     const track = trackRef.current;
     if (!track) return;
 
@@ -71,7 +74,7 @@ export function CarouselShell({
     observer.observe(track);
     Array.from(track.children).forEach((child) => observer.observe(child));
     return () => observer.disconnect();
-  }, [children, updateControls]);
+  }, [children, tvMode, updateControls]);
 
   const move = (direction: -1 | 1) => {
     const track = trackRef.current;
@@ -116,7 +119,7 @@ export function CarouselShell({
   return (
     <section aria-label={ariaLabel} className={cx('carousel-shell', className)} role="region">
       {/* Netflix Pagination Indicators */}
-      {pageCount > 1 && (
+      {!tvMode && pageCount > 1 && (
         <div aria-hidden="true" className="carousel-shell__pagination">
           {Array.from({ length: pageCount }).map((_, index) => (
             <span
@@ -131,7 +134,7 @@ export function CarouselShell({
       )}
 
       {/* Netflix Left Paddle Handle */}
-      {canScrollBack && (
+      {!tvMode && canScrollBack && (
         <button
           aria-label={`Previous items in ${ariaLabel}`}
           className="carousel-shell__paddle carousel-shell__paddle--left"
@@ -157,7 +160,7 @@ export function CarouselShell({
           event.preventDefault();
           event.currentTarget.scrollBy({ left: event.deltaY, behavior: 'smooth' });
         }}
-        onScroll={updateControls}
+        onScroll={tvMode ? undefined : updateControls}
         ref={trackRef}
         style={{
           '--carousel-item-width': itemWidth,
@@ -171,7 +174,7 @@ export function CarouselShell({
       </div>
 
       {/* Netflix Right Paddle Handle */}
-      {canScrollForward && (
+      {!tvMode && canScrollForward && (
         <button
           aria-label={`Next items in ${ariaLabel}`}
           className="carousel-shell__paddle carousel-shell__paddle--right"

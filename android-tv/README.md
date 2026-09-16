@@ -10,7 +10,7 @@ The TV app is a native shell around the existing DAITIGN browse application. It 
 - Startup retains a ten-second render watchdog, an on-screen failure message, and a focusable Retry action.
 - Play keeps the browse WebView alive, validates the generated VIDSTUCK URL, then opens it at the top level in a dedicated player WebView.
 - The player uses VIDSTUCK's original UI. DAITIGN adds no playback toolbar.
-- Before the first VIDSTUCK load in a process, the same WebView/controller runs a short local synthetic-control test and logs its result.
+- Playback goes directly to VIDSTUCK; there is no synthetic control screen or artificial startup delay.
 - `tv-player-controller.js` discovers visible controls by semantics and screen geometry and reports the active player state to Kotlin.
 - Closing playback destroys only the player WebView; the browse DOM, route, scroll positions, and focused card remain in memory.
 
@@ -46,7 +46,7 @@ android-tv/app/build/outputs/apk/debug/app-debug.apk
 
 ## Diagnostics
 
-Native startup, WebView lifecycle, preview console messages, player focus, D-pad keys, state transitions, control inventory, and synthetic-control results use one Logcat tag:
+Native startup, WebView lifecycle, preview console messages, player focus, raw D-pad keys, state transitions, and discovered control inventory use one Logcat tag:
 
 ```bash
 adb logcat -s DAITIGN-TV

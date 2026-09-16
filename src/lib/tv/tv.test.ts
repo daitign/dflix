@@ -231,20 +231,50 @@ test('13. Android TV startup cannot remain on a silent black splash', () => {
   assert.ok(!activity.includes('splashOverlay'));
 });
 
-test('14. Android TV player owns D-pad input and validates the controller before VIDSTUCK', () => {
+test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthetic test screen', () => {
   const activity = fs.readFileSync(
     path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
     'utf-8',
   );
   assert.ok(activity.includes('override fun dispatchKeyEvent'));
-  for (const key of ['KEYCODE_DPAD_CENTER', 'KEYCODE_ENTER', 'KEYCODE_DPAD_LEFT', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_DPAD_UP', 'KEYCODE_DPAD_DOWN', 'KEYCODE_BACK']) {
+  for (const key of ['KEYCODE_DPAD_CENTER', 'KEYCODE_ENTER', 'KEYCODE_NUMPAD_ENTER', 'KEYCODE_DPAD_LEFT', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_DPAD_UP', 'KEYCODE_DPAD_DOWN', 'KEYCODE_BACK']) {
     assert.ok(activity.includes(key));
   }
   assert.ok(activity.includes('player.isFocusable = true'));
   assert.ok(activity.includes('player.isFocusableInTouchMode = true'));
   assert.ok(activity.includes('player.requestFocus()'));
-  assert.ok(activity.includes('runSyntheticPlayerTest'));
-  assert.ok(activity.includes('loadDataWithBaseURL(PLAYER_TEST_URL'));
+  assert.ok(activity.includes('wakePlayerControls'));
+  assert.ok(activity.includes('loadPendingVidstuck()'));
+  assert.ok(!activity.includes('runSyntheticPlayerTest'));
+  assert.ok(!activity.includes('PLAYER_TEST_URL'));
+  assert.ok(!activity.includes('loadDataWithBaseURL'));
+});
+
+test('16. Browse menu is a trapped TV focus scope with Back restoration', () => {
+  const navigation = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/components/navigation/NavigationShell.tsx'),
+    'utf-8',
+  );
+  const spatial = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/lib/tv/spatialNavigation.ts'),
+    'utf-8',
+  );
+  assert.ok(navigation.includes('data-tv-focus-scope="menu"'));
+  assert.ok(navigation.includes('registerTVBackHandler(closeMenu)'));
+  assert.ok(navigation.includes("querySelector<HTMLElement>('[data-tv-focusable=\"true\"]')"));
+  assert.ok(spatial.includes('[data-tv-focus-scope="menu"]'));
+  assert.ok(spatial.includes("direction === 'left'"));
+});
+
+test('17. TV preview remains mounted through position updates and Top 10 uses a landscape baseline', () => {
+  const provider = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/HoverPreviewProvider.tsx'),
+    'utf-8',
+  );
+  assert.ok(provider.includes("closest('.ranked-card')"));
+  assert.ok(provider.includes("querySelector<HTMLElement>('.media-card__surface')"));
+  assert.ok(provider.includes('key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}'));
+  assert.ok(!provider.includes('activePreview.left}-${activePreview.top'));
 });
 
 test('15. TV preview retries muted and does not unmute the accepted fallback', () => {

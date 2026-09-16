@@ -10,6 +10,15 @@ interface FocusRow {
 }
 
 let preferredX: number | null = null;
+let cachedScope: HTMLElement | null = null;
+let cachedElements: HTMLElement[] | null = null;
+let cachedRows: FocusRow[] | null = null;
+
+function invalidateNavigationCache() {
+  cachedScope = null;
+  cachedElements = null;
+  cachedRows = null;
+}
 
 export function isVisible(element: HTMLElement): boolean {
   if (!element.isConnected) return false;
@@ -27,12 +36,21 @@ export function isFocusCandidate(element: HTMLElement): boolean {
 }
 
 function getActiveScope(): HTMLElement {
-  const scopes = Array.from(document.querySelectorAll<HTMLElement>('[data-tv-focus-scope="modal"]'));
+  const scopes = Array.from(document.querySelectorAll<HTMLElement>(
+    '[data-tv-focus-scope="modal"], [data-tv-focus-scope="menu"]',
+  ));
   return scopes.reverse().find(isVisible) ?? document.body;
 }
 
 export function getFocusableElements(scope: HTMLElement = getActiveScope()): HTMLElement[] {
-  return Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR)).filter(isVisible);
+  if (scope === cachedScope && cachedElements) {
+    const current = cachedElements.filter((element) => element.isConnected && isVisible(element));
+    if (current.length === cachedElements.length) return current;
+  }
+  cachedScope = scope;
+  cachedElements = Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR)).filter(isVisible);
+  cachedRows = null;
+  return cachedElements;
 }
 
 function center(element: HTMLElement) {
@@ -82,7 +100,9 @@ export function findClosestInRow(elements: HTMLElement[], targetX: number): HTML
 }
 
 export function findNextSpatialElement(current: HTMLElement, direction: Direction): HTMLElement | null {
-  const rows = rowsFor(getFocusableElements());
+  const scope = getActiveScope();
+  if (scope !== cachedScope || !cachedRows) cachedRows = rowsFor(getFocusableElements(scope));
+  const rows = cachedRows;
   const rowIndex = rows.findIndex((row) => row.elements.includes(current));
   if (rowIndex < 0) return null;
 
@@ -99,7 +119,9 @@ export function findNextSpatialElement(current: HTMLElement, direction: Directio
 }
 
 export function scrollElementIntoOptimalView(element: HTMLElement) {
-  element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  window.requestAnimationFrame(() => {
+    if (element.isConnected) element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  });
 }
 
 function focusElement(element: HTMLElement, preserveX = false) {
@@ -155,6 +177,13 @@ export function initSpatialNavigation(): () => void {
     if (!direction) return;
 
     const active = document.activeElement as HTMLElement | null;
+    const menuScope = active?.closest<HTMLElement>('[data-tv-focus-scope="menu"]');
+    if (menuScope && direction === 'left') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      menuScope.dispatchEvent(new CustomEvent('daitign:tv-menu-back', { bubbles: true }));
+      return;
+    }
     if (active instanceof HTMLInputElement && (direction === 'left' || direction === 'right')) return;
     if (!active || !isFocusCandidate(active) || !isVisible(active)) {
       event.preventDefault();
@@ -162,12 +191,24 @@ export function initSpatialNavigation(): () => void {
       return;
     }
 
+    const startedAt = window.performance.now();
     const next = findNextSpatialElement(active, direction);
     event.preventDefault();
     event.stopImmediatePropagation();
     if (!next) return;
     focusElement(next, direction === 'up' || direction === 'down');
+    window.requestAnimationFrame(() => {
+      console.debug(`[DAITIGN TV Perf] key-to-focus ${Math.round(window.performance.now() - startedAt)}ms`);
+    });
   };
+
+  const observer = new MutationObserver(invalidateNavigationCache);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['aria-hidden', 'data-tv-focusable', 'disabled', 'hidden', 'style'],
+    childList: true,
+    subtree: true,
+  });
 
   document.addEventListener('focusin', handleFocus, true);
   window.addEventListener('keydown', handleKey, true);
@@ -175,6 +216,8 @@ export function initSpatialNavigation(): () => void {
     window.clearTimeout(initialTimer);
     document.removeEventListener('focusin', handleFocus, true);
     window.removeEventListener('keydown', handleKey, true);
+    observer.disconnect();
     preferredX = null;
+    invalidateNavigationCache();
   };
 }

@@ -10,10 +10,12 @@
   var selected = null;
   var previousControl = null;
   var preferredX = null;
+  var candidateCache = [];
+  var candidatesDirty = true;
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.1) drop-shadow(0 4px 9px rgba(255,255,255,.22))!important;transform:scale(1.04)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -31,11 +33,15 @@
   }
 
   function label(element) {
-    return [element.getAttribute('aria-label'), element.getAttribute('title'), element.getAttribute('name'), element.getAttribute('data-testid'), element.getAttribute('role'), element.textContent, typeof element.className === 'string' ? element.className : ''].filter(Boolean).join(' ').trim().toLowerCase();
+    return [
+      element.getAttribute('aria-label'), element.getAttribute('title'), element.getAttribute('name'),
+      element.getAttribute('data-testid'), element.getAttribute('role'), element.textContent,
+      typeof element.className === 'string' ? element.className : ''
+    ].filter(Boolean).join(' ').trim().toLowerCase();
   }
 
   function isTimeline(element) {
-    return element.matches('input[type="range"], [role="slider"], [aria-valuenow]') || /timeline|progress|scrub|seek/.test(label(element));
+    return element.matches('input[type="range"],[role="slider"],[aria-valuenow]') || /timeline|progress|scrub|seek/.test(label(element));
   }
 
   function controlKind(element) {
@@ -45,65 +51,43 @@
     if (/next|episode/.test(semantic)) return 'next';
     if (/volume|mute|sound/.test(semantic)) return 'volume';
     if (/aspect|fit|ratio/.test(semantic)) return 'fit';
-    if (/subtitle|caption|cc/.test(semantic)) return 'subtitle';
-    if (/quality|auto|1080|720|480/.test(semantic)) return 'quality';
+    if (/subtitle|caption|\bcc\b|english\s*\d*/.test(semantic)) return 'subtitle';
+    if (/quality|\bauto\b|1080|720|480/.test(semantic)) return 'quality';
     if (/server|source/.test(semantic)) return 'server';
     if (/setting/.test(semantic)) return 'settings';
     if (/fullscreen|full screen/.test(semantic)) return 'fullscreen';
+    if (/cast|airplay|chromecast/.test(semantic)) return 'cast';
+    if (/back|return/.test(semantic)) return 'back';
     return 'control';
   }
 
-  function candidates() {
+  function candidates(force) {
+    if (!force && !candidatesDirty) {
+      candidateCache = candidateCache.filter(visible);
+      return candidateCache.slice();
+    }
     var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title]';
-    return Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
+    candidateCache = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
       if (!visible(element) || element.matches('video,iframe,:disabled,[aria-disabled="true"]')) return false;
       var rect = element.getBoundingClientRect();
       return !(rect.width > innerWidth * .82 && rect.height > innerHeight * .82);
     });
-  }
 
-  function inventory(logResults) {
-    var all = candidates();
-    var grouped = rows(all);
-    var result = all.map(function (element) {
-      var rect = element.getBoundingClientRect();
-      var group = grouped.findIndex(function (row) { return row.elements.indexOf(element) >= 0; });
-      return {
-        kind: controlKind(element),
-        label: label(element),
-        tag: element.tagName.toLowerCase(),
-        role: element.getAttribute('role') || '',
-        group: group,
-        rect: {
-          left: Math.round(rect.left), top: Math.round(rect.top),
-          width: Math.round(rect.width), height: Math.round(rect.height)
-        }
-      };
-    });
-    if (logResults) result.forEach(function (control) {
-      console.log('[DAITIGN TV Player] control', JSON.stringify(control));
-    });
-    return result;
-  }
-
-  function popup() {
-    var containers = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"],[role="menu"],[role="listbox"],[aria-modal="true"]'));
-    var semanticPopup = containers.reverse().find(visible);
-    if (semanticPopup) return semanticPopup;
-    var positional = Array.prototype.slice.call(document.body.querySelectorAll('div')).filter(function (element) {
-      if (!visible(element)) return false;
-      var rect = element.getBoundingClientRect();
-      var style = getComputedStyle(element);
-      if (style.position !== 'fixed' && style.position !== 'absolute') return false;
-      if (rect.width > innerWidth * .8 || rect.height > innerHeight * .85) return false;
-      if (rect.width < innerWidth * .12 || rect.height < innerHeight * .12) return false;
-      return candidates().filter(function (item) { return element.contains(item); }).length >= 2;
-    });
-    positional.sort(function (a, b) {
-      var ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
-      return ar.width * ar.height - br.width * br.height;
-    });
-    return positional[0] || null;
+    // Some VIDSTUCK builds expose icon-only controls as SVGs inside otherwise
+    // unlabeled wrappers. Promote the smallest visible wrapper as a geometry
+    // fallback without depending on one fragile class name.
+    if (candidateCache.length < 12) {
+      Array.prototype.slice.call(document.querySelectorAll('svg')).forEach(function (icon) {
+        if (!visible(icon)) return;
+        var wrapper = icon.closest('button,[role="button"],[tabindex]') || icon.parentElement;
+        if (!wrapper || !visible(wrapper) || candidateCache.indexOf(wrapper) >= 0) return;
+        var rect = wrapper.getBoundingClientRect();
+        if (rect.width < 12 || rect.height < 12 || rect.width > 180 || rect.height > 180) return;
+        candidateCache.push(wrapper);
+      });
+    }
+    candidatesDirty = false;
+    return candidateCache.slice();
   }
 
   function center(element) {
@@ -113,8 +97,7 @@
 
   function rows(elements) {
     var result = [];
-    elements.sort(function (a, b) { return center(a).y - center(b).y || center(a).x - center(b).x; });
-    elements.forEach(function (element) {
+    elements.slice().sort(function (a, b) { return center(a).y - center(b).y || center(a).x - center(b).x; }).forEach(function (element) {
       var point = center(element);
       var row = result.find(function (entry) { return Math.abs(entry.y - point.y) < Math.max(24, element.getBoundingClientRect().height * .6); });
       if (!row) result.push({ y: point.y, elements: [element] });
@@ -125,6 +108,43 @@
       }
     });
     return result.sort(function (a, b) { return a.y - b.y; });
+  }
+
+  function inventory(logResults) {
+    var all = candidates(true);
+    var grouped = rows(all);
+    var result = all.map(function (element) {
+      var rect = element.getBoundingClientRect();
+      var group = grouped.findIndex(function (row) { return row.elements.indexOf(element) >= 0; });
+      return {
+        kind: controlKind(element), label: label(element), tag: element.tagName.toLowerCase(),
+        role: element.getAttribute('role') || '', group: group,
+        rect: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) }
+      };
+    });
+    if (logResults) result.forEach(function (control) { console.log('[DAITIGN TV Player] control', JSON.stringify(control)); });
+    return result;
+  }
+
+  function popup() {
+    var containers = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"],[role="menu"],[role="listbox"],[aria-modal="true"]'));
+    var semanticPopup = containers.reverse().find(visible);
+    if (semanticPopup) return semanticPopup;
+    var all = candidates(false);
+    var positional = Array.prototype.slice.call(document.body.querySelectorAll('div')).filter(function (element) {
+      if (!visible(element)) return false;
+      var rect = element.getBoundingClientRect();
+      var computed = getComputedStyle(element);
+      if (computed.position !== 'fixed' && computed.position !== 'absolute') return false;
+      if (rect.width > innerWidth * .8 || rect.height > innerHeight * .85) return false;
+      if (rect.width < innerWidth * .12 || rect.height < innerHeight * .12) return false;
+      return all.filter(function (item) { return element.contains(item); }).length >= 2;
+    });
+    positional.sort(function (a, b) {
+      var ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+      return ar.width * ar.height - br.width * br.height;
+    });
+    return positional[0] || null;
   }
 
   function setSelected(element) {
@@ -141,10 +161,8 @@
   function showControls() {
     var target = document.querySelector('video') || document.body;
     [window, document, document.body, target].forEach(function (node) {
-      node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight - 36 }));
-      if (typeof PointerEvent === 'function') {
-        node.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight - 36, pointerType: 'mouse' }));
-      }
+      node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight * .86 }));
+      if (typeof PointerEvent === 'function') node.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight * .86, pointerType: 'mouse' }));
     });
   }
 
@@ -155,21 +173,25 @@
     notify(HIDDEN);
   }
 
+  function defaultControl(all) {
+    var semantic = all.find(function (element) { return controlKind(element) === 'play-pause'; });
+    if (semantic) return semantic;
+    var controlRows = rows(all.filter(function (element) { return !isTimeline(element); }));
+    var bottomRow = controlRows[controlRows.length - 1];
+    return bottomRow ? bottomRow.elements[0] : null;
+  }
+
   function focusDefault(attempt) {
     attempt = attempt || 0;
     showControls();
     window.setTimeout(function () {
-      var all = candidates();
+      var all = candidates(true);
       if (attempt === 0 || all.length) inventory(true);
-      var control = all.find(function (element) { return /play|pause/.test(label(element)) && !isTimeline(element); }) || all.find(function (element) { return !isTimeline(element); });
-      if (control) {
-        setSelected(control);
-      } else if (attempt < 10) {
-        focusDefault(attempt + 1);
-      } else {
-        console.warn('[DAITIGN TV Player] no visible controls discovered after reveal attempts');
-      }
-    }, attempt === 0 ? 120 : 180);
+      var control = defaultControl(all);
+      if (control) setSelected(control);
+      else if (attempt < 12) focusDefault(attempt + 1);
+      else console.warn('[DAITIGN TV Player] no visible controls discovered after reveal attempts');
+    }, attempt === 0 ? 90 : 120);
   }
 
   function dispatchSeek(key) {
@@ -179,11 +201,12 @@
 
   function move(direction) {
     var activePopup = popup();
-    var all = activePopup ? candidates().filter(function (item) { return activePopup.contains(item); }) : candidates();
-    if (!selected || !visible(selected)) { focusDefault(); return; }
+    var all = candidates(false);
+    if (activePopup) all = all.filter(function (item) { return activePopup.contains(item); });
+    if (!selected || !visible(selected) || all.indexOf(selected) < 0) { focusDefault(0); return; }
     var grouped = rows(all);
     var rowIndex = grouped.findIndex(function (row) { return row.elements.indexOf(selected) >= 0; });
-    if (rowIndex < 0) { focusDefault(); return; }
+    if (rowIndex < 0) { focusDefault(0); return; }
     var row = grouped[rowIndex];
     var index = row.elements.indexOf(selected);
     var target = null;
@@ -199,44 +222,47 @@
   }
 
   function activate() {
-    if (!selected || !visible(selected)) { focusDefault(); return; }
-    // Preserve the control that opened a popup. Activating a menu option must
-    // return to that originating control instead of remembering the option
-    // that disappears when the popup closes.
+    if (!selected || !visible(selected)) { focusDefault(0); return; }
     if (state !== MENU) previousControl = selected;
     selected.click();
+    candidatesDirty = true;
     window.setTimeout(function () {
       var activePopup = popup();
-      if (activePopup) setSelected(candidates().find(function (item) { return activePopup.contains(item); }));
+      if (activePopup) setSelected(candidates(true).find(function (item) { return activePopup.contains(item); }));
       else if (visible(previousControl)) setSelected(previousControl);
       else focusDefault(0);
-    }, 160);
+    }, 140);
   }
 
   function closeMenu() {
     var activePopup = popup();
     if (!activePopup) return false;
-    var close = candidates().find(function (element) { return activePopup.contains(element) && /close|back|done/.test(label(element)); });
+    var close = candidates(false).find(function (element) { return activePopup.contains(element) && /close|back|done/.test(label(element)); });
     if (close) close.click();
     else document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape', code: 'Escape' }));
-    window.setTimeout(function () { setSelected(visible(previousControl) ? previousControl : null); }, 100);
+    candidatesDirty = true;
+    window.setTimeout(function () { if (visible(previousControl)) setSelected(previousControl); else focusDefault(0); }, 90);
     notify(CONTROLS);
     return true;
   }
 
+  var observer = new MutationObserver(function () { candidatesDirty = true; });
+  observer.observe(document.documentElement, {
+    subtree: true, childList: true, attributes: true,
+    attributeFilter: ['style', 'hidden', 'disabled', 'aria-hidden', 'aria-label', 'title', 'role']
+  });
+
   window.DAITIGN_TV_PLAYER = {
     getState: function () { return state; },
+    wake: function () { focusDefault(0); return true; },
     handle: function (key) {
       if (key === 'BACK') {
         if (state === MENU && closeMenu()) return true;
         if (state !== HIDDEN) { hideControls(); return true; }
         return false;
       }
-      if (state === HIDDEN) {
-        if (key === 'OK') { focusDefault(0); return true; }
-        return true;
-      }
       showControls();
+      if (state === HIDDEN || !selected || !visible(selected)) { focusDefault(0); return true; }
       if ((key === 'LEFT' || key === 'RIGHT') && state === TIMELINE) { dispatchSeek(key === 'LEFT' ? 'ArrowLeft' : 'ArrowRight'); return true; }
       if (key === 'LEFT' || key === 'RIGHT' || key === 'UP' || key === 'DOWN') { move(key); return true; }
       if (key === 'OK') { activate(); return true; }
@@ -244,11 +270,7 @@
     },
     inventory: function () { return inventory(true); },
     snapshot: function () {
-      return {
-        state: state,
-        selected: selected ? { kind: controlKind(selected), label: label(selected) } : null,
-        controls: inventory(false)
-      };
+      return { state: state, selected: selected ? { kind: controlKind(selected), label: label(selected) } : null, controls: inventory(false) };
     }
   };
   console.log('[DAITIGN TV Player] controller ready; document visibility=' + document.visibilityState);
