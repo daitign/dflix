@@ -271,9 +271,19 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
         ? document.activeElement.closest<HTMLElement>('[data-tv-card="true"]')
         : null;
 
-      // A D-pad focus move may auto-scroll its new card into view. The old preview
-      // has already unmounted on blur; keep the new card's delayed open request.
-      if (isTVMode() && !current && openTimerRef.current && focusedCard) return;
+      if (isTVMode()) {
+        // Native D-pad focus frequently triggers both page and carousel scrolling.
+        // Scrolling must not destroy the active trailer while its card still owns
+        // focus; a real focus move closes the old preview through the card path.
+        if (current
+          && current.anchorElement.isConnected
+          && document.activeElement === current.anchorElement) {
+          const position = getPreviewPosition(current.anchorElement, current.referenceElement);
+          commitActivePreview({ ...current, ...position });
+          return;
+        }
+        if (!current && openTimerRef.current && focusedCard) return;
+      }
       const isInitialKeyboardFocusScroll = current?.source === 'keyboard'
         && document.activeElement === current.anchorElement
         && window.performance.now() - current.openedAt < 180

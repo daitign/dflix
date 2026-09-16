@@ -177,17 +177,19 @@ test('9. Component audit: Media cards and interactive controls are tagged with d
   assert.ok(detailsHero.includes('data-tv-focusable="true"'));
 });
 
-test('10. TV player uses the four-state native model and keeps the browse WebView alive', () => {
+test('10. Android TV uses the proven programmatic root without a diagnostic startup overlay', () => {
   const activity = fs.readFileSync(
     path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
     'utf-8',
   );
-  for (const state of ['PLAYER_HIDDEN', 'PLAYER_CONTROLS', 'PLAYER_TIMELINE', 'PLAYER_MENU']) {
-    assert.ok(activity.includes(state));
-  }
-  assert.ok(activity.includes('browseWebView?.visibility = View.INVISIBLE'));
-  assert.ok(activity.includes('player.loadUrl(uri.toString())'));
-  assert.ok(!activity.includes('injectTvPlayerFocusController'));
+  assert.ok(activity.includes('createNativeRoot()'));
+  assert.ok(activity.includes('setContentView(rootContainer)'));
+  assert.ok(activity.includes('createBrowseWebView()'));
+  assert.ok(activity.includes('startTvPlayer'));
+  assert.ok(activity.includes('playerWebView'));
+  assert.ok(!activity.includes('DAITIGN TV STARTING'));
+  assert.ok(!activity.includes('DAITIGN LOCAL WEBVIEW OK'));
+  assert.ok(!activity.includes('splashOverlay'));
 });
 
 test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar', () => {
@@ -216,15 +218,42 @@ test('13. Android TV startup cannot remain on a silent black splash', () => {
     'utf-8',
   );
   assert.ok(activity.includes('https://daiflix.vercel.app/?tv=1'));
-  assert.ok(activity.includes('LOAD_TIMEOUT_MS = 9_000L'));
-  assert.ok(activity.includes('showStartupFailure()'));
+  assert.ok(activity.includes('STARTUP_TIMEOUT_MS = 10_000L'));
+  assert.ok(activity.includes('showBrowseFailure'));
+  assert.ok(activity.includes('retryButton'));
+  assert.ok(activity.includes('DAITIGN STARTUP ERROR'));
   assert.ok(activity.includes('onPageStarted'));
   assert.ok(activity.includes('onPageFinished'));
   assert.ok(activity.includes('onReceivedError'));
   assert.ok(activity.includes('onReceivedHttpError'));
   assert.ok(activity.includes('onReceivedSslError'));
   assert.ok(activity.includes('handler?.cancel()'));
-  assert.ok(activity.includes('errorView.bringToFront()'));
-  assert.ok(activity.includes('playerWebView = player'));
-  assert.ok(activity.indexOf('playerWebView = player') > activity.indexOf('fun startTvPlayer'));
+  assert.ok(!activity.includes('splashOverlay'));
+});
+
+test('14. Android TV player owns D-pad input and validates the controller before VIDSTUCK', () => {
+  const activity = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
+    'utf-8',
+  );
+  assert.ok(activity.includes('override fun dispatchKeyEvent'));
+  for (const key of ['KEYCODE_DPAD_CENTER', 'KEYCODE_ENTER', 'KEYCODE_DPAD_LEFT', 'KEYCODE_DPAD_RIGHT', 'KEYCODE_DPAD_UP', 'KEYCODE_DPAD_DOWN', 'KEYCODE_BACK']) {
+    assert.ok(activity.includes(key));
+  }
+  assert.ok(activity.includes('player.isFocusable = true'));
+  assert.ok(activity.includes('player.isFocusableInTouchMode = true'));
+  assert.ok(activity.includes('player.requestFocus()'));
+  assert.ok(activity.includes('runSyntheticPlayerTest'));
+  assert.ok(activity.includes('loadDataWithBaseURL(PLAYER_TEST_URL'));
+});
+
+test('15. TV preview retries muted and does not unmute the accepted fallback', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes('Playback did not start within 1500ms'));
+  assert.ok(preview.includes('mutedFallbackActive = true'));
+  assert.ok(preview.includes('if (mutedFallbackActive)'));
+  assert.ok(preview.includes('preview unmounted'));
 });

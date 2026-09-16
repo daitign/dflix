@@ -13,7 +13,7 @@
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.12) drop-shadow(0 5px 10px rgba(0,0,0,.55))!important;transform:scale(1.06)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.18)!important;transform:scaleY(1.35)!important;transition:filter 120ms ease,transform 120ms ease!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.1) drop-shadow(0 4px 9px rgba(255,255,255,.22))!important;transform:scale(1.04)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -54,12 +54,36 @@
   }
 
   function candidates() {
-    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[tabindex]:not([tabindex="-1"]),[aria-label],[title]';
+    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title]';
     return Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
-      if (!visible(element) || element.matches('video,iframe')) return false;
+      if (!visible(element) || element.matches('video,iframe,:disabled,[aria-disabled="true"]')) return false;
       var rect = element.getBoundingClientRect();
       return !(rect.width > innerWidth * .82 && rect.height > innerHeight * .82);
     });
+  }
+
+  function inventory(logResults) {
+    var all = candidates();
+    var grouped = rows(all);
+    var result = all.map(function (element) {
+      var rect = element.getBoundingClientRect();
+      var group = grouped.findIndex(function (row) { return row.elements.indexOf(element) >= 0; });
+      return {
+        kind: controlKind(element),
+        label: label(element),
+        tag: element.tagName.toLowerCase(),
+        role: element.getAttribute('role') || '',
+        group: group,
+        rect: {
+          left: Math.round(rect.left), top: Math.round(rect.top),
+          width: Math.round(rect.width), height: Math.round(rect.height)
+        }
+      };
+    });
+    if (logResults) result.forEach(function (control) {
+      console.log('[DAITIGN TV Player] control', JSON.stringify(control));
+    });
+    return result;
   }
 
   function popup() {
@@ -110,12 +134,18 @@
     selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     preferredX = center(selected).x;
+    console.log('[DAITIGN TV Player] selected', controlKind(selected), label(selected));
     notify(popup() ? MENU : (isTimeline(selected) ? TIMELINE : CONTROLS));
   }
 
   function showControls() {
     var target = document.querySelector('video') || document.body;
-    [document, target].forEach(function (node) { node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: innerWidth / 2, clientY: innerHeight - 36 })); });
+    [window, document, document.body, target].forEach(function (node) {
+      node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight - 36 }));
+      if (typeof PointerEvent === 'function') {
+        node.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight - 36, pointerType: 'mouse' }));
+      }
+    });
   }
 
   function hideControls() {
@@ -125,13 +155,21 @@
     notify(HIDDEN);
   }
 
-  function focusDefault() {
+  function focusDefault(attempt) {
+    attempt = attempt || 0;
     showControls();
     window.setTimeout(function () {
       var all = candidates();
+      if (attempt === 0 || all.length) inventory(true);
       var control = all.find(function (element) { return /play|pause/.test(label(element)) && !isTimeline(element); }) || all.find(function (element) { return !isTimeline(element); });
-      setSelected(control);
-    }, 90);
+      if (control) {
+        setSelected(control);
+      } else if (attempt < 10) {
+        focusDefault(attempt + 1);
+      } else {
+        console.warn('[DAITIGN TV Player] no visible controls discovered after reveal attempts');
+      }
+    }, attempt === 0 ? 120 : 180);
   }
 
   function dispatchSeek(key) {
@@ -162,12 +200,16 @@
 
   function activate() {
     if (!selected || !visible(selected)) { focusDefault(); return; }
-    previousControl = selected;
+    // Preserve the control that opened a popup. Activating a menu option must
+    // return to that originating control instead of remembering the option
+    // that disappears when the popup closes.
+    if (state !== MENU) previousControl = selected;
     selected.click();
     window.setTimeout(function () {
       var activePopup = popup();
       if (activePopup) setSelected(candidates().find(function (item) { return activePopup.contains(item); }));
       else if (visible(previousControl)) setSelected(previousControl);
+      else focusDefault(0);
     }, 160);
   }
 
@@ -190,14 +232,25 @@
         if (state !== HIDDEN) { hideControls(); return true; }
         return false;
       }
-      if (state === HIDDEN) { focusDefault(); return true; }
+      if (state === HIDDEN) {
+        if (key === 'OK') { focusDefault(0); return true; }
+        return true;
+      }
       showControls();
       if ((key === 'LEFT' || key === 'RIGHT') && state === TIMELINE) { dispatchSeek(key === 'LEFT' ? 'ArrowLeft' : 'ArrowRight'); return true; }
       if (key === 'LEFT' || key === 'RIGHT' || key === 'UP' || key === 'DOWN') { move(key); return true; }
       if (key === 'OK') { activate(); return true; }
       return false;
     },
-    inventory: function () { return candidates().map(function (element) { return { kind: controlKind(element), label: label(element) }; }); }
+    inventory: function () { return inventory(true); },
+    snapshot: function () {
+      return {
+        state: state,
+        selected: selected ? { kind: controlKind(selected), label: label(selected) } : null,
+        controls: inventory(false)
+      };
+    }
   };
+  console.log('[DAITIGN TV Player] controller ready; document visibility=' + document.visibilityState);
   notify(HIDDEN);
 }());

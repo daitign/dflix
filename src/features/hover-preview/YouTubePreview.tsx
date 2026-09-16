@@ -139,6 +139,8 @@ export function YouTubePreview({
 }: YouTubePreviewProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
+  const onPlayingRef = useRef(onPlaying);
+  onPlayingRef.current = onPlaying;
   const hasStartedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const loopIntervalRef = useRef<number>(0);
@@ -364,6 +366,9 @@ export function YouTubePreview({
 
   useEffect(() => {
     let disposed = false;
+    console.log('[DAITIGN TV Preview] preview selected:', title, 'variant:', variant);
+    console.log('[DAITIGN TV Preview] trailer key:', activeVideo?.key ?? 'none');
+    console.log('[DAITIGN TV Preview] preview mounted; document visibility:', document.visibilityState);
     hasStartedRef.current = false;
     setHasStarted(false);
     setIsUnavailable(false);
@@ -413,6 +418,7 @@ export function YouTubePreview({
         const isMobile = isMobileTouchDevice();
         const wantSound = shouldBeAudibleRef.current && !isMobile;
         let playbackStarted = false;
+        let mutedFallbackActive = false;
 
         const player = new api.Player(mountRef.current, {
           height: '100%',
@@ -484,6 +490,7 @@ export function YouTubePreview({
               } catch (err) {
                 console.warn('[DAITIGN TV Preview] 6. play promise result: playVideo error, retrying muted', err);
                 console.log('[DAITIGN TV Preview] 7. muted state: muted (recovery)');
+                mutedFallbackActive = true;
                 event.target.mute();
                 event.target.playVideo();
                 currentVolumeRef.current = 0;
@@ -499,6 +506,7 @@ export function YouTubePreview({
                 console.warn('[DAITIGN TV Preview] 6. play promise result: Playback did not start within 1500ms, watchdog forcing muted retry');
                 console.log('[DAITIGN TV Preview] 7. muted state: muted (watchdog recovery)');
                 try {
+                  mutedFallbackActive = true;
                   event.target.mute();
                   event.target.setVolume?.(0);
                   event.target.playVideo();
@@ -524,7 +532,7 @@ export function YouTubePreview({
                   hasStartedRef.current = true;
                   isPlayingRef.current = true;
                   setHasStarted(true);
-                  onPlaying?.();
+                  onPlayingRef.current?.();
                 }
 
                 // Seamless loop monitor: loop 0.6s before end to prevent YouTube "More videos" / related videos screen
@@ -538,6 +546,26 @@ export function YouTubePreview({
                     }
                   } catch {}
                 }, 250);
+
+                // Once WebView autoplay required a muted retry, keep this player
+                // muted. Immediately unmuting here can make Android WebView block
+                // or pause the same autoplay again.
+                if (mutedFallbackActive) {
+                  try {
+                    event.target.mute();
+                    event.target.setVolume?.(0);
+                  } catch {}
+                  currentVolumeRef.current = 0;
+                  isMutedRef.current = true;
+                  setAutoplaySoundAllowed(false);
+                  if (isHero && !isHeroInViewRef.current) {
+                    try {
+                      event.target.pauseVideo();
+                      isPlayingRef.current = false;
+                    } catch {}
+                  }
+                  return;
+                }
 
                 const isMobile = isMobileTouchDevice();
 
@@ -619,6 +647,7 @@ export function YouTubePreview({
                   console.warn('[DAITIGN TV Preview] 6. play promise result: paused by browser/system policy, immediately retrying muted');
                   console.log('[DAITIGN TV Preview] 7. muted state: muted (recovery)');
                   try {
+                    mutedFallbackActive = true;
                     event.target.mute();
                     event.target.playVideo();
                     currentVolumeRef.current = 0;
@@ -634,6 +663,7 @@ export function YouTubePreview({
               if (event.data === 5 /* CUED */) {
                 console.log('[DAITIGN TV Preview] 6. play promise result: CUED state received, forcing playVideo()');
                 try {
+                  mutedFallbackActive = true;
                   event.target.mute();
                   event.target.playVideo();
                 } catch {}
@@ -650,10 +680,14 @@ export function YouTubePreview({
         });
         playerRef.current = player;
       })
-      .catch(() => markUnavailable());
+      .catch((error) => {
+        console.error('[DAITIGN TV Preview] iframe/API creation failed:', error);
+        markUnavailable();
+      });
 
     return () => {
       disposed = true;
+      console.log('[DAITIGN TV Preview] preview unmounted:', title, 'key:', activeVideo?.key ?? 'none');
       clearStartTimeout();
       if (watchdogTimerRef.current !== null) {
         window.clearTimeout(watchdogTimerRef.current);
@@ -668,7 +702,7 @@ export function YouTubePreview({
       playerRef.current = null;
       destroyPlayer(player);
     };
-  }, [activeVideo?.key, candidateIndex, candidateList.length, onPlaying, setAutoplaySoundAllowed, title]);
+  }, [activeVideo?.key, candidateIndex, candidateList.length, setAutoplaySoundAllowed, title, variant]);
 
   if (isUnavailable) return null;
 
@@ -718,4 +752,3 @@ export function YouTubePreview({
     </>
   );
 }
-
