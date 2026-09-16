@@ -201,6 +201,13 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
     assert.ok(controller.includes(`'${control}'`));
   }
   assert.ok(controller.includes("[role=\"slider\"]"));
+  assert.ok(controller.includes("var MENU = 'PLAYER_MENU'"));
+  assert.ok(controller.includes('discoverMenuItems'));
+  assert.ok(controller.includes('[role="menuitem"],[role="option"],button'));
+  assert.ok(controller.includes('moveMenu(direction)'));
+  assert.ok(controller.includes('activateMenuItem'));
+  assert.ok(controller.includes('pointerFallback'));
+  assert.ok(controller.includes('closeMenu()'));
   assert.ok(!controller.includes('toolbar'));
 });
 
@@ -245,6 +252,9 @@ test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthe
   assert.ok(activity.includes('player.requestFocus()'));
   assert.ok(activity.includes('wakePlayerControls'));
   assert.ok(activity.includes('loadPendingVidstuck()'));
+  assert.ok(activity.includes('[BROWSE KEY]'));
+  assert.ok(activity.includes("handleRemoteKey('OK')"));
+  assert.ok(activity.includes('document.activeElement'));
   assert.ok(!activity.includes('runSyntheticPlayerTest'));
   assert.ok(!activity.includes('PLAYER_TEST_URL'));
   assert.ok(!activity.includes('loadDataWithBaseURL'));
@@ -262,7 +272,11 @@ test('16. Browse menu is a trapped TV focus scope with Back restoration', () => 
   assert.ok(navigation.includes('data-tv-focus-scope="menu"'));
   assert.ok(navigation.includes('registerTVBackHandler(closeMenu)'));
   assert.ok(navigation.includes("querySelector<HTMLElement>('[data-tv-focusable=\"true\"]')"));
+  assert.ok(navigation.includes('daitign:tv-menu-activate'));
+  assert.ok(navigation.includes('data-tv-route={item.href}'));
   assert.ok(spatial.includes('[data-tv-focus-scope="menu"]'));
+  assert.ok(spatial.includes('activateTVFocusedElement'));
+  assert.ok(spatial.includes("handleRemoteKey: (key) => key === 'OK'"));
   assert.ok(spatial.includes("direction === 'left'"));
 });
 
@@ -277,13 +291,21 @@ test('17. TV preview remains mounted through position updates and Top 10 uses a 
   assert.ok(!provider.includes('activePreview.left}-${activePreview.top'));
 });
 
-test('15. TV preview retries muted and does not unmute the accepted fallback', () => {
+test('18. TV preview confirms real playback, retries muted, and responds to remote media unlock', () => {
   const preview = fs.readFileSync(
     path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
     'utf-8',
   );
-  assert.ok(preview.includes('Playback did not start within 1500ms'));
+  assert.ok(preview.includes('autoplay timeout after 1500ms'));
+  assert.ok(preview.includes("'daitign:tv-media-interaction'"));
+  assert.ok(preview.includes('playVideo called from remote interaction'));
+  assert.ok(preview.includes('remoteSoundRetryRef.current'));
+  assert.ok(preview.includes('playVideo called (Android TV confirmation retry)'));
+  assert.ok(preview.includes("[api.PlayerState.PLAYING]: 'PLAYING'"));
+  assert.ok(preview.includes("[api.PlayerState.BUFFERING ?? 3]: 'BUFFERING'"));
+  assert.ok(preview.includes('success (PLAYING)'));
+  assert.ok(preview.includes('enablejsapi=1 autoplay=1 playsinline=1 origin='));
   assert.ok(preview.includes('mutedFallbackActive = true'));
-  assert.ok(preview.includes('if (mutedFallbackActive)'));
+  assert.ok(preview.includes('if (mutedFallbackActive && !remoteSoundRetryRef.current)'));
   assert.ok(preview.includes('preview unmounted'));
 });

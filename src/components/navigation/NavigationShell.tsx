@@ -142,12 +142,23 @@ export function NavigationShell({
     const unregisterBack = registerTVBackHandler(closeMenu);
     const menu = browseMenuRef.current;
     const handleMenuBack = () => closeMenu();
+    const handleMenuActivate = (event: Event) => {
+      const element = (event as CustomEvent<{ element?: HTMLElement }>).detail?.element;
+      const route = element?.dataset.tvRoute;
+      if (!route || !menu?.contains(element)) return;
+      event.preventDefault();
+      setIsBrowseOpen(false);
+      navigateTo(route);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
     menu?.addEventListener('daitign:tv-menu-back', handleMenuBack);
+    menu?.addEventListener('daitign:tv-menu-activate', handleMenuActivate);
 
     return () => {
       window.cancelAnimationFrame(focusFirstItem);
       unregisterBack();
       menu?.removeEventListener('daitign:tv-menu-back', handleMenuBack);
+      menu?.removeEventListener('daitign:tv-menu-activate', handleMenuActivate);
     };
   }, [isBrowseOpen]);
 
@@ -235,6 +246,7 @@ export function NavigationShell({
                           activeId === item.id && 'netflix-browse-popover__item--active'
                         )}
                         data-tv-focusable="true"
+                        data-tv-route={item.href}
                         href={item.href}
                         key={item.id}
                         onClick={(e) => {

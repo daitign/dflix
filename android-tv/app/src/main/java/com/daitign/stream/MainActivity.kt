@@ -500,7 +500,24 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (playerWebView == null) return super.dispatchKeyEvent(event)
+        if (playerWebView == null) {
+            val isBrowseActivate = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                event.keyCode == KeyEvent.KEYCODE_ENTER ||
+                event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
+            if (!isBrowseActivate) return super.dispatchKeyEvent(event)
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                Log.i(TAG, "[BROWSE KEY] ${KeyEvent.keyCodeToString(event.keyCode)} activates focused element")
+                browseWebView?.evaluateJavascript(
+                    "(function(){" +
+                        "if(window.DAITIGN_TV&&window.DAITIGN_TV.handleRemoteKey){return Boolean(window.DAITIGN_TV.handleRemoteKey('OK'));}" +
+                        "var active=document.activeElement;" +
+                        "if(active&&typeof active.click==='function'){active.click();return true;}" +
+                        "return false;" +
+                    "})()",
+                ) { handled -> Log.i(TAG, "browse focused activation handled=$handled") }
+            }
+            return true
+        }
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             Log.i(
                 TAG,

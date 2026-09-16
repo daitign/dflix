@@ -16,11 +16,13 @@ declare global {
     DAITIGN_TV?: {
       getBrowseState?: () => string;
       handleBack?: () => boolean;
+      handleRemoteKey?: (key: 'OK') => boolean;
       isTV?: boolean;
       onNativeBack?: () => boolean;
       onPlayerClosed?: () => void;
       restoreBrowseState?: () => void;
       saveBrowseState?: () => void;
+      tvMediaInteractionUnlocked?: boolean;
       version?: string;
     };
   }

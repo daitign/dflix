@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import type { TmdbVideo } from '../../lib/tmdb/types';
+import { isTVMode } from '../../lib/tv/tvDetection.ts';
 import { isMobileTouchDevice, shouldTrailerBeAudible, usePreviewAudio } from '../preview-audio';
 
 const YOUTUBE_API_SCRIPT_ID = 'daitign-youtube-iframe-api';
@@ -43,6 +44,8 @@ interface YouTubePlayerOptions {
 interface YouTubeApi {
   Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer;
   PlayerState: {
+    BUFFERING?: number;
+    CUED?: number;
     ENDED: number;
     PAUSED: number;
     PLAYING: number;
@@ -148,6 +151,7 @@ export function YouTubePreview({
   const isMutedRef = useRef<boolean>(false);
   const fadeIntervalRef = useRef<number | null>(null);
   const watchdogTimerRef = useRef<number | null>(null);
+  const remoteSoundRetryRef = useRef(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
 
@@ -169,10 +173,13 @@ export function YouTubePreview({
     isHoverActive,
     isModalActive,
     setAutoplaySoundAllowed,
+    tvMediaInteractionUnlocked,
     toggleSound,
   } = usePreviewAudio();
 
   const isAudible = isAudibleProp !== undefined ? isAudibleProp : contextIsAudible;
+  const tvMediaInteractionUnlockedRef = useRef(tvMediaInteractionUnlocked);
+  tvMediaInteractionUnlockedRef.current = tvMediaInteractionUnlocked;
 
   const isHero = variant === 'hero';
   const isModal = variant === 'modal';
@@ -191,6 +198,30 @@ export function YouTubePreview({
 
   const isHeroInViewRef = useRef(isHeroInView);
   isHeroInViewRef.current = isHeroInView;
+
+  useEffect(() => {
+    if (!isTVMode()) return;
+    const handleTVMediaInteraction = () => {
+      const player = playerRef.current;
+      if (!player) return;
+      console.log('[DAITIGN TV Preview] remote media-unlock replay requested');
+      try {
+        if (shouldBeAudibleRef.current) {
+          remoteSoundRetryRef.current = true;
+          player.unMute();
+          player.setVolume?.(100);
+          currentVolumeRef.current = 100;
+          isMutedRef.current = false;
+        }
+        player.playVideo();
+        console.log('[DAITIGN TV Preview] playVideo called from remote interaction');
+      } catch (error) {
+        console.warn('[DAITIGN TV Preview] remote media-unlock replay failed', error);
+      }
+    };
+    window.addEventListener('daitign:tv-media-interaction', handleTVMediaInteraction);
+    return () => window.removeEventListener('daitign:tv-media-interaction', handleTVMediaInteraction);
+  }, []);
 
   // Playback state arbitration (Play / Pause when scrolled out of view or modal/hover opens)
   useEffect(() => {
@@ -370,6 +401,7 @@ export function YouTubePreview({
     console.log('[DAITIGN TV Preview] trailer key:', activeVideo?.key ?? 'none');
     console.log('[DAITIGN TV Preview] preview mounted; document visibility:', document.visibilityState);
     hasStartedRef.current = false;
+    remoteSoundRetryRef.current = false;
     setHasStarted(false);
     setIsUnavailable(false);
 
@@ -454,6 +486,11 @@ export function YouTubePreview({
               iframe.tabIndex = -1;
               iframe.title = `${title} trailer preview`;
 
+              console.log('[DAITIGN TV Preview] API ready');
+              console.log('[DAITIGN TV Preview] iframe created');
+              console.log('[DAITIGN TV Preview] params enablejsapi=1 autoplay=1 playsinline=1 origin=' + window.location.origin);
+              console.log('[DAITIGN TV Preview] tvMediaInteractionUnlocked=' + tvMediaInteractionUnlockedRef.current);
+
               // 10 Specific Diagnostic Loggers (PART H)
               console.log('[DAITIGN TV Preview] 1. trailer selected:', activeVideo.name || activeVideo.key, `(${activeVideo.type})`);
               console.log('[DAITIGN TV Preview] 2. YouTube video key:', activeVideo.key);
@@ -486,7 +523,7 @@ export function YouTubePreview({
 
               try {
                 event.target.playVideo();
-                console.log('[DAITIGN TV Preview] 6. play promise result: playVideo() invoked');
+                console.log('[DAITIGN TV Preview] playVideo called (sound-on attempt=' + wantSound + ')');
               } catch (err) {
                 console.warn('[DAITIGN TV Preview] 6. play promise result: playVideo error, retrying muted', err);
                 console.log('[DAITIGN TV Preview] 7. muted state: muted (recovery)');
@@ -497,14 +534,24 @@ export function YouTubePreview({
                 isMutedRef.current = true;
               }
 
+              if (isTVMode()) {
+                window.setTimeout(() => {
+                  if (disposed || playbackStarted) return;
+                  try {
+                    event.target.playVideo();
+                    console.log('[DAITIGN TV Preview] playVideo called (Android TV confirmation retry)');
+                  } catch {}
+                }, 220);
+              }
+
               // TV Playback Watchdog: If playback does NOT start within 1.5s, retry muted immediately
               if (watchdogTimerRef.current !== null) {
                 window.clearTimeout(watchdogTimerRef.current);
               }
               watchdogTimerRef.current = window.setTimeout(() => {
                 if (disposed || playbackStarted) return;
-                console.warn('[DAITIGN TV Preview] 6. play promise result: Playback did not start within 1500ms, watchdog forcing muted retry');
-                console.log('[DAITIGN TV Preview] 7. muted state: muted (watchdog recovery)');
+                console.warn('[DAITIGN TV Preview] autoplay timeout after 1500ms');
+                console.log('[DAITIGN TV Preview] muted retry');
                 try {
                   mutedFallbackActive = true;
                   event.target.mute();
@@ -519,6 +566,16 @@ export function YouTubePreview({
             },
             onStateChange: (event) => {
               if (disposed) return;
+
+              const stateNames: Record<number, string> = {
+                [-1]: 'UNSTARTED',
+                [api.PlayerState.ENDED]: 'ENDED',
+                [api.PlayerState.PLAYING]: 'PLAYING',
+                [api.PlayerState.PAUSED]: 'PAUSED',
+                [api.PlayerState.BUFFERING ?? 3]: 'BUFFERING',
+                [api.PlayerState.CUED ?? 5]: 'CUED',
+              };
+              console.log(`[DAITIGN TV Preview] state = ${stateNames[event.data] ?? event.data}`);
 
               if (event.data === api.PlayerState.PLAYING) {
                 console.log('[DAITIGN TV Preview] 6. play promise result: success (PLAYING)');
@@ -550,7 +607,7 @@ export function YouTubePreview({
                 // Once WebView autoplay required a muted retry, keep this player
                 // muted. Immediately unmuting here can make Android WebView block
                 // or pause the same autoplay again.
-                if (mutedFallbackActive) {
+                if (mutedFallbackActive && !remoteSoundRetryRef.current) {
                   try {
                     event.target.mute();
                     event.target.setVolume?.(0);
@@ -565,6 +622,20 @@ export function YouTubePreview({
                     } catch {}
                   }
                   return;
+                }
+
+                // A physical remote interaction is a real user gesture. If it
+                // unlocks sound after the muted fallback, do not let the stale
+                // fallback flag immediately mute the successful retry again.
+                if (remoteSoundRetryRef.current && shouldBeAudibleRef.current) {
+                  try {
+                    event.target.unMute();
+                    event.target.setVolume?.(100);
+                  } catch {}
+                  currentVolumeRef.current = 100;
+                  isMutedRef.current = false;
+                  mutedFallbackActive = false;
+                  remoteSoundRetryRef.current = false;
                 }
 
                 const isMobile = isMobileTouchDevice();

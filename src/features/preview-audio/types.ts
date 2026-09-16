@@ -24,6 +24,9 @@ export interface PreviewAudioContextValue {
    */
   isAudible: boolean;
 
+  /** A real TV remote key has supplied a media-unlock interaction. */
+  tvMediaInteractionUnlocked: boolean;
+
   /**
    * Hover preview active state for audio arbitration:
    * When a hover preview card is open, isHoverActive is true,

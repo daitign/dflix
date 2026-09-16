@@ -47,6 +47,10 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
   const [autoplaySoundAllowed, setAutoplaySoundAllowed] = useState<boolean>(true);
   const [isHoverActive, setHoverActive] = useState<boolean>(false);
   const [isModalActive, setModalActive] = useState<boolean>(false);
+  const [tvMediaInteractionUnlocked, setTvMediaInteractionUnlocked] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !isTVMode()) return false;
+    try { return window.sessionStorage.getItem('daitign-tv-media-unlocked') === 'true'; } catch { return false; }
+  });
 
   const setSoundEnabled = useCallback((enabled: boolean) => {
     setSoundEnabledState(enabled);
@@ -94,6 +98,16 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
     return removeListeners;
   }, [autoplaySoundAllowed]);
 
+  useEffect(() => {
+    if (!isTVMode()) return;
+    const handleTVMediaInteraction = () => {
+      setTvMediaInteractionUnlocked(true);
+      setAutoplaySoundAllowed(true);
+    };
+    window.addEventListener('daitign:tv-media-interaction', handleTVMediaInteraction);
+    return () => window.removeEventListener('daitign:tv-media-interaction', handleTVMediaInteraction);
+  }, []);
+
   const isAudible = soundEnabled && autoplaySoundAllowed;
 
   const value = useMemo<PreviewAudioContextValue>(
@@ -104,12 +118,13 @@ export function PreviewAudioProvider({ children }: { children: React.ReactNode }
       autoplaySoundAllowed,
       setAutoplaySoundAllowed,
       isAudible,
+      tvMediaInteractionUnlocked,
       isHoverActive,
       setHoverActive,
       isModalActive,
       setModalActive,
     }),
-    [soundEnabled, setSoundEnabled, toggleSound, autoplaySoundAllowed, isAudible, isHoverActive, isModalActive],
+    [soundEnabled, setSoundEnabled, toggleSound, autoplaySoundAllowed, isAudible, tvMediaInteractionUnlocked, isHoverActive, isModalActive],
   );
 
   return (

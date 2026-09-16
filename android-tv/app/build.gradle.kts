@@ -11,8 +11,8 @@ android {
         applicationId = "com.daitign.stream"
         minSdk = 21
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3-tv"
+        versionCode = 5
+        versionName = "1.0.4-tv"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

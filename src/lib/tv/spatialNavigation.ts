@@ -136,6 +136,39 @@ function focusInitial() {
   if (preferred) focusElement(preferred);
 }
 
+function signalTVMediaInteraction() {
+  if (!window.DAITIGN_TV?.tvMediaInteractionUnlocked) {
+    window.DAITIGN_TV = { ...window.DAITIGN_TV, tvMediaInteractionUnlocked: true };
+    try { window.sessionStorage.setItem('daitign-tv-media-unlocked', 'true'); } catch {}
+    console.log('[DAITIGN TV Preview] media interaction unlocked by remote');
+  }
+  // Dispatch every valid remote gesture so a preview that previously fell back
+  // to muted playback can retry sound without remounting its iframe.
+  window.dispatchEvent(new CustomEvent('daitign:tv-media-interaction'));
+}
+
+export function activateTVFocusedElement(): boolean {
+  const active = document.activeElement as HTMLElement | null;
+  if (!active || !isFocusCandidate(active) || !isVisible(active)) return false;
+  if (active.tagName === 'SELECT' || active.tagName === 'INPUT') return false;
+
+  signalTVMediaInteraction();
+  const menuScope = active.closest<HTMLElement>('[data-tv-focus-scope="menu"]');
+  if (menuScope) {
+    const activation = new CustomEvent('daitign:tv-menu-activate', {
+      bubbles: true,
+      cancelable: true,
+      detail: { element: active },
+    });
+    menuScope.dispatchEvent(activation);
+    if (!activation.defaultPrevented) active.click();
+    return true;
+  }
+
+  active.click();
+  return true;
+}
+
 export function initSpatialNavigation(): () => void {
   if (typeof window === 'undefined' || !isTVMode()) return () => {};
 
@@ -151,6 +184,9 @@ export function initSpatialNavigation(): () => void {
 
   const handleKey = (event: KeyboardEvent) => {
     if (!isTVMode()) return;
+    if (event.key.startsWith('Arrow')) {
+      signalTVMediaInteraction();
+    }
     if (event.key === 'Escape' || event.key === 'Backspace') {
       if (event.target instanceof HTMLInputElement && event.key === 'Backspace' && event.target.value) return;
       if (executeTVBack()) {
@@ -160,12 +196,10 @@ export function initSpatialNavigation(): () => void {
       return;
     }
 
-    if ((event.key === 'Enter' || event.key === ' ') && document.activeElement instanceof HTMLElement) {
-      const active = document.activeElement;
-      if (isFocusCandidate(active) && isVisible(active) && active.tagName !== 'SELECT' && active.tagName !== 'INPUT') {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (activateTVFocusedElement()) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        active.click();
       }
       return;
     }
@@ -212,11 +246,17 @@ export function initSpatialNavigation(): () => void {
 
   document.addEventListener('focusin', handleFocus, true);
   window.addEventListener('keydown', handleKey, true);
+  window.DAITIGN_TV = {
+    ...window.DAITIGN_TV,
+    handleRemoteKey: (key) => key === 'OK' && activateTVFocusedElement(),
+    tvMediaInteractionUnlocked: window.sessionStorage.getItem('daitign-tv-media-unlocked') === 'true',
+  };
   return () => {
     window.clearTimeout(initialTimer);
     document.removeEventListener('focusin', handleFocus, true);
     window.removeEventListener('keydown', handleKey, true);
     observer.disconnect();
+    if (window.DAITIGN_TV) delete window.DAITIGN_TV.handleRemoteKey;
     preferredX = null;
     invalidateNavigationCache();
   };
