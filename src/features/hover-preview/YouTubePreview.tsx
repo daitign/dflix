@@ -4,6 +4,7 @@ import { IconButton } from '../../components/primitives/IconButton';
 import type { TmdbVideo } from '../../lib/tmdb/types';
 import { isTVMode } from '../../lib/tv/tvDetection.ts';
 import { isMobileTouchDevice, shouldTrailerBeAudible, usePreviewAudio } from '../preview-audio';
+import { logTVPreviewStage } from './tvPreviewDiagnostics';
 
 const YOUTUBE_API_SCRIPT_ID = 'daitign-youtube-iframe-api';
 const PLAYER_START_TIMEOUT_MS = 12_000;
@@ -29,9 +30,13 @@ interface YouTubePlayerStateEvent extends YouTubePlayerEvent {
   data: number;
 }
 
+interface YouTubePlayerErrorEvent extends YouTubePlayerEvent {
+  data: number;
+}
+
 interface YouTubePlayerOptions {
   events: {
-    onError: (event: YouTubePlayerEvent) => void;
+    onError: (event: YouTubePlayerErrorEvent) => void;
     onReady: (event: YouTubePlayerEvent) => void;
     onStateChange: (event: YouTubePlayerStateEvent) => void;
   };
@@ -117,12 +122,22 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
   return youtubeApiPromise;
 }
 
+function getYouTubeErrorMeaning(code: number): string {
+  if (code === 2) return 'invalid parameter or video ID';
+  if (code === 5) return 'HTML5 player playback failure';
+  if (code === 100) return 'video unavailable or removed';
+  if (code === 101 || code === 150) return 'owner disallows embedded playback';
+  if (code === 153) return 'missing HTTP Referer or client identity';
+  return 'unknown YouTube playback error';
+}
+
 export interface YouTubePreviewProps {
   className?: string;
   heroVolumeFactor?: number;
   isAudible?: boolean;
   isHeroInView?: boolean;
   onPlaying?: () => void;
+  surface?: 'card' | 'details' | 'hero' | 'top-10';
   title: string;
   variant?: 'hover' | 'hero' | 'modal';
   video?: TmdbVideo;
@@ -135,11 +150,13 @@ export function YouTubePreview({
   isAudible: isAudibleProp,
   isHeroInView = true,
   onPlaying,
+  surface,
   title,
   variant = 'hover',
   video,
   videos,
 }: YouTubePreviewProps) {
+  const diagnosticSurface = surface ?? variant;
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const onPlayingRef = useRef(onPlaying);
@@ -203,7 +220,10 @@ export function YouTubePreview({
     if (!isTVMode()) return;
     const handleTVMediaInteraction = () => {
       const player = playerRef.current;
-      if (!player) return;
+      if (!player) {
+        logTVPreviewStage('media-unlock retry waiting for player', { title, surface: diagnosticSurface });
+        return;
+      }
       console.log('[DAITIGN TV Preview] remote media-unlock replay requested');
       try {
         if (shouldBeAudibleRef.current) {
@@ -215,6 +235,7 @@ export function YouTubePreview({
         }
         player.playVideo();
         console.log('[DAITIGN TV Preview] playVideo called from remote interaction');
+        logTVPreviewStage('playVideo() called from media unlock', { title, surface: diagnosticSurface });
       } catch (error) {
         console.warn('[DAITIGN TV Preview] remote media-unlock replay failed', error);
       }
@@ -397,6 +418,9 @@ export function YouTubePreview({
 
   useEffect(() => {
     let disposed = false;
+    logTVPreviewStage('shared preview engine mounted', {
+      title, surface: diagnosticSurface, key: activeVideo?.key ?? null, origin: window.location.origin,
+    });
     console.log('[DAITIGN TV Preview] preview selected:', title, 'variant:', variant);
     console.log('[DAITIGN TV Preview] trailer key:', activeVideo?.key ?? 'none');
     console.log('[DAITIGN TV Preview] preview mounted; document visibility:', document.visibilityState);
@@ -446,6 +470,7 @@ export function YouTubePreview({
     loadYouTubeApi()
       .then((api) => {
         if (disposed || !mountRef.current) return;
+        logTVPreviewStage('YouTube API ready', { title, surface: diagnosticSurface, key: activeVideo.key });
 
         const isMobile = isMobileTouchDevice();
         const wantSound = shouldBeAudibleRef.current && !isMobile;
@@ -472,7 +497,16 @@ export function YouTubePreview({
             rel: 0,
           },
           events: {
-            onError: (event) => handleVideoError(event.target),
+            onError: (event) => {
+              logTVPreviewStage('YouTube player error', {
+                title,
+                surface: diagnosticSurface,
+                key: activeVideo.key,
+                code: event.data,
+                meaning: getYouTubeErrorMeaning(event.data),
+              });
+              handleVideoError(event.target);
+            },
             onReady: (event) => {
               if (disposed) {
                 destroyPlayer(event.target);
@@ -490,6 +524,15 @@ export function YouTubePreview({
               console.log('[DAITIGN TV Preview] iframe created');
               console.log('[DAITIGN TV Preview] params enablejsapi=1 autoplay=1 playsinline=1 origin=' + window.location.origin);
               console.log('[DAITIGN TV Preview] tvMediaInteractionUnlocked=' + tvMediaInteractionUnlockedRef.current);
+              logTVPreviewStage('iframe/player created', {
+                title,
+                surface: diagnosticSurface,
+                key: activeVideo.key,
+                enablejsapi: 1,
+                autoplay: 1,
+                playsinline: 1,
+                origin: window.location.origin,
+              });
 
               // 10 Specific Diagnostic Loggers (PART H)
               console.log('[DAITIGN TV Preview] 1. trailer selected:', activeVideo.name || activeVideo.key, `(${activeVideo.type})`);
@@ -524,6 +567,7 @@ export function YouTubePreview({
               try {
                 event.target.playVideo();
                 console.log('[DAITIGN TV Preview] playVideo called (sound-on attempt=' + wantSound + ')');
+                logTVPreviewStage('playVideo() called', { title, surface: diagnosticSurface, soundOn: wantSound });
               } catch (err) {
                 console.warn('[DAITIGN TV Preview] 6. play promise result: playVideo error, retrying muted', err);
                 console.log('[DAITIGN TV Preview] 7. muted state: muted (recovery)');
@@ -552,6 +596,7 @@ export function YouTubePreview({
                 if (disposed || playbackStarted) return;
                 console.warn('[DAITIGN TV Preview] autoplay timeout after 1500ms');
                 console.log('[DAITIGN TV Preview] muted retry');
+                logTVPreviewStage('autoplay timeout; muted retry', { title, surface: diagnosticSurface, key: activeVideo.key });
                 try {
                   mutedFallbackActive = true;
                   event.target.mute();
@@ -576,6 +621,9 @@ export function YouTubePreview({
                 [api.PlayerState.CUED ?? 5]: 'CUED',
               };
               console.log(`[DAITIGN TV Preview] state = ${stateNames[event.data] ?? event.data}`);
+              logTVPreviewStage('player state', {
+                title, surface: diagnosticSurface, key: activeVideo.key, state: stateNames[event.data] ?? event.data,
+              });
 
               if (event.data === api.PlayerState.PLAYING) {
                 console.log('[DAITIGN TV Preview] 6. play promise result: success (PLAYING)');
@@ -753,12 +801,16 @@ export function YouTubePreview({
       })
       .catch((error) => {
         console.error('[DAITIGN TV Preview] iframe/API creation failed:', error);
+        logTVPreviewStage('YouTube API/player creation failed', {
+          title, surface: diagnosticSurface, key: activeVideo?.key ?? null, error: error instanceof Error ? error.message : String(error),
+        });
         markUnavailable();
       });
 
     return () => {
       disposed = true;
       console.log('[DAITIGN TV Preview] preview unmounted:', title, 'key:', activeVideo?.key ?? 'none');
+      logTVPreviewStage('preview destroyed', { title, surface: diagnosticSurface, key: activeVideo?.key ?? null });
       clearStartTimeout();
       if (watchdogTimerRef.current !== null) {
         window.clearTimeout(watchdogTimerRef.current);

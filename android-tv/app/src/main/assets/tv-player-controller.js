@@ -19,7 +19,7 @@
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;filter:brightness(1.12) drop-shadow(0 4px 9px rgba(255,255,255,.22))!important;transform:scale(1.035)!important;transition:filter 100ms ease,transform 100ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -326,6 +326,7 @@
     if (!selected || !activePopup || !activePopup.contains(selected) || !visible(selected)) { syncMenu(0); return; }
     var item = selected;
     var popupBefore = activePopup;
+    var singleChoiceMenu = /subtitle|quality|server|fit/.test(controlKind(menuOpener));
     var before = selectionSignature(item);
     try { item.focus({ preventScroll: true }); } catch (_) {}
     item.click();
@@ -334,6 +335,11 @@
       if (visible(popupBefore) && popupBefore.contains(item) && selectionSignature(item) === before) pointerFallback(item);
       menuCandidatesDirty = true;
       window.setTimeout(function () {
+        if (singleChoiceMenu && visible(popupBefore)) {
+          console.log('[DAITIGN TV Player] single-choice option activated; closing popup');
+          closeMenu();
+          return;
+        }
         if (visible(popupBefore)) {
           activePopup = popupBefore;
           var items = discoverMenuItems(popupBefore, true);
@@ -388,6 +394,14 @@
   var observer = new MutationObserver(function () {
     candidatesDirty = true;
     menuCandidatesDirty = true;
+    if (state === MENU && (!activePopup || !visible(activePopup))) {
+      activePopup = null;
+      menuCandidateCache = [];
+      menuCandidatesDirty = true;
+      if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
+      else focusDefault(0);
+      return;
+    }
     if (state === MENU && activePopup && visible(activePopup)) {
       window.clearTimeout(menuSyncTimer);
       menuSyncTimer = window.setTimeout(function () {

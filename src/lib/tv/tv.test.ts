@@ -208,6 +208,11 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
   assert.ok(controller.includes('activateMenuItem'));
   assert.ok(controller.includes('pointerFallback'));
   assert.ok(controller.includes('closeMenu()'));
+  assert.ok(controller.includes('singleChoiceMenu'));
+  assert.ok(controller.includes('single-choice option activated; closing popup'));
+  assert.ok(controller.includes('background:rgba(255,255,255,.19)'));
+  assert.ok(controller.includes('box-shadow:none'));
+  assert.ok(controller.includes('transform:none'));
   assert.ok(!controller.includes('toolbar'));
 });
 
@@ -254,6 +259,8 @@ test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthe
   assert.ok(activity.includes('loadPendingVidstuck()'));
   assert.ok(activity.includes('[BROWSE KEY]'));
   assert.ok(activity.includes("handleRemoteKey('OK')"));
+  assert.ok(activity.includes('handleMediaUnlock'));
+  assert.ok(activity.includes('[PREVIEW WEBVIEW]'));
   assert.ok(activity.includes('document.activeElement'));
   assert.ok(!activity.includes('runSyntheticPlayerTest'));
   assert.ok(!activity.includes('PLAYER_TEST_URL'));
@@ -274,8 +281,12 @@ test('16. Browse menu is a trapped TV focus scope with Back restoration', () => 
   assert.ok(navigation.includes("querySelector<HTMLElement>('[data-tv-focusable=\"true\"]')"));
   assert.ok(navigation.includes('daitign:tv-menu-activate'));
   assert.ok(navigation.includes('data-tv-route={item.href}'));
+  assert.ok(navigation.includes('focusFirstTVPageControl'));
   assert.ok(spatial.includes('[data-tv-focus-scope="menu"]'));
   assert.ok(spatial.includes('activateTVFocusedElement'));
+  assert.ok(spatial.includes('Always invoke the element\'s genuine React/anchor click handler first'));
+  assert.ok(spatial.includes('active.click()'));
+  assert.ok(spatial.includes('handleMediaUnlock'));
   assert.ok(spatial.includes("handleRemoteKey: (key) => key === 'OK'"));
   assert.ok(spatial.includes("direction === 'left'"));
 });
@@ -308,4 +319,20 @@ test('18. TV preview confirms real playback, retries muted, and responds to remo
   assert.ok(preview.includes('mutedFallbackActive = true'));
   assert.ok(preview.includes('if (mutedFallbackActive && !remoteSoundRetryRef.current)'));
   assert.ok(preview.includes('preview unmounted'));
+  assert.ok(preview.includes('YouTube player error'));
+  assert.ok(preview.includes('getYouTubeErrorMeaning'));
+  assert.ok(preview.includes('logTVPreviewStage'));
+});
+
+test('19. TV preview eligibility bypasses WebView reduced-motion quirks before browser heuristics', () => {
+  const hoverEligibility = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/usePreviewPlaybackEligibility.ts'),
+    'utf-8',
+  );
+  const heroEligibility = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/home/useHeroPlaybackEligibility.ts'),
+    'utf-8',
+  );
+  assert.ok(hoverEligibility.indexOf('if (isTVMode()) return true') < hoverEligibility.indexOf('if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return false'));
+  assert.ok(heroEligibility.indexOf('if (isTVMode()) return true') < heroEligibility.indexOf('const prefersReducedMotion'));
 });

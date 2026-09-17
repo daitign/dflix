@@ -155,13 +155,20 @@ export function activateTVFocusedElement(): boolean {
   signalTVMediaInteraction();
   const menuScope = active.closest<HTMLElement>('[data-tv-focus-scope="menu"]');
   if (menuScope) {
+    const route = active.dataset.tvRoute ?? active.getAttribute('href');
+    const routeBeforeClick = window.location.pathname;
+    // Always invoke the element's genuine React/anchor click handler first.
+    active.click();
+    if (!route || window.location.pathname !== routeBeforeClick) return true;
+
+    // If a vendor WebView swallowed the anchor activation, ask the owning
+    // Browse menu to perform its explicit SPA-route fallback.
     const activation = new CustomEvent('daitign:tv-menu-activate', {
       bubbles: true,
       cancelable: true,
       detail: { element: active },
     });
     menuScope.dispatchEvent(activation);
-    if (!activation.defaultPrevented) active.click();
     return true;
   }
 
@@ -248,6 +255,10 @@ export function initSpatialNavigation(): () => void {
   window.addEventListener('keydown', handleKey, true);
   window.DAITIGN_TV = {
     ...window.DAITIGN_TV,
+    handleMediaUnlock: () => {
+      signalTVMediaInteraction();
+      return true;
+    },
     handleRemoteKey: (key) => key === 'OK' && activateTVFocusedElement(),
     tvMediaInteractionUnlocked: window.sessionStorage.getItem('daitign-tv-media-unlocked') === 'true',
   };
@@ -256,7 +267,10 @@ export function initSpatialNavigation(): () => void {
     document.removeEventListener('focusin', handleFocus, true);
     window.removeEventListener('keydown', handleKey, true);
     observer.disconnect();
-    if (window.DAITIGN_TV) delete window.DAITIGN_TV.handleRemoteKey;
+    if (window.DAITIGN_TV) {
+      delete window.DAITIGN_TV.handleMediaUnlock;
+      delete window.DAITIGN_TV.handleRemoteKey;
+    }
     preferredX = null;
     invalidateNavigationCache();
   };

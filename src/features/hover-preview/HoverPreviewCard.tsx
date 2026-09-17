@@ -13,6 +13,7 @@ import type {
 } from './types';
 import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
 import { YouTubePreview } from './YouTubePreview';
+import { logTVPreviewStage } from './tvPreviewDiagnostics';
 import { usePreviewAudio } from '../preview-audio';
 import { useMyList } from '../my-list';
 import { isTVMode } from '../../lib/tv';
@@ -56,6 +57,7 @@ export function HoverPreviewCard({
   const [previewCandidates, setPreviewCandidates] = useState<TmdbVideo[]>([]);
   const canPlayPreview = usePreviewPlaybackEligibility();
   const { setHoverActive } = usePreviewAudio();
+  const previewSurface = anchorElement.closest('.ranked-card') ? 'top-10' : 'card';
 
   // Arbitrate audio playback with Hero banner
   useEffect(() => {
@@ -77,13 +79,26 @@ export function HoverPreviewCard({
   useEffect(() => {
     setPreviewVideo(null);
     setPreviewCandidates([]);
-    if (phase !== 'open' || !canPlayPreview || !data.tmdbId) return undefined;
+    if (phase !== 'open') return undefined;
+    logTVPreviewStage('preview requested', {
+      surface: previewSurface,
+      title: data.title,
+      tmdbId: data.tmdbId,
+      eligible: canPlayPreview,
+    });
+    if (!canPlayPreview || !data.tmdbId) return undefined;
 
     const controller = new AbortController();
     getMediaVideos(data.playbackType, data.tmdbId, { signal: controller.signal })
       .then((videos) => {
         if (!controller.signal.aborted) {
           const candidates = selectPreviewVideoCandidates(videos);
+          logTVPreviewStage('trailer key resolved', {
+            surface: previewSurface,
+            title: data.title,
+            key: candidates[0]?.key ?? null,
+            candidateCount: candidates.length,
+          });
           setPreviewCandidates(candidates);
           setPreviewVideo(candidates[0] ?? null);
         }
@@ -96,7 +111,7 @@ export function HoverPreviewCard({
       });
 
     return () => controller.abort();
-  }, [canPlayPreview, data.playbackType, data.tmdbId, phase]);
+  }, [canPlayPreview, data.playbackType, data.tmdbId, data.title, phase, previewSurface]);
 
   const handleBlur = (event: FocusEvent<HTMLElement>) => {
     const nextTarget = event.relatedTarget;
@@ -162,7 +177,7 @@ export function HoverPreviewCard({
           src={data.artwork?.fallback ?? data.artworkUrl ?? ''}
         />
         {phase === 'open' && previewVideo && (
-          <YouTubePreview title={data.title} video={previewVideo} videos={previewCandidates} />
+          <YouTubePreview surface={previewSurface} title={data.title} video={previewVideo} videos={previewCandidates} />
         )}
         <span aria-hidden="true" className="hover-preview-card__media-shade" />
         {isTv ? (

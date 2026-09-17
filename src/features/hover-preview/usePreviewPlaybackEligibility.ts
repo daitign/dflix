@@ -22,8 +22,11 @@ export function shouldAutoplayHoverPreview({
 }
 
 function getEligibility() {
-  if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return false;
+  // Android TV WebViews can inherit the television's global animator setting
+  // as reduced motion. TV previews are an explicit ten-foot UI feature, so TV
+  // mode must be resolved before applying browser accessibility heuristics.
   if (isTVMode()) return true;
+  if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return false;
   return shouldAutoplayHoverPreview({
     hasFinePointer: window.matchMedia(FINE_POINTER_QUERY).matches,
     prefersReducedMotion: window.matchMedia(REDUCED_MOTION_QUERY).matches,

@@ -25,9 +25,11 @@ export function shouldAutoplayHeroTrailer({
 
 function getHeroEligibility(): boolean {
   if (typeof window === 'undefined') return false;
+  // Some Android TV WebViews expose the system animator setting as reduced
+  // motion. TV mode explicitly opts into cinematic previews.
+  if (isTVMode()) return true;
   const prefersReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
   if (prefersReducedMotion) return false;
-  if (isTVMode()) return true;
 
   const nav = navigator as unknown as { connection?: { effectiveType?: string; saveData?: boolean } };
   const connection = nav.connection;

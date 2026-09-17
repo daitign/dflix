@@ -26,6 +26,17 @@ export interface AppNotification {
   title: string;
 }
 
+function focusFirstTVPageControl() {
+  if (!isTVMode()) return;
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('#main-content [data-tv-focusable="true"]')
+        ?.focus({ preventScroll: true });
+    });
+  });
+}
+
 export function NavigationShell({
   children,
   onSearchChange,
@@ -150,6 +161,7 @@ export function NavigationShell({
       setIsBrowseOpen(false);
       navigateTo(route);
       window.scrollTo({ top: 0, behavior: 'instant' });
+      focusFirstTVPageControl();
     };
     menu?.addEventListener('daitign:tv-menu-back', handleMenuBack);
     menu?.addEventListener('daitign:tv-menu-activate', handleMenuActivate);
@@ -254,6 +266,7 @@ export function NavigationShell({
                           setIsBrowseOpen(false);
                           navigateTo(item.href);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
+                          focusFirstTVPageControl();
                         }}
                         role="menuitem"
                       >

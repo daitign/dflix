@@ -10,12 +10,14 @@ declare global {
       exitApp?: () => void;
       getAppVersion?: () => string;
       isTV?: () => boolean;
+      logPreviewEvent?: (message: string) => void;
       showToast?: (message: string) => void;
       startTvPlayer?: (vidstuckUrl: string, stateJson: string) => void;
     };
     DAITIGN_TV?: {
       getBrowseState?: () => string;
       handleBack?: () => boolean;
+      handleMediaUnlock?: () => boolean;
       handleRemoteKey?: (key: 'OK') => boolean;
       isTV?: boolean;
       onNativeBack?: () => boolean;

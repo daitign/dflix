@@ -10,6 +10,7 @@ import { useHeroPlaybackEligibility } from '../../home/useHeroPlaybackEligibilit
 import { getMediaVideos, selectPreviewVideoCandidates } from '../../../lib/tmdb/videos';
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { useMyList } from '../../my-list';
+import { logTVPreviewStage } from '../../hover-preview/tvPreviewDiagnostics';
 
 interface DetailsHeroProps {
   details: MediaDetails;
@@ -53,6 +54,9 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
     setModalVideo(null);
     setModalCandidates([]);
     setIsTrailerPlaying(false);
+    logTVPreviewStage('preview requested', {
+      surface: 'details', title: details.title, tmdbId: details.tmdbId, eligible: canPlayVideo,
+    });
     if (!canPlayVideo || !details.tmdbId) return;
 
     const controller = new AbortController();
@@ -61,6 +65,9 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
       .then((videos) => {
         if (!controller.signal.aborted) {
           const candidates = selectPreviewVideoCandidates(videos);
+          logTVPreviewStage('trailer key resolved', {
+            surface: 'details', title: details.title, key: candidates[0]?.key ?? null, candidateCount: candidates.length,
+          });
           setModalCandidates(candidates);
           setModalVideo(candidates[0] ?? null);
         }
@@ -73,7 +80,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
       });
 
     return () => controller.abort();
-  }, [canPlayVideo, details.playbackType, details.tmdbId, details.type]);
+  }, [canPlayVideo, details.playbackType, details.title, details.tmdbId, details.type]);
 
   return (
     <section className="details-hero" data-details-video-slot>
@@ -92,6 +99,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
           isAudible={isTrailerAudible}
           key={details.tmdbId}
           onPlaying={() => setIsTrailerPlaying(true)}
+          surface="details"
           title={details.title}
           variant="modal"
           video={modalVideo}

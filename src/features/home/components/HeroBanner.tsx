@@ -12,6 +12,7 @@ import { getMediaVideos, selectPreviewVideoCandidates } from '../../../lib/tmdb/
 import type { TmdbVideo } from '../../../lib/tmdb/types';
 import { navigateToWatch } from '../../../lib/navigation/watchRoutes';
 import { useMyList } from '../../my-list';
+import { logTVPreviewStage } from '../../hover-preview/tvPreviewDiagnostics';
 import './HeroBanner.css';
 
 interface HeroBannerProps {
@@ -38,6 +39,9 @@ export function HeroBanner({ item }: HeroBannerProps) {
     setHeroVideo(null);
     setHeroCandidates([]);
     setIsTrailerPlaying(false);
+    logTVPreviewStage('preview requested', {
+      surface: 'hero', title: item.title, tmdbId: item.tmdbId, eligible: canPlayVideo,
+    });
     if (!canPlayVideo || !item.tmdbId) return;
 
     const controller = new AbortController();
@@ -46,6 +50,9 @@ export function HeroBanner({ item }: HeroBannerProps) {
       .then((videos) => {
         if (!controller.signal.aborted) {
           const candidates = selectPreviewVideoCandidates(videos);
+          logTVPreviewStage('trailer key resolved', {
+            surface: 'hero', title: item.title, key: candidates[0]?.key ?? null, candidateCount: candidates.length,
+          });
           setHeroCandidates(candidates);
           setHeroVideo(candidates[0] ?? null);
         }
@@ -58,7 +65,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
       });
 
     return () => controller.abort();
-  }, [canPlayVideo, item.playbackType, item.tmdbId, item.type]);
+  }, [canPlayVideo, item.playbackType, item.title, item.tmdbId, item.type]);
 
   useEffect(() => {
     setIsHeroPlayerSuspended(false);
@@ -89,6 +96,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
           isHeroInView={isHeroInView}
           key={item.tmdbId}
           onPlaying={() => setIsTrailerPlaying(true)}
+          surface="hero"
           title={item.title}
           variant="hero"
           video={heroVideo}

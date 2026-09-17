@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var browseReady = false
     private var browseRendererGone = false
+    private var browseMediaUnlocked = false
     private var pendingPlayerUrl: String? = null
     private var lastBackAt = 0L
 
@@ -364,6 +365,20 @@ class MainActivity : ComponentActivity() {
         Log.i(TAG, "player state -> $playerState")
     }
 
+    fun logPreviewEvent(message: String) {
+        Log.i(TAG, "[PREVIEW JS] $message")
+        runOnUiThread {
+            val browse = browseWebView
+            Log.i(
+                TAG,
+                "[PREVIEW WEBVIEW] visible=${browse?.visibility == View.VISIBLE} " +
+                    "shown=${browse?.isShown} focus=${browse?.hasFocus()} " +
+                    "windowFocus=${browse?.hasWindowFocus()} lifecycle=${lifecycle.currentState} " +
+                    "playerAttached=${playerWebView != null}",
+            )
+        }
+    }
+
     fun closeTvPlayer() {
         runOnUiThread {
             if (customView != null) hideCustomView()
@@ -501,6 +516,25 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (playerWebView == null) {
+            val isBrowseRemoteInteraction = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                event.keyCode == KeyEvent.KEYCODE_ENTER ||
+                event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+                event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+            if (isBrowseRemoteInteraction && event.action == KeyEvent.ACTION_DOWN && !browseMediaUnlocked) {
+                browseMediaUnlocked = true
+                Log.i(TAG, "[PREVIEW] first physical remote interaction; requesting immediate media unlock")
+                browseWebView?.run {
+                    visibility = View.VISIBLE
+                    onResume()
+                    resumeTimers()
+                }
+                browseWebView?.evaluateJavascript(
+                    "Boolean(window.DAITIGN_TV&&window.DAITIGN_TV.handleMediaUnlock&&window.DAITIGN_TV.handleMediaUnlock())",
+                ) { unlocked -> Log.i(TAG, "[PREVIEW] media unlock bridge result=$unlocked") }
+            }
             val isBrowseActivate = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
                 event.keyCode == KeyEvent.KEYCODE_ENTER ||
                 event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
@@ -509,8 +543,9 @@ class MainActivity : ComponentActivity() {
                 Log.i(TAG, "[BROWSE KEY] ${KeyEvent.keyCodeToString(event.keyCode)} activates focused element")
                 browseWebView?.evaluateJavascript(
                     "(function(){" +
-                        "if(window.DAITIGN_TV&&window.DAITIGN_TV.handleRemoteKey){return Boolean(window.DAITIGN_TV.handleRemoteKey('OK'));}" +
                         "var active=document.activeElement;" +
+                        "console.log('[DAITIGN TV Browse] native OK focus='+(active?active.tagName+':'+(active.dataset.tvRoute||active.getAttribute('href')||active.textContent):'none'));" +
+                        "if(window.DAITIGN_TV&&window.DAITIGN_TV.handleRemoteKey){return Boolean(window.DAITIGN_TV.handleRemoteKey('OK'));}" +
                         "if(active&&typeof active.click==='function'){active.click();return true;}" +
                         "return false;" +
                     "})()",
