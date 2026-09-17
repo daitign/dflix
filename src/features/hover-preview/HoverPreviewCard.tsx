@@ -1,4 +1,4 @@
-import { useEffect, useState, type FocusEvent, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type PointerEvent } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import { IconButton } from '../../components/primitives/IconButton';
 import { ResponsiveImage } from '../../components/primitives/ResponsiveImage';
@@ -23,11 +23,11 @@ interface HoverPreviewCardProps {
   data: MediaPreviewData;
   onAction: (action: HoverPreviewAction, data: MediaPreviewData, trigger?: HTMLElement | null) => void;
   onCancelClose: () => void;
-  onClose: (options?: { immediate?: boolean; returnFocus?: boolean }) => void;
+  onClose: (options?: { immediate?: boolean; reason?: string; returnFocus?: boolean }) => void;
   onScheduleClose: () => void;
   phase: 'open' | 'closing';
   placement: HoverPreviewPlacement;
-  style: { left: number; top: number; width: number };
+  style?: CSSProperties;
 }
 
 function getLengthLabel(data: MediaPreviewData) {
@@ -57,7 +57,7 @@ export function HoverPreviewCard({
   const [previewCandidates, setPreviewCandidates] = useState<TmdbVideo[]>([]);
   const canPlayPreview = usePreviewPlaybackEligibility();
   const { setHoverActive } = usePreviewAudio();
-  const previewSurface = anchorElement.closest('.ranked-card') ? 'top-10' : 'card';
+  const previewSurface = anchorElement.closest('.ranked-card') ? 'top10' : 'card';
 
   // Arbitrate audio playback with Hero banner
   useEffect(() => {

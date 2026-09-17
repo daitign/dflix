@@ -21,6 +21,7 @@ import {
   type MediaPreviewData,
 } from './types';
 import { isTVMode } from '../../lib/tv';
+import { logTVPreviewStage } from './tvPreviewDiagnostics';
 import './HoverPreview.css';
 
 const HOVER_OPEN_DELAY_MS = 520;
@@ -50,7 +51,7 @@ interface ActivePreview extends PreviewRequest, PreviewPosition {
 
 interface HoverPreviewContextValue {
   cancelClose: () => void;
-  close: (options?: { immediate?: boolean; returnFocus?: boolean }) => void;
+  close: (options?: { immediate?: boolean; reason?: string; returnFocus?: boolean }) => void;
   focusControls: () => boolean;
   isPreviewTarget: (target: EventTarget | null) => boolean;
   performAction: (action: HoverPreviewAction, data: MediaPreviewData, trigger?: HTMLElement | null) => void;
@@ -79,28 +80,9 @@ function getPreviewPosition(anchorElement: HTMLElement, referenceElement: HTMLEl
       : 'center';
 
   if (isTVMode()) {
-    // Ranked anchors are narrow portrait posters. Use a normal landscape card as
-    // their cinematic sizing baseline while retaining the focused poster center.
-    const isRanked = Boolean(anchorElement.closest('.ranked-card'));
-    const landscapeCard = isRanked
-      ? document.querySelector<HTMLElement>('.media-card__surface')?.getBoundingClientRect()
-      : null;
-    const baseCardWidth = landscapeCard?.width || anchor.width || reference.width || (viewportWidth / 6);
-    const targetScale = 1.25;
-    const rawWidth = Math.round(baseCardWidth * targetScale);
-    const tvWidth = clamp(rawWidth, baseCardWidth * 1.2, viewportWidth * 0.27);
-    const tvHeight = Math.round(tvWidth * (9 / 16));
-    const proposedLeft = placement === 'left'
-      ? anchor.left
-      : placement === 'right'
-        ? anchor.right - tvWidth
-        : anchorCenter - tvWidth / 2;
-    const left = clamp(proposedLeft, safeInset, viewportWidth - tvWidth - safeInset);
-    const growthAboveAnchor = (tvHeight - anchor.height) * 0.5;
-    const proposedTop = anchor.top - growthAboveAnchor;
-    const top = clamp(proposedTop, safeInset, Math.max(safeInset, viewportHeight - tvHeight - safeInset));
-
-    return { left, placement, top, width: tvWidth };
+    // TV previews render inside their card. Geometry is owned by the row's
+    // flex-basis transition so siblings reflow rather than being covered.
+    return { left: 0, placement, top: 0, width: reference.width || anchor.width };
   }
 
   const maximumWidth = Math.min(512, viewportWidth - safeInset * 2);
@@ -129,6 +111,7 @@ interface HoverPreviewProviderProps {
 }
 
 export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
+  const isTv = isTVMode();
   const { isModalActive } = usePreviewAudio();
   const [activePreview, setActivePreviewState] = useState<ActivePreview | null>(null);
   const [announcement, setAnnouncement] = useState('');
@@ -140,9 +123,27 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   const pointerPreviewSuppressedRef = useRef(false);
 
   const commitActivePreview = useCallback((preview: ActivePreview | null) => {
+    const previous = activePreviewRef.current;
+    if (isTv && previous?.referenceElement !== preview?.referenceElement) {
+      previous?.referenceElement.removeAttribute('data-tv-preview-expanded');
+      const previousItem = previous?.referenceElement.closest('.carousel-shell__item');
+      previousItem?.removeAttribute('data-tv-preview-expanded');
+      previousItem?.removeAttribute('data-tv-ranked-double');
+    }
+    if (isTv && preview) {
+      preview.referenceElement.setAttribute('data-tv-preview-expanded', 'true');
+      const previewItem = preview.referenceElement.closest('.carousel-shell__item');
+      previewItem?.setAttribute('data-tv-preview-expanded', 'true');
+      if (preview.referenceElement.matches('.ranked-card--double-digit')) {
+        previewItem?.setAttribute('data-tv-ranked-double', 'true');
+      }
+      window.requestAnimationFrame(() => {
+        preview.referenceElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
+    }
     activePreviewRef.current = preview;
     setActivePreviewState(preview);
-  }, []);
+  }, [isTv]);
 
   const clearTimer = (timerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>) => {
     if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -157,11 +158,16 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     if (current?.phase === 'closing') commitActivePreview({ ...current, phase: 'open' });
   }, [commitActivePreview]);
 
-  const close = useCallback((options: { immediate?: boolean; returnFocus?: boolean } = {}) => {
+  const close = useCallback((options: { immediate?: boolean; reason?: string; returnFocus?: boolean } = {}) => {
     clearTimer(openTimerRef);
     clearTimer(closeIntentTimerRef);
     const current = activePreviewRef.current;
     if (!current) return;
+    logTVPreviewStage('preview closing', {
+      reason: options.reason ?? (options.immediate ? 'immediate' : 'close-request'),
+      surface: current.anchorElement.closest('.ranked-card') ? 'top10' : 'card',
+      title: current.data.title,
+    });
 
     if (options.returnFocus) current.anchorElement.focus({ preventScroll: true });
 
@@ -182,7 +188,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   // When Details modal becomes active, immediately destroy hover preview
   useEffect(() => {
     if (isModalActive) {
-      close({ immediate: true });
+      close({ immediate: true, reason: 'details-modal-opened' });
     }
   }, [isModalActive, close]);
 
@@ -192,7 +198,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     closeIntentTimerRef.current = window.setTimeout(() => {
       const current = activePreviewRef.current;
       if (anchorElement && current && current.anchorElement !== anchorElement) return;
-      close();
+      close({ reason: 'focus-or-pointer-left' });
     }, POINTER_CLOSE_DELAY_MS);
   }, [close]);
 
@@ -221,17 +227,21 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
       });
     };
 
+    // TV focus should feel immediate. Expand with the already-available
+    // backdrop now, then let the active card's trailer resolve in place.
+    // Desktop mouse hover keeps its deliberate 520ms intent delay.
+    if (isTv) {
+      activate();
+      return;
+    }
+
     if (request.source === 'keyboard') {
-      if (isTVMode()) {
-        openTimerRef.current = window.setTimeout(activate, 575);
-        return;
-      }
       activate();
       return;
     }
 
     openTimerRef.current = window.setTimeout(activate, HOVER_OPEN_DELAY_MS);
-  }, [commitActivePreview]);
+  }, [commitActivePreview, isModalActive, isTv]);
 
   const focusControls = useCallback(() => {
     const primaryControl = document.querySelector<HTMLElement>('[data-hover-preview-root] [data-preview-primary]');
@@ -253,8 +263,8 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
       details: `${data.title} details opened.`,
     };
 
-    if (action === 'details') close({ immediate: true });
-    if (action === 'play') close({ immediate: true });
+    if (action === 'details') close({ immediate: true, reason: 'details-activated' });
+    if (action === 'play') close({ immediate: true, reason: 'play-activated' });
 
     window.dispatchEvent(new CustomEvent<HoverPreviewActionDetail>(HOVER_PREVIEW_ACTION_EVENT, {
       detail: { action, media: data, trigger },
@@ -283,8 +293,6 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
         if (current
           && current.anchorElement.isConnected
           && document.activeElement === current.anchorElement) {
-          const position = getPreviewPosition(current.anchorElement, current.referenceElement);
-          commitActivePreview({ ...current, ...position });
           return;
         }
         if (!current && openTimerRef.current && focusedCard) return;
@@ -300,7 +308,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
         return;
       }
 
-      close({ immediate: true });
+      close({ immediate: true, reason: isCarouselScroll ? 'carousel-scroll' : 'viewport-scroll' });
     };
     const restorePointerPreview = (event: PointerEvent) => {
       if (event.pointerType === 'mouse' && (event.movementX !== 0 || event.movementY !== 0)) {
@@ -322,6 +330,11 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
     clearTimer(closeIntentTimerRef);
     clearTimer(collapseTimerRef);
     clearTimer(announcementTimerRef);
+    const current = activePreviewRef.current;
+    current?.referenceElement.removeAttribute('data-tv-preview-expanded');
+    const currentItem = current?.referenceElement.closest('.carousel-shell__item');
+    currentItem?.removeAttribute('data-tv-preview-expanded');
+    currentItem?.removeAttribute('data-tv-ranked-double');
   }, []);
 
   const contextValue = useMemo<HoverPreviewContextValue>(() => ({
@@ -338,30 +351,39 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   return (
     <HoverPreviewContext.Provider value={contextValue}>
       {children}
-      {typeof document !== 'undefined' && createPortal(
-        <>
-          {activePreview && (
-            <div className="hover-preview-layer">
-              <HoverPreviewCard
-                anchorElement={activePreview.anchorElement}
-                data={activePreview.data}
-                key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}
-                onAction={performAction}
-                onCancelClose={cancelClose}
-                onClose={close}
-                onScheduleClose={scheduleClose}
-                phase={activePreview.phase}
-                placement={activePreview.placement}
-                style={{
-                  left: activePreview.left,
-                  top: activePreview.top,
-                  width: activePreview.width,
-                }}
-              />
-            </div>
-          )}
-          {announcement && <div aria-live="polite" className="hover-preview-toast" role="status">{announcement}</div>}
-        </>,
+      {typeof document !== 'undefined' && activePreview && isTv && createPortal(
+        <HoverPreviewCard
+          anchorElement={activePreview.anchorElement}
+          data={activePreview.data}
+          key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}
+          onAction={performAction}
+          onCancelClose={cancelClose}
+          onClose={close}
+          onScheduleClose={scheduleClose}
+          phase={activePreview.phase}
+          placement={activePreview.placement}
+        />,
+        activePreview.referenceElement,
+      )}
+      {typeof document !== 'undefined' && activePreview && !isTv && createPortal(
+        <div className="hover-preview-layer">
+          <HoverPreviewCard
+            anchorElement={activePreview.anchorElement}
+            data={activePreview.data}
+            key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}
+            onAction={performAction}
+            onCancelClose={cancelClose}
+            onClose={close}
+            onScheduleClose={scheduleClose}
+            phase={activePreview.phase}
+            placement={activePreview.placement}
+            style={{ left: activePreview.left, top: activePreview.top, width: activePreview.width }}
+          />
+        </div>,
+        document.body,
+      )}
+      {typeof document !== 'undefined' && announcement && createPortal(
+        <div aria-live="polite" className="hover-preview-toast" role="status">{announcement}</div>,
         document.body,
       )}
     </HoverPreviewContext.Provider>

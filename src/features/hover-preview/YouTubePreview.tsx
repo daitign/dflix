@@ -137,7 +137,7 @@ export interface YouTubePreviewProps {
   isAudible?: boolean;
   isHeroInView?: boolean;
   onPlaying?: () => void;
-  surface?: 'card' | 'details' | 'hero' | 'top-10';
+  surface?: 'card' | 'details' | 'hero' | 'top10';
   title: string;
   variant?: 'hover' | 'hero' | 'modal';
   video?: TmdbVideo;
@@ -235,7 +235,11 @@ export function YouTubePreview({
         }
         player.playVideo();
         console.log('[DAITIGN TV Preview] playVideo called from remote interaction');
-        logTVPreviewStage('playVideo() called from media unlock', { title, surface: diagnosticSurface });
+        logTVPreviewStage('playVideo() called from media unlock', {
+          audio: shouldBeAudibleRef.current ? 'unmuted-retry' : 'muted-preference',
+          title,
+          surface: diagnosticSurface,
+        });
       } catch (error) {
         console.warn('[DAITIGN TV Preview] remote media-unlock replay failed', error);
       }
@@ -545,6 +549,12 @@ export function YouTubePreview({
               console.log('[DAITIGN TV Preview] 10. WebView media settings: mediaPlaybackRequiresUserGesture=false, ua:', navigator.userAgent);
 
               // Attempt sound ON first if requested; if policy rejects/pauses, retry muted immediately
+              logTVPreviewStage('audio attempt', {
+                mode: wantSound ? 'unmuted' : 'muted',
+                savedMediaUnlock: tvMediaInteractionUnlockedRef.current,
+                surface: diagnosticSurface,
+                title,
+              });
               if (wantSound) {
                 console.log('[DAITIGN TV Preview] 7. muted state: unmuted attempt (DAITIGN preference)');
                 try {
@@ -628,6 +638,13 @@ export function YouTubePreview({
               if (event.data === api.PlayerState.PLAYING) {
                 console.log('[DAITIGN TV Preview] 6. play promise result: success (PLAYING)');
                 playbackStarted = true;
+                logTVPreviewStage('playback confirmed', {
+                  audio: mutedFallbackActive && !remoteSoundRetryRef.current
+                    ? 'muted-fallback'
+                    : (shouldBeAudibleRef.current ? 'unmuted' : 'muted'),
+                  surface: diagnosticSurface,
+                  title,
+                });
                 if (watchdogTimerRef.current !== null) {
                   window.clearTimeout(watchdogTimerRef.current);
                   watchdogTimerRef.current = null;
@@ -810,7 +827,12 @@ export function YouTubePreview({
     return () => {
       disposed = true;
       console.log('[DAITIGN TV Preview] preview unmounted:', title, 'key:', activeVideo?.key ?? 'none');
-      logTVPreviewStage('preview destroyed', { title, surface: diagnosticSurface, key: activeVideo?.key ?? null });
+      logTVPreviewStage('preview destroyed', {
+        reason: 'surface-unmounted-or-video-changed',
+        title,
+        surface: diagnosticSurface,
+        key: activeVideo?.key ?? null,
+      });
       clearStartTimeout();
       if (watchdogTimerRef.current !== null) {
         window.clearTimeout(watchdogTimerRef.current);

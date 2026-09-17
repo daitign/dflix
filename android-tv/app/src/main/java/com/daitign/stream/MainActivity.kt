@@ -535,23 +535,15 @@ class MainActivity : ComponentActivity() {
                     "Boolean(window.DAITIGN_TV&&window.DAITIGN_TV.handleMediaUnlock&&window.DAITIGN_TV.handleMediaUnlock())",
                 ) { unlocked -> Log.i(TAG, "[PREVIEW] media unlock bridge result=$unlocked") }
             }
-            val isBrowseActivate = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
-                event.keyCode == KeyEvent.KEYCODE_ENTER ||
-                event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
-            if (!isBrowseActivate) return super.dispatchKeyEvent(event)
+            // Do not consume Browse Enter/Center here. The previous async
+            // evaluateJavascript path intercepted the physical key before the
+            // focused DOM element received its genuine WebView key event.
+            // Spatial navigation handles that real event and invokes the
+            // element's original React/anchor click behavior.
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Log.i(TAG, "[BROWSE KEY] ${KeyEvent.keyCodeToString(event.keyCode)} activates focused element")
-                browseWebView?.evaluateJavascript(
-                    "(function(){" +
-                        "var active=document.activeElement;" +
-                        "console.log('[DAITIGN TV Browse] native OK focus='+(active?active.tagName+':'+(active.dataset.tvRoute||active.getAttribute('href')||active.textContent):'none'));" +
-                        "if(window.DAITIGN_TV&&window.DAITIGN_TV.handleRemoteKey){return Boolean(window.DAITIGN_TV.handleRemoteKey('OK'));}" +
-                        "if(active&&typeof active.click==='function'){active.click();return true;}" +
-                        "return false;" +
-                    "})()",
-                ) { handled -> Log.i(TAG, "browse focused activation handled=$handled") }
+                Log.i(TAG, "[BROWSE KEY PASS-THROUGH] ${KeyEvent.keyCodeToString(event.keyCode)}")
             }
-            return true
+            return super.dispatchKeyEvent(event)
         }
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             Log.i(

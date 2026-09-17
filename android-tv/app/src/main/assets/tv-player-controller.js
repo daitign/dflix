@@ -353,8 +353,8 @@
           if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
           else focusDefault(0);
         }
-      }, 100);
-    }, 140);
+      }, 80);
+    }, 80);
   }
 
   function activateControl() {
@@ -371,23 +371,38 @@
     }, 90);
   }
 
+  function finishMenuClose() {
+    activePopup = null;
+    menuCandidateCache = [];
+    menuCandidatesDirty = true;
+    window.clearTimeout(menuSyncTimer);
+    if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
+    else focusDefault(0);
+  }
+
   function closeMenu() {
-    if (!activePopup || !visible(activePopup)) return false;
+    if (state !== MENU) return false;
     var popupBefore = activePopup;
-    var close = discoverMenuItems(activePopup, false).find(function (element) { return /close|back|done/.test(label(element)); });
+    if (!popupBefore || !visible(popupBefore)) {
+      finishMenuClose();
+      return true;
+    }
+
+    var close = discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
     if (close) close.click();
     else {
+      // VIDSTUCK popups do not consistently expose a visible close control.
+      // Send their normal Escape path first, then toggle the real opener only
+      // when the popup is still present.
       if (selected) dispatchKey(selected, 'Escape');
+      dispatchKey(popupBefore, 'Escape');
       dispatchKey(document.body, 'Escape');
+      if (visible(popupBefore) && visible(menuOpener)) menuOpener.click();
     }
     window.setTimeout(function () {
-      if (visible(popupBefore) && visible(menuOpener)) menuOpener.click();
-      activePopup = null;
-      menuCandidateCache = [];
-      menuCandidatesDirty = true;
-      if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
-      else focusDefault(0);
-    }, 100);
+      if (visible(popupBefore) && visible(menuOpener)) pointerFallback(menuOpener);
+      window.setTimeout(finishMenuClose, 80);
+    }, 80);
     return true;
   }
 
@@ -421,7 +436,7 @@
     wake: function () { focusDefault(0); return true; },
     handle: function (key) {
       if (key === 'BACK') {
-        if (state === MENU && closeMenu()) return true;
+        if (state === MENU) { closeMenu(); return true; }
         if (state !== HIDDEN) { hideControls(); return true; }
         return false;
       }

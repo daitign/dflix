@@ -13,6 +13,8 @@ let preferredX: number | null = null;
 let cachedScope: HTMLElement | null = null;
 let cachedElements: HTMLElement[] | null = null;
 let cachedRows: FocusRow[] | null = null;
+let preservePreferredXDuringFocus = false;
+let lastFocusedByRow = new WeakMap<HTMLElement, HTMLElement>();
 
 function invalidateNavigationCache() {
   cachedScope = null;
@@ -23,7 +25,13 @@ function invalidateNavigationCache() {
 export function isVisible(element: HTMLElement): boolean {
   if (!element.isConnected) return false;
   const style = window.getComputedStyle(element);
-  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+  const isExpandedActiveAnchor = element === document.activeElement
+    && Boolean(element.closest('[data-tv-preview-expanded="true"]'));
+  if (
+    style.display === 'none'
+    || style.visibility === 'hidden'
+    || (style.opacity === '0' && !isExpandedActiveAnchor)
+  ) return false;
   const rect = element.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
 }
@@ -56,6 +64,15 @@ export function getFocusableElements(scope: HTMLElement = getActiveScope()): HTM
 function center(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+function explicitRowFor(element: HTMLElement): HTMLElement | null {
+  return element.closest<HTMLElement>('[data-tv-row]');
+}
+
+function rememberRowFocus(element: HTMLElement) {
+  const row = explicitRowFor(element);
+  if (row) lastFocusedByRow.set(row, element);
 }
 
 function rowsFor(elements: HTMLElement[]): FocusRow[] {
@@ -115,6 +132,9 @@ export function findNextSpatialElement(current: HTMLElement, direction: Directio
 
   const nextRow = rows[rowIndex + (direction === 'down' ? 1 : -1)];
   if (!nextRow) return null;
+  const nextExplicitRow = nextRow.elements[0] ? explicitRowFor(nextRow.elements[0]) : null;
+  const remembered = nextExplicitRow ? lastFocusedByRow.get(nextExplicitRow) : null;
+  if (remembered && nextRow.elements.includes(remembered) && isVisible(remembered)) return remembered;
   return findClosestInRow(nextRow.elements, preferredX ?? center(current).x);
 }
 
@@ -125,8 +145,14 @@ export function scrollElementIntoOptimalView(element: HTMLElement) {
 }
 
 function focusElement(element: HTMLElement, preserveX = false) {
-  element.focus({ preventScroll: true });
-  if (!preserveX) preferredX = center(element).x;
+  preservePreferredXDuringFocus = preserveX;
+  try {
+    element.focus({ preventScroll: true });
+    rememberRowFocus(element);
+    if (!preserveX) preferredX = center(element).x;
+  } finally {
+    preservePreferredXDuringFocus = false;
+  }
   scrollElementIntoOptimalView(element);
 }
 
@@ -186,7 +212,15 @@ export function initSpatialNavigation(): () => void {
 
   const handleFocus = (event: FocusEvent) => {
     const target = event.target;
-    if (target instanceof HTMLElement && isFocusCandidate(target) && isVisible(target)) preferredX = center(target).x;
+    if (
+      !preservePreferredXDuringFocus
+      && target instanceof HTMLElement
+      && isFocusCandidate(target)
+      && isVisible(target)
+    ) {
+      rememberRowFocus(target);
+      preferredX = center(target).x;
+    }
   };
 
   const handleKey = (event: KeyboardEvent) => {
@@ -272,6 +306,7 @@ export function initSpatialNavigation(): () => void {
       delete window.DAITIGN_TV.handleRemoteKey;
     }
     preferredX = null;
+    lastFocusedByRow = new WeakMap<HTMLElement, HTMLElement>();
     invalidateNavigationCache();
   };
 }

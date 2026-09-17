@@ -29,7 +29,6 @@ export function HeroBanner({ item }: HeroBannerProps) {
   const [heroVideo, setHeroVideo] = useState<TmdbVideo | null>(null);
   const [heroCandidates, setHeroCandidates] = useState<TmdbVideo[]>([]);
   const [isTrailerPlaying, setIsTrailerPlaying] = useState(false);
-  const [isHeroPlayerSuspended, setIsHeroPlayerSuspended] = useState(false);
   const canPlayVideo = useHeroPlaybackEligibility();
 
   const mediaFormat = item.type === 'tv' ? 'SERIES' : item.type === 'anime' ? 'ANIME SERIES' : 'FILM';
@@ -68,14 +67,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
   }, [canPlayVideo, item.playbackType, item.title, item.tmdbId, item.type]);
 
   useEffect(() => {
-    setIsHeroPlayerSuspended(false);
-  }, [item.id]);
-
-  useEffect(() => {
-    if (isHoverActive || isModalActive) {
-      setIsHeroPlayerSuspended(true);
-      setIsTrailerPlaying(false);
-    }
+    if (isHoverActive || isModalActive) setIsTrailerPlaying(false);
   }, [isHoverActive, isModalActive]);
 
   return (
@@ -90,7 +82,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
         sources={item.backdrop ? [{ srcSet: item.backdrop.srcSet, type: item.backdrop.type }] : []}
         src={item.backdrop?.fallback ?? item.backdropUrl ?? '/media/fallback-landscape.svg'}
       />
-      {heroVideo && !isHeroPlayerSuspended && !isHoverActive && !isModalActive && (
+      {heroVideo && !isHoverActive && !isModalActive && (
         <YouTubePreview
           heroVolumeFactor={heroVolumeFactor}
           isHeroInView={isHeroInView}

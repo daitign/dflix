@@ -2,6 +2,7 @@ import { ResponsiveImage } from '../../../components/primitives/ResponsiveImage'
 import { getFreshnessBadge, type MediaItem } from '../../catalog';
 import { toMediaPreviewData, useHoverPreviewAnchor } from '../../hover-preview';
 import { FreshnessBadge } from './StatusBadge';
+import { isTVMode } from '../../../lib/tv';
 import './MediaCard.css';
 
 interface MediaCardProps {
@@ -10,7 +11,8 @@ interface MediaCardProps {
 }
 
 export function MediaCard({ cardIndex, item }: MediaCardProps) {
-  const artwork = item.backdrop;
+  const tvMode = isTVMode();
+  const artwork = tvMode ? (item.poster ?? item.backdrop) : item.backdrop;
   const { anchorProps, anchorRef, referenceRef } = useHoverPreviewAnchor<HTMLElement>({
     data: toMediaPreviewData(item),
   });
@@ -39,9 +41,9 @@ export function MediaCard({ cardIndex, item }: MediaCardProps) {
         <ResponsiveImage
           alt=""
           fallbackLabel={`${item.title} artwork unavailable`}
-          sizes="(max-width: 767px) 47vw, (max-width: 1279px) 24vw, 16vw"
+          sizes={tvMode ? '12vw' : '(max-width: 767px) 47vw, (max-width: 1279px) 24vw, 16vw'}
           sources={artwork ? [{ srcSet: artwork.srcSet, type: artwork.type }] : []}
-          src={artwork?.fallback ?? item.backdropUrl ?? ''}
+          src={artwork?.fallback ?? (tvMode ? item.posterUrl : item.backdropUrl) ?? item.backdropUrl ?? ''}
         />
         <span aria-hidden="true" className="media-card__shade" />
         <div className="media-card__title-overlay">

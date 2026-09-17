@@ -139,6 +139,20 @@ test('6. TV Spatial Navigation: findClosestInRow selects candidate with closest 
   assert.equal(findClosestInRow(candidates, 500), card3);
 });
 
+test('6b. TV Spatial Navigation: expanded preview anchors retain focus and vertical column memory', () => {
+  const spatial = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/lib/tv/spatialNavigation.ts'),
+    'utf-8'
+  );
+
+  assert.ok(spatial.includes('isExpandedActiveAnchor'));
+  assert.ok(spatial.includes("closest('[data-tv-preview-expanded=\"true\"]')"));
+  assert.ok(spatial.includes('preservePreferredXDuringFocus = preserveX'));
+  assert.ok(spatial.includes('!preservePreferredXDuringFocus'));
+  assert.ok(spatial.includes('lastFocusedByRow'));
+  assert.ok(spatial.includes('nextRow.elements.includes(remembered)'));
+});
+
 test('7. Component audit: Carousel track never receives focus (tabIndex=-1)', () => {
   const carouselFile = fs.readFileSync(
     path.resolve(process.cwd(), 'src/components/layout/CarouselShell.tsx'),
@@ -210,6 +224,9 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
   assert.ok(controller.includes('closeMenu()'));
   assert.ok(controller.includes('singleChoiceMenu'));
   assert.ok(controller.includes('single-choice option activated; closing popup'));
+  assert.ok(controller.includes('finishMenuClose'));
+  assert.ok(controller.includes("dispatchKey(popupBefore, 'Escape')"));
+  assert.ok(controller.includes("if (state === MENU) { closeMenu(); return true; }"));
   assert.ok(controller.includes('background:rgba(255,255,255,.19)'));
   assert.ok(controller.includes('box-shadow:none'));
   assert.ok(controller.includes('transform:none'));
@@ -257,11 +274,12 @@ test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthe
   assert.ok(activity.includes('player.requestFocus()'));
   assert.ok(activity.includes('wakePlayerControls'));
   assert.ok(activity.includes('loadPendingVidstuck()'));
-  assert.ok(activity.includes('[BROWSE KEY]'));
-  assert.ok(activity.includes("handleRemoteKey('OK')"));
+  assert.ok(activity.includes('[BROWSE KEY PASS-THROUGH]'));
+  assert.ok(activity.includes('return super.dispatchKeyEvent(event)'));
+  assert.ok(!activity.includes("handleRemoteKey('OK')"));
   assert.ok(activity.includes('handleMediaUnlock'));
   assert.ok(activity.includes('[PREVIEW WEBVIEW]'));
-  assert.ok(activity.includes('document.activeElement'));
+  assert.ok(activity.includes('The previous async'));
   assert.ok(!activity.includes('runSyntheticPlayerTest'));
   assert.ok(!activity.includes('PLAYER_TEST_URL'));
   assert.ok(!activity.includes('loadDataWithBaseURL'));
@@ -291,15 +309,27 @@ test('16. Browse menu is a trapped TV focus scope with Back restoration', () => 
   assert.ok(spatial.includes("direction === 'left'"));
 });
 
-test('17. TV preview remains mounted through position updates and Top 10 uses a landscape baseline', () => {
+test('17. TV preview expands in-row and reserves space for regular and Top 10 cards', () => {
   const provider = fs.readFileSync(
     path.resolve(process.cwd(), 'src/features/hover-preview/HoverPreviewProvider.tsx'),
     'utf-8',
   );
-  assert.ok(provider.includes("closest('.ranked-card')"));
-  assert.ok(provider.includes("querySelector<HTMLElement>('.media-card__surface')"));
+  assert.ok(provider.includes("setAttribute('data-tv-preview-expanded', 'true')"));
+  assert.ok(provider.includes('if (isTv)'));
+  assert.ok(provider.includes('Desktop mouse hover keeps its deliberate 520ms intent delay'));
+  assert.ok(!provider.includes('window.setTimeout(activate, 575)'));
+  assert.ok(provider.includes('activePreview.referenceElement'));
+  assert.ok(provider.includes("scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })"));
   assert.ok(provider.includes('key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}'));
   assert.ok(!provider.includes('activePreview.left}-${activePreview.top'));
+
+  const styles = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/tv.css'), 'utf-8');
+  assert.ok(styles.includes('--tv-poster-height: calc(var(--tv-poster-width) * 1.5)'));
+  assert.ok(styles.includes(".carousel-shell__item[data-tv-preview-expanded='true']"));
+  assert.ok(styles.includes(".ranked-card[data-tv-preview-expanded='true'] .hover-preview-card"));
+  assert.ok(styles.includes('rgb(229 9 20 / 92%)'));
+  assert.ok(styles.includes('.details-hero__trailer-mount'));
+  assert.ok(styles.includes('transform: translate(-50%, -50%) scale(1)'));
 });
 
 test('18. TV preview confirms real playback, retries muted, and responds to remote media unlock', () => {
@@ -322,6 +352,8 @@ test('18. TV preview confirms real playback, retries muted, and responds to remo
   assert.ok(preview.includes('YouTube player error'));
   assert.ok(preview.includes('getYouTubeErrorMeaning'));
   assert.ok(preview.includes('logTVPreviewStage'));
+  assert.ok(preview.includes("logTVPreviewStage('audio attempt'"));
+  assert.ok(preview.includes("logTVPreviewStage('playback confirmed'"));
 });
 
 test('19. TV preview eligibility bypasses WebView reduced-motion quirks before browser heuristics', () => {

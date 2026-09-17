@@ -4,6 +4,9 @@ html.daitign-tv {
   --tv-gap: clamp(0.55rem, 0.75vw, 1.5rem);
   --container-gutter: var(--tv-gutter);
   --items-per-page: 6;
+  --tv-poster-width: clamp(6.8rem, 10.8vw, 13rem);
+  --tv-poster-height: calc(var(--tv-poster-width) * 1.5);
+  --tv-preview-width: calc(var(--tv-poster-height) * 16 / 9);
   font-size: clamp(14px, 0.9vw, 34px);
   overflow-x: hidden;
   user-select: none;
@@ -19,8 +22,11 @@ html.daitign-tv body {
 html.daitign-tv [data-tv-focusable='true']:focus-visible {
   z-index: 20;
   outline: 0 !important;
-  filter: brightness(1.06);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 14px rgb(255 255 255 / 14%) !important;
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 2px rgb(229 9 20 / 90%),
+    0 0 18px rgb(229 9 20 / 35%),
+    0 8px 24px rgb(0 0 0 / 45%) !important;
   transform: scale(1.02) !important;
   transition: filter 90ms ease, transform 90ms ease;
 }
@@ -37,8 +43,11 @@ html.daitign-tv .ranked-card__poster-anchor:focus-visible,
 html.daitign-tv .continue-card__surface:focus-visible {
   border: 0 !important;
   border-radius: 5px;
-  filter: brightness(1.06);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 45%), 0 0 14px rgb(255 255 255 / 12%) !important;
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 2px rgb(229 9 20 / 92%),
+    0 0 18px rgb(229 9 20 / 38%),
+    0 8px 24px rgb(0 0 0 / 45%) !important;
   transform: scale(1.02) !important;
 }
 
@@ -171,11 +180,30 @@ html.daitign-tv .carousel-shell__pagination {
 }
 
 html.daitign-tv .carousel-shell__track {
+  display: flex;
+  grid-auto-columns: unset;
+  grid-auto-flow: unset;
+  align-items: flex-start;
   gap: var(--tv-gap);
-  grid-auto-columns: calc((100% - (5 * var(--tv-gap))) / 6);
   overflow-x: hidden;
+  overflow-y: hidden;
   scroll-behavior: smooth;
   scroll-snap-type: none;
+}
+
+html.daitign-tv .carousel-shell__item {
+  width: var(--tv-poster-width);
+  min-width: 0;
+  flex: 0 0 var(--tv-poster-width);
+  overflow: visible;
+  transition:
+    width 220ms cubic-bezier(.2,.8,.2,1),
+    flex-basis 220ms cubic-bezier(.2,.8,.2,1);
+}
+
+html.daitign-tv .carousel-shell__item[data-tv-preview-expanded='true'] {
+  width: var(--tv-preview-width);
+  flex-basis: var(--tv-preview-width);
 }
 
 html.daitign-tv .media-row {
@@ -204,12 +232,62 @@ html.daitign-tv .media-card__surface,
 html.daitign-tv .media-card__surface img,
 html.daitign-tv .ranked-card__art,
 html.daitign-tv .ranked-card__art img {
-  transition-duration: 90ms !important;
+  transition-duration: 200ms !important;
+}
+
+html.daitign-tv .media-card {
+  position: relative;
+  width: 100%;
+  height: var(--tv-poster-height);
+  contain: layout;
+}
+
+html.daitign-tv .media-card__surface {
+  width: 100%;
+  height: 100%;
+  transition:
+    opacity 120ms ease-out,
+    box-shadow 120ms ease-out,
+    transform 120ms ease-out !important;
+}
+
+html.daitign-tv .media-card__surface .responsive-image,
+html.daitign-tv .media-card__surface img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 2 / 3 !important;
+  object-fit: cover;
 }
 
 html.daitign-tv .carousel-shell--ranked {
   --rank-card-height: clamp(9rem, 19vh, 15rem);
   --carousel-gap: var(--tv-gap);
+}
+
+html.daitign-tv .carousel-shell--ranked .carousel-shell__item {
+  width: var(--rank-card-width);
+  flex-basis: var(--rank-card-width);
+}
+
+html.daitign-tv .carousel-shell--ranked .carousel-shell__item[data-tv-preview-expanded='true'] {
+  width: calc(var(--rank-poster-left) + (var(--rank-card-height) * 16 / 9));
+  flex-basis: calc(var(--rank-poster-left) + (var(--rank-card-height) * 16 / 9));
+}
+
+html.daitign-tv .carousel-shell--ranked .carousel-shell__item[data-tv-ranked-double='true'] {
+  width: calc(var(--rank-poster-left-double) + (var(--rank-card-height) * 16 / 9));
+  flex-basis: calc(var(--rank-poster-left-double) + (var(--rank-card-height) * 16 / 9));
+}
+
+html.daitign-tv .ranked-card {
+  width: 100%;
+  min-width: 100%;
+}
+
+html.daitign-tv .ranked-card--rank-1,
+html.daitign-tv .ranked-card--double-digit {
+  width: 100%;
+  min-width: 100%;
 }
 
 html.daitign-tv .browse-loading__track {
@@ -219,11 +297,20 @@ html.daitign-tv .browse-loading__track {
 
 /* Focus preview: 16:9, modest expansion, no metadata panel. */
 html.daitign-tv .hover-preview-card {
+  position: relative;
+  inset: auto;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border: 0;
   border-radius: 7px;
   background: #141414;
-  box-shadow: 0 14px 34px rgb(0 0 0 / 78%);
+  box-shadow:
+    0 0 0 2px rgb(229 9 20 / 92%),
+    0 0 18px rgb(229 9 20 / 35%),
+    0 14px 34px rgb(0 0 0 / 78%);
+  pointer-events: none;
 }
 
 html.daitign-tv .hover-preview-card--open {
@@ -233,8 +320,31 @@ html.daitign-tv .hover-preview-card--open {
 html.daitign-tv .hover-preview-card__media,
 html.daitign-tv .hover-preview-card__media .responsive-image {
   width: 100%;
-  height: auto;
+  height: 100%;
   aspect-ratio: 16 / 9;
+}
+
+html.daitign-tv .hover-preview-card__video-mount,
+html.daitign-tv .hover-preview-card__video iframe {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+html.daitign-tv .media-card[data-tv-preview-expanded='true'] .media-card__surface,
+html.daitign-tv .ranked-card[data-tv-preview-expanded='true'] .ranked-card__art {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.daitign-tv .ranked-card[data-tv-preview-expanded='true'] .hover-preview-card {
+  width: calc(100% - var(--rank-poster-left));
+  height: var(--rank-card-height);
+  margin-left: var(--rank-poster-left);
+}
+
+html.daitign-tv .ranked-card--double-digit[data-tv-preview-expanded='true'] .hover-preview-card {
+  width: calc(100% - var(--rank-poster-left-double));
+  margin-left: var(--rank-poster-left-double);
 }
 
 html.daitign-tv .hover-preview-card__body {
@@ -297,8 +407,19 @@ html.daitign-tv .details-modal::-webkit-scrollbar {
 
 html.daitign-tv .details-hero,
 html.daitign-tv .details-loading__hero {
-  min-height: clamp(14rem, 33vh, 27rem);
-  max-height: 35vh;
+  height: 34vh;
+  min-height: clamp(12rem, 30vh, 24rem);
+  max-height: 36vh;
+}
+
+html.daitign-tv .details-hero__trailer-mount,
+html.daitign-tv .details-hero__trailer iframe {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 html.daitign-tv .details-hero__content {
@@ -345,7 +466,7 @@ html.daitign-tv.daitign-tv-watching body {
 
   html.daitign-tv .carousel-shell__track,
   html.daitign-tv .browse-loading__track {
-    grid-auto-columns: calc((100% - (4 * var(--tv-gap))) / 5);
+    gap: var(--tv-gap);
   }
 
   html.daitign-tv .hero-banner,
@@ -363,7 +484,7 @@ html.daitign-tv.daitign-tv-watching body {
 
   html.daitign-tv .carousel-shell__track,
   html.daitign-tv .browse-loading__track {
-    grid-auto-columns: calc((100% - (6 * var(--tv-gap))) / 7);
+    gap: var(--tv-gap);
   }
 }
 
