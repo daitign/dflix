@@ -77,8 +77,7 @@
   opacity: 1;
 }
 
-.hover-preview-card__video-mount,
-.hover-preview-card__video iframe {
+.hover-preview-card__video-mount {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -91,6 +90,17 @@
   transform-origin: center center;
   border: 0;
   pointer-events: none;
+}
+
+.hover-preview-card__video iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+  pointer-events: none;
+  transform: none;
 }
 
 .hover-preview-card__media-shade {

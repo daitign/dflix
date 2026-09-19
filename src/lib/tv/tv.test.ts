@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { executeTVBack, initTVMode, isTVMode, registerTVBackHandler } from './tvDetection.ts';
+import { executeTVBack, getTVPlatform, initTVMode, isTVMode, registerTVBackHandler } from './tvDetection.ts';
 
 test('1. TV detection: returns false by default in standard node/browser environment without TV signals', () => {
   assert.equal(isTVMode(), false);
@@ -224,6 +224,9 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
   assert.ok(controller.includes('closeMenu()'));
   assert.ok(controller.includes('singleChoiceMenu'));
   assert.ok(controller.includes('single-choice option activated; closing popup'));
+  assert.ok(controller.includes('CONTROLS_IDLE_MS = 3200'));
+  assert.ok(controller.includes('scheduleControlsIdle'));
+  assert.ok(controller.includes('popup remains open; Back will retry close'));
   assert.ok(controller.includes('finishMenuClose'));
   assert.ok(controller.includes("dispatchKey(popupBefore, 'Escape')"));
   assert.ok(controller.includes("if (state === MENU) { closeMenu(); return true; }"));
@@ -285,6 +288,59 @@ test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthe
   assert.ok(!activity.includes('loadDataWithBaseURL'));
 });
 
+test('15. One Android TV APK detects Fire TV and isolates media keys to playback', () => {
+  const activity = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/MainActivity.kt'),
+    'utf-8',
+  );
+  const bridge = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/java/com/daitign/stream/WebAppInterface.kt'),
+    'utf-8',
+  );
+  const controller = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/assets/tv-player-controller.js'),
+    'utf-8',
+  );
+  const manifest = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/src/main/AndroidManifest.xml'),
+    'utf-8',
+  );
+  const gradle = fs.readFileSync(
+    path.resolve(process.cwd(), 'android-tv/app/build.gradle.kts'),
+    'utf-8',
+  );
+
+  assert.ok(activity.includes('enum class TvPlatform'));
+  assert.ok(activity.includes('amazon.hardware.fire_tv'));
+  assert.ok(activity.includes('manufacturer.equals("Amazon"'));
+  assert.ok(activity.includes('model.startsWith("AFT"'));
+  assert.ok(activity.includes('DAITIGN-FIRE-TV/1.0'));
+  assert.ok(bridge.includes('getPlatform'));
+  for (const key of [
+    'KEYCODE_BUTTON_SELECT',
+    'KEYCODE_MEDIA_PLAY_PAUSE',
+    'KEYCODE_MEDIA_REWIND',
+    'KEYCODE_MEDIA_FAST_FORWARD',
+  ]) assert.ok(activity.includes(key));
+  assert.ok(activity.includes('[BROWSE MEDIA KEY IGNORED]'));
+  assert.ok(controller.includes("key === 'PLAY_PAUSE'"));
+  assert.ok(controller.includes("key === 'SEEK_BACKWARD'"));
+  assert.ok(controller.includes('suspend: suspendPlayback'));
+  assert.ok(activity.includes("daitign:tv-app-visibility"));
+  assert.ok(activity.includes('val browseVisible = visible && playerWebView == null'));
+  assert.ok(activity.includes('browseWebView?.onPause()'));
+  assert.ok(manifest.includes('android.intent.category.LAUNCHER'));
+  assert.ok(manifest.includes('android.intent.category.LEANBACK_LAUNCHER'));
+  assert.ok(manifest.includes('android.permission.INTERNET'));
+  assert.ok(manifest.includes('android:hardwareAccelerated="true"'));
+  assert.ok(!gradle.includes('com.google.android.gms'));
+  assert.ok(!gradle.includes('play-services'));
+});
+
+test('15b. Web TV platform detection defaults safely outside the native bridge', () => {
+  assert.equal(getTVPlatform(), 'ANDROID_TV');
+});
+
 test('16. Browse menu is a trapped TV focus scope with Back restoration', () => {
   const navigation = fs.readFileSync(
     path.resolve(process.cwd(), 'src/components/navigation/NavigationShell.tsx'),
@@ -317,9 +373,10 @@ test('17. TV preview expands in-row and reserves space for regular and Top 10 ca
   assert.ok(provider.includes("setAttribute('data-tv-preview-expanded', 'true')"));
   assert.ok(provider.includes('if (isTv)'));
   assert.ok(provider.includes('Desktop mouse hover keeps its deliberate 520ms intent delay'));
+  assert.ok(provider.includes("if (!isTVMode() && lastPointerTypeRef.current !== '') return"));
   assert.ok(!provider.includes('window.setTimeout(activate, 575)'));
   assert.ok(provider.includes('activePreview.referenceElement'));
-  assert.ok(provider.includes("scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })"));
+  assert.ok(provider.includes("scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })"));
   assert.ok(provider.includes('key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}'));
   assert.ok(!provider.includes('activePreview.left}-${activePreview.top'));
 
@@ -329,6 +386,7 @@ test('17. TV preview expands in-row and reserves space for regular and Top 10 ca
   assert.ok(styles.includes(".ranked-card[data-tv-preview-expanded='true'] .hover-preview-card"));
   assert.ok(styles.includes('rgb(229 9 20 / 92%)'));
   assert.ok(styles.includes('.details-hero__trailer-mount'));
+  assert.ok(styles.includes('scroll-behavior: auto'));
   assert.ok(styles.includes('transform: translate(-50%, -50%) scale(1)'));
 });
 
@@ -354,6 +412,9 @@ test('18. TV preview confirms real playback, retries muted, and responds to remo
   assert.ok(preview.includes('logTVPreviewStage'));
   assert.ok(preview.includes("logTVPreviewStage('audio attempt'"));
   assert.ok(preview.includes("logTVPreviewStage('playback confirmed'"));
+  assert.ok(preview.includes("'daitign:tv-app-visibility'"));
+  assert.ok(preview.includes('isTVAppSuspendedRef.current'));
+  assert.ok(preview.includes("logTVPreviewStage('paused for TV app suspension'"));
 });
 
 test('19. TV preview eligibility bypasses WebView reduced-motion quirks before browser heuristics', () => {

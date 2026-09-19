@@ -142,9 +142,12 @@ html.daitign-tv .hero-banner__wash {
     linear-gradient(180deg, rgb(20 20 20 / 55%) 0%, transparent 24%, transparent 60%, #141414 100%);
 }
 
-html.daitign-tv .hero-banner__trailer-mount,
-html.daitign-tv .hero-banner__trailer iframe {
+html.daitign-tv .hero-banner__trailer-mount {
   transform: translate(-50%, -50%) scale(1.16);
+}
+
+html.daitign-tv .hero-banner__trailer iframe {
+  transform: none;
 }
 
 /* Rows sit naturally below the hero; no overlap or negative spacing. */
@@ -187,7 +190,7 @@ html.daitign-tv .carousel-shell__track {
   gap: var(--tv-gap);
   overflow-x: hidden;
   overflow-y: hidden;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-snap-type: none;
 }
 
@@ -196,9 +199,7 @@ html.daitign-tv .carousel-shell__item {
   min-width: 0;
   flex: 0 0 var(--tv-poster-width);
   overflow: visible;
-  transition:
-    width 220ms cubic-bezier(.2,.8,.2,1),
-    flex-basis 220ms cubic-bezier(.2,.8,.2,1);
+  transition: none;
 }
 
 html.daitign-tv .carousel-shell__item[data-tv-preview-expanded='true'] {
@@ -232,7 +233,7 @@ html.daitign-tv .media-card__surface,
 html.daitign-tv .media-card__surface img,
 html.daitign-tv .ranked-card__art,
 html.daitign-tv .ranked-card__art img {
-  transition-duration: 200ms !important;
+  transition-duration: 80ms !important;
 }
 
 html.daitign-tv .media-card {
@@ -314,7 +315,7 @@ html.daitign-tv .hover-preview-card {
 }
 
 html.daitign-tv .hover-preview-card--open {
-  animation: tv-preview-in 200ms cubic-bezier(.2,.8,.2,1) both;
+  animation: tv-preview-in 90ms ease-out both;
 }
 
 html.daitign-tv .hover-preview-card__media,
@@ -324,9 +325,12 @@ html.daitign-tv .hover-preview-card__media .responsive-image {
   aspect-ratio: 16 / 9;
 }
 
-html.daitign-tv .hover-preview-card__video-mount,
-html.daitign-tv .hover-preview-card__video iframe {
+html.daitign-tv .hover-preview-card__video-mount {
   transform: translate(-50%, -50%) scale(1);
+}
+
+html.daitign-tv .hover-preview-card__video iframe {
+  transform: none;
 }
 
 html.daitign-tv .media-card[data-tv-preview-expanded='true'] .media-card__surface,
@@ -412,14 +416,12 @@ html.daitign-tv .details-loading__hero {
   max-height: 36vh;
 }
 
-html.daitign-tv .details-hero__trailer-mount,
+html.daitign-tv .details-hero__trailer-mount {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
 html.daitign-tv .details-hero__trailer iframe {
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  object-fit: contain;
-  transform: translate(-50%, -50%) scale(1);
+  transform: none;
 }
 
 html.daitign-tv .details-hero__content {

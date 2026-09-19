@@ -44,7 +44,7 @@ function getHeroEligibility(): boolean {
 }
 
 export function useHeroPlaybackEligibility(): boolean {
-  const [isEligible, setIsEligible] = useState(false);
+  const [isEligible, setIsEligible] = useState(() => getHeroEligibility());
 
   useEffect(() => {
     const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);

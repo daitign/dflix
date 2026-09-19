@@ -52,8 +52,10 @@ function getActiveScope(): HTMLElement {
 
 export function getFocusableElements(scope: HTMLElement = getActiveScope()): HTMLElement[] {
   if (scope === cachedScope && cachedElements) {
-    const current = cachedElements.filter((element) => element.isConnected && isVisible(element));
-    if (current.length === cachedElements.length) return current;
+    // Visibility-affecting DOM changes invalidate this cache through the
+    // observer. Avoid getComputedStyle/getBoundingClientRect for every card on
+    // every D-pad press; that forced layout was noticeable on real TV CPUs.
+    if (cachedElements.every((element) => element.isConnected)) return cachedElements.slice();
   }
   cachedScope = scope;
   cachedElements = Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR)).filter(isVisible);
@@ -76,6 +78,14 @@ function rememberRowFocus(element: HTMLElement) {
 }
 
 function rowsFor(elements: HTMLElement[]): FocusRow[] {
+  const centers = new Map<HTMLElement, { x: number; y: number }>();
+  const pointFor = (element: HTMLElement) => {
+    const cached = centers.get(element);
+    if (cached) return cached;
+    const point = center(element);
+    centers.set(element, point);
+    return point;
+  };
   const explicit = new Map<HTMLElement, HTMLElement[]>();
   const loose: HTMLElement[] = [];
 
@@ -89,18 +99,18 @@ function rowsFor(elements: HTMLElement[]): FocusRow[] {
   });
 
   const rows: FocusRow[] = Array.from(explicit.values()).map((rowElements) => ({
-    centerY: rowElements.reduce((sum, item) => sum + center(item).y, 0) / rowElements.length,
-    elements: rowElements.sort((a, b) => center(a).x - center(b).x),
+    centerY: rowElements.reduce((sum, item) => sum + pointFor(item).y, 0) / rowElements.length,
+    elements: rowElements.sort((a, b) => pointFor(a).x - pointFor(b).x),
   }));
 
-  loose.sort((a, b) => center(a).y - center(b).y || center(a).x - center(b).x);
+  loose.sort((a, b) => pointFor(a).y - pointFor(b).y || pointFor(a).x - pointFor(b).x);
   loose.forEach((element) => {
-    const point = center(element);
+    const point = pointFor(element);
     const row = rows.find((candidate) => Math.abs(candidate.centerY - point.y) <= 28);
     if (row) {
       row.elements.push(element);
-      row.elements.sort((a, b) => center(a).x - center(b).x);
-      row.centerY = row.elements.reduce((sum, item) => sum + center(item).y, 0) / row.elements.length;
+      row.elements.sort((a, b) => pointFor(a).x - pointFor(b).x);
+      row.centerY = row.elements.reduce((sum, item) => sum + pointFor(item).y, 0) / row.elements.length;
     } else {
       rows.push({ centerY: point.y, elements: [element] });
     }
@@ -163,13 +173,12 @@ function focusInitial() {
 }
 
 function signalTVMediaInteraction() {
-  if (!window.DAITIGN_TV?.tvMediaInteractionUnlocked) {
-    window.DAITIGN_TV = { ...window.DAITIGN_TV, tvMediaInteractionUnlocked: true };
-    try { window.sessionStorage.setItem('daitign-tv-media-unlocked', 'true'); } catch {}
-    console.log('[DAITIGN TV Preview] media interaction unlocked by remote');
-  }
-  // Dispatch every valid remote gesture so a preview that previously fell back
-  // to muted playback can retry sound without remounting its iframe.
+  if (window.DAITIGN_TV?.tvMediaInteractionUnlocked) return;
+  window.DAITIGN_TV = { ...window.DAITIGN_TV, tvMediaInteractionUnlocked: true };
+  try { window.sessionStorage.setItem('daitign-tv-media-unlocked', 'true'); } catch {}
+  console.log('[DAITIGN TV Preview] media interaction unlocked by remote');
+  // One physical gesture unlocks subsequent previews. Replaying this event on
+  // every D-pad move caused redundant YouTube commands and visible TV input lag.
   window.dispatchEvent(new CustomEvent('daitign:tv-media-interaction'));
 }
 
@@ -280,7 +289,7 @@ export function initSpatialNavigation(): () => void {
   const observer = new MutationObserver(invalidateNavigationCache);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['aria-hidden', 'data-tv-focusable', 'disabled', 'hidden', 'style'],
+    attributeFilter: ['aria-hidden', 'class', 'data-tv-focusable', 'disabled', 'hidden'],
     childList: true,
     subtree: true,
   });

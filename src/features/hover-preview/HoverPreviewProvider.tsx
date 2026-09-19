@@ -138,7 +138,7 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
         previewItem?.setAttribute('data-tv-ranked-double', 'true');
       }
       window.requestAnimationFrame(() => {
-        preview.referenceElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        preview.referenceElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
       });
     }
     activePreviewRef.current = preview;
@@ -432,7 +432,10 @@ export function useHoverPreviewAnchor<TReference extends HTMLElement>({ data }: 
       lastPointerTypeRef.current = '';
     },
     onFocus: (event) => {
-      if (lastPointerTypeRef.current !== '') return;
+      // Some Android/Fire TV WebViews synthesize a mouse pointer event before
+      // moving DOM focus with the D-pad. TV focus must always own the preview;
+      // pointer suppression only applies to desktop/touch browsing.
+      if (!isTVMode() && lastPointerTypeRef.current !== '') return;
       if (!referenceRef.current) return;
       context.requestOpen({
         anchorElement: event.currentTarget,

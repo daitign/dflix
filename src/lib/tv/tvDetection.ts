@@ -1,6 +1,7 @@
 import { getTvBrowseState, restoreTvBrowseState, saveTvBrowseState } from './tvBrowseState.ts';
 
 type BackHandler = () => boolean;
+export type TVPlatform = 'ANDROID_TV' | 'FIRE_TV';
 const backHandlers: BackHandler[] = [];
 
 declare global {
@@ -9,6 +10,7 @@ declare global {
       closeTvPlayer?: () => void;
       exitApp?: () => void;
       getAppVersion?: () => string;
+      getPlatform?: () => string;
       isTV?: () => boolean;
       logPreviewEvent?: (message: string) => void;
       showToast?: (message: string) => void;
@@ -22,12 +24,22 @@ declare global {
       isTV?: boolean;
       onNativeBack?: () => boolean;
       onPlayerClosed?: () => void;
+      platform?: TVPlatform;
       restoreBrowseState?: () => void;
       saveBrowseState?: () => void;
       tvMediaInteractionUnlocked?: boolean;
       version?: string;
     };
   }
+}
+
+export function getTVPlatform(): TVPlatform {
+  if (typeof window === 'undefined') return 'ANDROID_TV';
+  try {
+    const bridgePlatform = window.AndroidTVBridge?.getPlatform?.();
+    if (bridgePlatform === 'FIRE_TV') return 'FIRE_TV';
+  } catch {}
+  return /DAITIGN-FIRE-TV|\bAFT[A-Z0-9]*\b/i.test(window.navigator.userAgent) ? 'FIRE_TV' : 'ANDROID_TV';
 }
 
 export function isTVMode(): boolean {
@@ -59,7 +71,10 @@ export function executeTVBack(): boolean {
 
 export function initTVMode(): boolean {
   if (!isTVMode()) return false;
+  const platform = getTVPlatform();
   document.documentElement.classList.add('daitign-tv');
+  document.documentElement.classList.toggle('daitign-fire-tv', platform === 'FIRE_TV');
+  document.documentElement.dataset.tvPlatform = platform;
   window.DAITIGN_TV = {
     ...window.DAITIGN_TV,
     getBrowseState: () => JSON.stringify(getTvBrowseState() ?? {}),
@@ -67,6 +82,7 @@ export function initTVMode(): boolean {
     isTV: true,
     onNativeBack: executeTVBack,
     onPlayerClosed: () => { restoreTvBrowseState(); },
+    platform,
     restoreBrowseState: () => { restoreTvBrowseState(); },
     saveBrowseState: () => { saveTvBrowseState(); },
     version: '2.0',

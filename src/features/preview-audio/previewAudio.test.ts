@@ -128,6 +128,14 @@ test('13. HeroBanner: binds heroRef and passes scroll playback controls to YouTu
   assert.ok(heroBannerSrc.includes('heroVolumeFactor={heroVolumeFactor}'), 'HeroBanner must pass heroVolumeFactor to YouTubePreview');
 });
 
+test('13b. Hero trailer eligibility is resolved on the first client render', () => {
+  const eligibility = fs.readFileSync(
+    path.resolve('src/features/home/useHeroPlaybackEligibility.ts'),
+    'utf8',
+  );
+  assert.ok(eligibility.includes('useState(() => getHeroEligibility())'));
+});
+
 test('14. YouTubePreview: pauses trailer when not in view and smoothly updates volume', () => {
   const ytPreviewSrc = fs.readFileSync(
     path.resolve('src/features/hover-preview/YouTubePreview.tsx'),
@@ -138,6 +146,48 @@ test('14. YouTubePreview: pauses trailer when not in view and smoothly updates v
   assert.ok(ytPreviewSrc.includes('player.pauseVideo()'), 'YouTubePreview must call pauseVideo when not in view');
   assert.ok(ytPreviewSrc.includes('player.setVolume?.(targetVol)'), 'YouTubePreview must set faded volume on scroll');
   assert.ok(ytPreviewSrc.includes('fadeIntervalRef'), 'YouTubePreview must maintain volume fader interval');
+});
+
+test('14b. YouTubePreview keeps a stable React mount across StrictMode replay', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes("const playerMount = document.createElement('div')"));
+  assert.ok(preview.includes('playerMount.id = `daitign-youtube-preview-'));
+  assert.ok(preview.includes('mountRef.current.replaceChildren(playerMount)'));
+  assert.ok(preview.includes('new api.Player(playerMount.id'));
+  assert.ok(preview.includes('mountRef.current?.replaceChildren()'));
+});
+
+test('14c. YouTubePreview restores the cached API across TV surface hand-offs', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes('if (!window.YT?.Player) window.YT = api'));
+  assert.ok(preview.indexOf('window.YT = api') < preview.indexOf('new api.Player(playerMount.id'));
+});
+
+test('14d. YouTubePreview reveals a created iframe when Windows/WebView callbacks stall', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes("mountRef.current.querySelector('iframe')"));
+  assert.ok(preview.includes("logTVPreviewStage('iframe readiness fallback revealed preview'"));
+  assert.ok(preview.includes('}, 650)'));
+});
+
+test('14e. YouTubePreview falls back to a direct privacy-enhanced embed when iframe_api stalls', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes("const embedOrigin = 'https://www.youtube-nocookie.com'"));
+  assert.ok(preview.includes("mountDirectIframeFallback('iframe API readiness timeout')"));
+  assert.ok(preview.includes("command('playVideo')"));
+  assert.ok(preview.includes('}, 900)'));
 });
 
 test('15. PreviewAudioContext: initializes sound to ON by default and supports wheel/scroll gesture activation', () => {
@@ -199,6 +249,3 @@ test('19. HeroBanner.css: scales mobile hero trailer layer to match 62% backdrop
             heroCss.includes('.hero-banner__trailer'), 'HeroBanner.css must frame trailer on mobile');
   assert.ok(heroCss.includes('scale(1.35)'), 'HeroBanner.css must scale trailer mount on mobile');
 });
-
-
-

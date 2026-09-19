@@ -47,7 +47,7 @@ interface YouTubePlayerOptions {
 }
 
 interface YouTubeApi {
-  Player: new (element: HTMLElement, options: YouTubePlayerOptions) => YouTubePlayer;
+  Player: new (element: HTMLElement | string, options: YouTubePlayerOptions) => YouTubePlayer;
   PlayerState: {
     BUFFERING?: number;
     CUED?: number;
@@ -65,6 +65,7 @@ declare global {
 }
 
 let youtubeApiPromise: Promise<YouTubeApi> | null = null;
+let youtubeMountSequence = 0;
 
 function destroyPlayer(player?: YouTubePlayer | null) {
   if (!player) return;
@@ -169,6 +170,7 @@ export function YouTubePreview({
   const fadeIntervalRef = useRef<number | null>(null);
   const watchdogTimerRef = useRef<number | null>(null);
   const remoteSoundRetryRef = useRef(false);
+  const isTVAppSuspendedRef = useRef(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
 
@@ -215,6 +217,35 @@ export function YouTubePreview({
 
   const isHeroInViewRef = useRef(isHeroInView);
   isHeroInViewRef.current = isHeroInView;
+  const shouldResumeAfterSuspendRef = useRef(false);
+  shouldResumeAfterSuspendRef.current = isHero
+    ? isHeroInView && !isHoverActive && !isModalActive
+    : (isModal ? isModalActive : isHoverActive);
+
+  useEffect(() => {
+    if (!isTVMode()) return;
+    const handleTVAppVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<{ visible?: boolean; platform?: string }>).detail;
+      const visible = detail?.visible !== false;
+      isTVAppSuspendedRef.current = !visible;
+      const player = playerRef.current;
+      if (!player) return;
+      try {
+        if (!visible) {
+          isPlayingRef.current = false;
+          window.clearInterval(loopIntervalRef.current);
+          player.pauseVideo();
+          logTVPreviewStage('paused for TV app suspension', { platform: detail?.platform, title, surface: diagnosticSurface });
+        } else if (shouldResumeAfterSuspendRef.current) {
+          isPlayingRef.current = true;
+          player.playVideo();
+          logTVPreviewStage('resumed after TV app suspension', { platform: detail?.platform, title, surface: diagnosticSurface });
+        }
+      } catch {}
+    };
+    window.addEventListener('daitign:tv-app-visibility', handleTVAppVisibility);
+    return () => window.removeEventListener('daitign:tv-app-visibility', handleTVAppVisibility);
+  }, [diagnosticSurface, title]);
 
   useEffect(() => {
     if (!isTVMode()) return;
@@ -439,6 +470,10 @@ export function YouTubePreview({
       destroyPlayer(player);
       if (!disposed) setIsUnavailable(true);
     }, PLAYER_START_TIMEOUT_MS);
+    let iframeRevealTimer = 0;
+    let apiFallbackTimer = 0;
+    let directRevealTimer = 0;
+    let directFallbackActive = false;
 
     const clearStartTimeout = () => {
       window.clearTimeout(startTimeout);
@@ -447,6 +482,9 @@ export function YouTubePreview({
 
     const markUnavailable = (player?: YouTubePlayer) => {
       clearStartTimeout();
+      window.clearTimeout(iframeRevealTimer);
+      window.clearTimeout(apiFallbackTimer);
+      window.clearTimeout(directRevealTimer);
       const activePlayer = player ?? playerRef.current;
       playerRef.current = null;
       destroyPlayer(activePlayer);
@@ -471,17 +509,114 @@ export function YouTubePreview({
       return;
     }
 
+    const mountDirectIframeFallback = (reason: string) => {
+      if (disposed || directFallbackActive || playerRef.current || !mountRef.current) return;
+      directFallbackActive = true;
+
+      const embedOrigin = 'https://www.youtube-nocookie.com';
+      const params = new URLSearchParams({
+        autoplay: '1',
+        controls: '0',
+        disablekb: '1',
+        enablejsapi: '1',
+        fs: '0',
+        iv_load_policy: '3',
+        loop: '1',
+        modestbranding: '1',
+        mute: '1',
+        origin: window.location.origin,
+        playlist: activeVideo.key,
+        playsinline: '1',
+        rel: '0',
+      });
+      const iframe = document.createElement('iframe');
+      iframe.src = `${embedOrigin}/embed/${encodeURIComponent(activeVideo.key)}?${params.toString()}`;
+      iframe.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      iframe.tabIndex = -1;
+      iframe.title = `${title} trailer preview`;
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = '0';
+
+      const command = (func: string, args: unknown[] = []) => {
+        iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), embedOrigin);
+      };
+      const directPlayer: YouTubePlayer = {
+        destroy: () => iframe.remove(),
+        getIframe: () => iframe,
+        mute: () => command('mute'),
+        pauseVideo: () => command('pauseVideo'),
+        playVideo: () => command('playVideo'),
+        seekTo: (seconds, allowSeekAhead) => command('seekTo', [seconds, allowSeekAhead]),
+        setVolume: (volume) => command('setVolume', [volume]),
+        unMute: () => command('unMute'),
+      };
+      const reveal = () => {
+        if (disposed || hasStartedRef.current || !iframe.isConnected) return;
+        directPlayer.mute();
+        directPlayer.setVolume?.(0);
+        directPlayer.playVideo();
+        currentVolumeRef.current = 0;
+        isMutedRef.current = true;
+        isPlayingRef.current = true;
+        hasStartedRef.current = true;
+        setAutoplaySoundAllowed(false);
+        setHasStarted(true);
+        onPlayingRef.current?.();
+        clearStartTimeout();
+        console.warn(`[DAITIGN Preview] using direct iframe fallback: ${reason}`);
+      };
+
+      iframe.addEventListener('load', () => {
+        directPlayer.playVideo();
+        window.setTimeout(reveal, 80);
+      }, { once: true });
+      playerRef.current = directPlayer;
+      mountRef.current.replaceChildren(iframe);
+      directRevealTimer = window.setTimeout(reveal, 650);
+    };
+
+    // Windows browsers with strict tracking protection can create a normal
+    // YouTube embed while blocking or delaying iframe_api. Start a lightweight
+    // direct embed instead of leaving every preview surface empty.
+    apiFallbackTimer = window.setTimeout(() => {
+      mountDirectIframeFallback('iframe API readiness timeout');
+    }, 900);
+
     loadYouTubeApi()
       .then((api) => {
         if (disposed || !mountRef.current) return;
+        window.clearTimeout(apiFallbackTimer);
+        if (directFallbackActive) return;
         logTVPreviewStage('YouTube API ready', { title, surface: diagnosticSurface, key: activeVideo.key });
+
+        // Some Android/Fire WebView builds (and a few embedded Chromium
+        // runtimes) drop the global YT reference after the first player is
+        // destroyed. The resolved API object is still valid, but Player's
+        // constructor and deferred callbacks consult window.YT internally.
+        // Restore that reference before every surface hand-off so moving from
+        // Hero -> card -> Details can create a fresh iframe reliably.
+        if (!window.YT?.Player) window.YT = api;
+
+        // YouTube replaces the element passed to YT.Player with an iframe.
+        // Keep React's ref on a stable wrapper and give each player lifecycle a
+        // fresh attached child. This survives StrictMode's setup/cleanup replay
+        // and rapid focus changes without creating a detached iframe.
+        const playerMount = document.createElement('div');
+        playerMount.id = `daitign-youtube-preview-${++youtubeMountSequence}`;
+        playerMount.style.width = '100%';
+        playerMount.style.height = '100%';
+        mountRef.current.replaceChildren(playerMount);
 
         const isMobile = isMobileTouchDevice();
         const wantSound = shouldBeAudibleRef.current && !isMobile;
         let playbackStarted = false;
         let mutedFallbackActive = false;
 
-        const player = new api.Player(mountRef.current, {
+        // Supplying the attached element ID is the most compatible IFrame API
+        // path across Chromium, Android System WebView and Fire OS WebView.
+        const player = new api.Player(playerMount.id, {
           height: '100%',
           width: '100%',
           videoId: activeVideo.key,
@@ -502,6 +637,7 @@ export function YouTubePreview({
           },
           events: {
             onError: (event) => {
+              window.clearTimeout(iframeRevealTimer);
               logTVPreviewStage('YouTube player error', {
                 title,
                 surface: diagnosticSurface,
@@ -636,6 +772,7 @@ export function YouTubePreview({
               });
 
               if (event.data === api.PlayerState.PLAYING) {
+                window.clearTimeout(iframeRevealTimer);
                 console.log('[DAITIGN TV Preview] 6. play promise result: success (PLAYING)');
                 playbackStarted = true;
                 logTVPreviewStage('playback confirmed', {
@@ -779,6 +916,7 @@ export function YouTubePreview({
               // immediately re-mute and resume playback so the video never stays paused with overlay controls.
               if (event.data === api.PlayerState.PAUSED) {
                 window.clearInterval(loopIntervalRef.current);
+                if (isTVAppSuspendedRef.current) return;
                 if (isPlayingRef.current || !hasStartedRef.current) {
                   console.warn('[DAITIGN TV Preview] 6. play promise result: paused by browser/system policy, immediately retrying muted');
                   console.log('[DAITIGN TV Preview] 7. muted state: muted (recovery)');
@@ -815,8 +953,42 @@ export function YouTubePreview({
           },
         });
         playerRef.current = player;
+        if (!window.YT?.Player) window.YT = api;
+
+        iframeRevealTimer = window.setTimeout(() => {
+          if (disposed || hasStartedRef.current || !mountRef.current) return;
+          const iframe = mountRef.current.querySelector('iframe');
+          if (!iframe) return;
+
+          // Some Windows browsers and television WebViews successfully create
+          // and autoplay the embed but never deliver IFrame API callbacks. Do
+          // not leave that working video permanently transparent. The normal
+          // PLAYING callback can still refine audio/state if it arrives later.
+          try {
+            if (shouldBeAudibleRef.current) {
+              player.unMute();
+              player.setVolume?.(100);
+            } else {
+              player.mute();
+              player.setVolume?.(0);
+            }
+            player.playVideo();
+          } catch {}
+          hasStartedRef.current = true;
+          setHasStarted(true);
+          onPlayingRef.current?.();
+          clearStartTimeout();
+          logTVPreviewStage('iframe readiness fallback revealed preview', {
+            title, surface: diagnosticSurface, key: activeVideo.key,
+          });
+        }, 650);
       })
       .catch((error) => {
+        window.clearTimeout(apiFallbackTimer);
+        if (!disposed && !directFallbackActive) {
+          mountDirectIframeFallback(error instanceof Error ? error.message : 'iframe API failed');
+          return;
+        }
         console.error('[DAITIGN TV Preview] iframe/API creation failed:', error);
         logTVPreviewStage('YouTube API/player creation failed', {
           title, surface: diagnosticSurface, key: activeVideo?.key ?? null, error: error instanceof Error ? error.message : String(error),
@@ -834,6 +1006,9 @@ export function YouTubePreview({
         key: activeVideo?.key ?? null,
       });
       clearStartTimeout();
+      window.clearTimeout(iframeRevealTimer);
+      window.clearTimeout(apiFallbackTimer);
+      window.clearTimeout(directRevealTimer);
       if (watchdogTimerRef.current !== null) {
         window.clearTimeout(watchdogTimerRef.current);
         watchdogTimerRef.current = null;
@@ -846,6 +1021,7 @@ export function YouTubePreview({
       const player = playerRef.current;
       playerRef.current = null;
       destroyPlayer(player);
+      mountRef.current?.replaceChildren();
     };
   }, [activeVideo?.key, candidateIndex, candidateList.length, setAutoplaySoundAllowed, title, variant]);
 

@@ -16,6 +16,10 @@
   var menuCandidateCache = [];
   var menuCandidatesDirty = true;
   var menuSyncTimer = 0;
+  var controlsIdleTimer = 0;
+  var lastControlRevealAt = 0;
+  var wasPlayingBeforeSuspend = false;
+  var CONTROLS_IDLE_MS = 3200;
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
@@ -194,18 +198,95 @@
     notify(resolvedState);
   }
 
+  function scheduleControlsIdle() {
+    window.clearTimeout(controlsIdleTimer);
+    controlsIdleTimer = window.setTimeout(function () {
+      if (state !== MENU) hideControls();
+    }, CONTROLS_IDLE_MS);
+  }
+
   function showControls() {
+    var now = Date.now();
+    if (now - lastControlRevealAt < 80) {
+      scheduleControlsIdle();
+      return;
+    }
+    lastControlRevealAt = now;
     var target = document.querySelector('video') || document.body;
-    [window, document, document.body, target].forEach(function (node) {
+    [document, target].forEach(function (node) {
       node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight * .86 }));
-      if (typeof PointerEvent === 'function') node.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight * .86, pointerType: 'mouse' }));
     });
+    scheduleControlsIdle();
   }
 
   function hideControls() {
+    window.clearTimeout(controlsIdleTimer);
+    controlsIdleTimer = 0;
+    var focused = document.activeElement;
+    if (focused && focused !== document.body && typeof focused.blur === 'function') focused.blur();
     clearSelection();
-    document.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    var target = document.querySelector('video') || document.body;
+    [target, document].forEach(function (node) {
+      node.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: null, clientX: -20, clientY: -20 }));
+      node.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false, relatedTarget: null, clientX: -20, clientY: -20 }));
+    });
     notify(HIDDEN);
+  }
+
+  function primaryVideo() {
+    return Array.prototype.slice.call(document.querySelectorAll('video')).find(visible) || document.querySelector('video');
+  }
+
+  function playPauseControl() {
+    return candidates(true).find(function (element) { return controlKind(element) === 'play-pause'; }) || null;
+  }
+
+  function setPlayback(command) {
+    var video = primaryVideo();
+    if (video) {
+      if (command === 'PLAY' || (command === 'PLAY_PAUSE' && video.paused)) {
+        var promise = video.play();
+        if (promise && typeof promise.catch === 'function') promise.catch(function () {});
+      } else if (command === 'PAUSE' || command === 'PLAY_PAUSE') video.pause();
+      console.log('[DAITIGN TV Player] media command ' + command + ' handled by video');
+      return true;
+    }
+    var control = playPauseControl();
+    if (!control) return false;
+    control.click();
+    console.log('[DAITIGN TV Player] media command ' + command + ' handled by play control');
+    return true;
+  }
+
+  function seekPlayback(direction) {
+    var seconds = direction === 'SEEK_FORWARD' ? 10 : -10;
+    var video = primaryVideo();
+    if (video && isFinite(video.duration)) {
+      video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + seconds));
+      console.log('[DAITIGN TV Player] media seek ' + seconds + ' seconds');
+      return true;
+    }
+    var timeline = candidates(true).find(isTimeline);
+    if (!timeline) return false;
+    dispatchKey(timeline, seconds > 0 ? 'ArrowRight' : 'ArrowLeft');
+    return true;
+  }
+
+  function suspendPlayback() {
+    var video = primaryVideo();
+    wasPlayingBeforeSuspend = !!(video && !video.paused && !video.ended);
+    if (video) video.pause();
+    hideControls();
+    console.log('[DAITIGN TV Player] suspended; wasPlaying=' + wasPlayingBeforeSuspend);
+    return true;
+  }
+
+  function resumePlayback() {
+    // Resume with playback paused. The next Select or Play/Pause action is an
+    // intentional user gesture and avoids surprise audio after Fire TV wake.
+    showControls();
+    console.log('[DAITIGN TV Player] resumed; playback remains paused');
+    return true;
   }
 
   function defaultControl(all) {
@@ -237,7 +318,6 @@
     showControls();
     window.setTimeout(function () {
       var all = candidates(true);
-      if (attempt === 0 || all.length) inventory(true);
       var control = defaultControl(all);
       if (control) setSelected(control, CONTROLS);
       else if (attempt < 12) focusDefault(attempt + 1);
@@ -352,6 +432,7 @@
           menuCandidateCache = [];
           if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
           else focusDefault(0);
+          scheduleControlsIdle();
         }
       }, 80);
     }, 80);
@@ -378,6 +459,7 @@
     window.clearTimeout(menuSyncTimer);
     if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
     else focusDefault(0);
+    scheduleControlsIdle();
   }
 
   function closeMenu() {
@@ -390,31 +472,44 @@
 
     var close = discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
     if (close) close.click();
-    else {
-      // VIDSTUCK popups do not consistently expose a visible close control.
-      // Send their normal Escape path first, then toggle the real opener only
-      // when the popup is still present.
-      if (selected) dispatchKey(selected, 'Escape');
-      dispatchKey(popupBefore, 'Escape');
-      dispatchKey(document.body, 'Escape');
-      if (visible(popupBefore) && visible(menuOpener)) menuOpener.click();
-    }
+    if (selected) dispatchKey(selected, 'Escape');
+    dispatchKey(popupBefore, 'Escape');
+    dispatchKey(document.body, 'Escape');
     window.setTimeout(function () {
-      if (visible(popupBefore) && visible(menuOpener)) pointerFallback(menuOpener);
-      window.setTimeout(finishMenuClose, 80);
-    }, 80);
+      if (!visible(popupBefore)) {
+        finishMenuClose();
+        return;
+      }
+      // Some VIDSTUCK builds ignore Escape and use the opener as a toggle.
+      if (visible(menuOpener)) menuOpener.click();
+      window.setTimeout(function () {
+        if (!visible(popupBefore)) {
+          finishMenuClose();
+          return;
+        }
+        // Keep PLAYER_MENU active when closing genuinely failed so Back can
+        // retry instead of accidentally hiding controls or exiting playback.
+        activePopup = popupBefore;
+        menuCandidatesDirty = true;
+        var items = discoverMenuItems(popupBefore, true);
+        if (items[0]) setSelected(items[0], MENU);
+        console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
+      }, 90);
+    }, 90);
     return true;
   }
 
   var observer = new MutationObserver(function () {
     candidatesDirty = true;
     menuCandidatesDirty = true;
+    if (state !== MENU) return;
     if (state === MENU && (!activePopup || !visible(activePopup))) {
       activePopup = null;
       menuCandidateCache = [];
       menuCandidatesDirty = true;
       if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
       else focusDefault(0);
+      scheduleControlsIdle();
       return;
     }
     if (state === MENU && activePopup && visible(activePopup)) {
@@ -428,11 +523,13 @@
   });
   observer.observe(document.documentElement, {
     subtree: true, childList: true, attributes: true,
-    attributeFilter: ['style', 'hidden', 'disabled', 'aria-hidden', 'aria-label', 'aria-selected', 'aria-checked', 'title', 'role']
+    attributeFilter: ['class', 'hidden', 'disabled', 'aria-hidden', 'aria-selected', 'aria-checked', 'role']
   });
 
   window.DAITIGN_TV_PLAYER = {
     getState: function () { return state; },
+    resume: resumePlayback,
+    suspend: suspendPlayback,
     wake: function () { focusDefault(0); return true; },
     handle: function (key) {
       if (key === 'BACK') {
@@ -441,6 +538,8 @@
         return false;
       }
       showControls();
+      if (key === 'PLAY_PAUSE' || key === 'PLAY' || key === 'PAUSE') return setPlayback(key);
+      if (key === 'SEEK_BACKWARD' || key === 'SEEK_FORWARD') return seekPlayback(key);
       if (state === MENU) {
         if (!activePopup || !visible(activePopup)) { activePopup = null; focusDefault(0); return true; }
         if (key === 'UP' || key === 'DOWN') { moveMenu(key); return true; }

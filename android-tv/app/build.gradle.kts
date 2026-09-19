@@ -11,8 +11,8 @@ android {
         applicationId = "com.daitign.stream"
         minSdk = 21
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.0.8-tv"
+        versionCode = 11
+        versionName = "1.0.10-tv"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -51,6 +51,4 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.webkit:webkit:1.10.0")
-    implementation("androidx.leanback:leanback:1.0.0")
-    implementation("com.google.android.material:material:1.11.0")
 }

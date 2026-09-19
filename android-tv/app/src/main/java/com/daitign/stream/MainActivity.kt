@@ -49,12 +49,18 @@ enum class PlayerState {
     PLAYER_MENU,
 }
 
+enum class TvPlatform {
+    ANDROID_TV,
+    FIRE_TV,
+}
+
 /** Native shell for the production TV browse WebView and top-level VIDSTUCK player. */
 class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "DAITIGN-TV"
         private const val APP_URL = "https://daiflix.vercel.app/?tv=1"
-        private const val TV_USER_AGENT = " DAITIGN-TV/3.0"
+        private const val TV_USER_AGENT = " DAITIGN-TV/3.1"
+        private const val FIRE_TV_FEATURE = "amazon.hardware.fire_tv"
         private const val STARTUP_TIMEOUT_MS = 10_000L
         private const val EXIT_INTERVAL_MS = 2_000L
     }
@@ -78,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private var browseMediaUnlocked = false
     private var pendingPlayerUrl: String? = null
     private var lastBackAt = 0L
+    private lateinit var tvPlatform: TvPlatform
 
     @Volatile
     private var playerState = PlayerState.PLAYER_HIDDEN
@@ -91,7 +98,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(TAG, "MainActivity.onCreate")
+        tvPlatform = detectTvPlatform()
+        Log.i(
+            TAG,
+            "MainActivity.onCreate platform=$tvPlatform manufacturer=${Build.MANUFACTURER} model=${Build.MODEL}",
+        )
         try {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             createNativeRoot()
@@ -175,6 +186,9 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView(webView: WebView) {
         webView.setBackgroundColor(Color.rgb(20, 20, 20))
+        // Keep Android's hardware-accelerated compositor. A forced software
+        // layer produces black frames on some Fire OS and Android TV WebViews.
+        webView.setLayerType(View.LAYER_TYPE_NONE, null)
         webView.isFocusable = true
         webView.isFocusableInTouchMode = true
         webView.settings.run {
@@ -185,7 +199,12 @@ class MainActivity : ComponentActivity() {
             useWideViewPort = true
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = (userAgentString ?: "Mozilla/5.0 (Linux; Android TV)") + TV_USER_AGENT
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
+            textZoom = 100
+            val platformToken = if (tvPlatform == TvPlatform.FIRE_TV) " DAITIGN-FIRE-TV/1.0" else " DAITIGN-ANDROID-TV/1.0"
+            userAgentString = (userAgentString ?: "Mozilla/5.0 (Linux; Android TV)") + TV_USER_AGENT + platformToken
         }
         CookieManager.getInstance().run {
             setAcceptCookie(true)
@@ -197,9 +216,22 @@ class MainActivity : ComponentActivity() {
             "WebView settings: javaScript=${webView.settings.javaScriptEnabled}, " +
                 "domStorage=${webView.settings.domStorageEnabled}, " +
                 "mediaGesture=${webView.settings.mediaPlaybackRequiresUserGesture}, " +
-                "hardware=${webView.isHardwareAccelerated}, layerType=${webView.layerType}",
+                "platform=$tvPlatform, hardware=${webView.isHardwareAccelerated}, layerType=${webView.layerType}",
         )
     }
+
+    private fun detectTvPlatform(): TvPlatform {
+        val manufacturer = Build.MANUFACTURER.orEmpty()
+        val model = Build.MODEL.orEmpty()
+        val hasFireFeature = runCatching { packageManager.hasSystemFeature(FIRE_TV_FEATURE) }.getOrDefault(false)
+        return if (
+            hasFireFeature ||
+            manufacturer.equals("Amazon", ignoreCase = true) ||
+            model.startsWith("AFT", ignoreCase = true)
+        ) TvPlatform.FIRE_TV else TvPlatform.ANDROID_TV
+    }
+
+    fun getTvPlatformName(): String = tvPlatform.name
 
     private fun createBrowseWebView(): WebView = WebView(this).also { webView ->
         configureWebView(webView)
@@ -414,7 +446,6 @@ class MainActivity : ComponentActivity() {
             "Boolean(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.handle('$key'))",
         ) { handled ->
             Log.i(TAG, "player controller key=$key handled=$handled state=$playerState")
-            playerHandler.postDelayed({ logPlayerInventory(player, "after $key") }, 260L)
             callback?.onReceiveValue(handled)
         }
     }
@@ -443,7 +474,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun routePlayerKey(key: String) {
-        wakePlayerControls()
+        // Native hover synthesis is expensive on lower-powered Sharp/Fire TV
+        // hardware. It is only needed to wake VIDSTUCK from its hidden state;
+        // the injected controller handles subsequent navigation directly.
+        if (playerState == PlayerState.PLAYER_HIDDEN) wakePlayerControls()
         sendPlayerKey(key)
     }
 
@@ -516,9 +550,18 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (playerWebView == null) {
+            if (isMediaPlaybackKey(event.keyCode)) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    Log.i(TAG, "[BROWSE MEDIA KEY IGNORED] ${KeyEvent.keyCodeToString(event.keyCode)}")
+                }
+                // Media keys belong to VIDSTUCK only. Consuming them here keeps
+                // Fire remotes from pausing or seeking a browse-page trailer.
+                return true
+            }
             val isBrowseRemoteInteraction = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
                 event.keyCode == KeyEvent.KEYCODE_ENTER ||
                 event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER ||
+                event.keyCode == KeyEvent.KEYCODE_BUTTON_SELECT ||
                 event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
                 event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
                 event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
@@ -556,14 +599,17 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_DPAD_CENTER -> "CENTER" to "OK"
             KeyEvent.KEYCODE_ENTER -> "ENTER" to "OK"
             KeyEvent.KEYCODE_NUMPAD_ENTER -> "NUMPAD_ENTER" to "OK"
+            KeyEvent.KEYCODE_BUTTON_SELECT -> "BUTTON_SELECT" to "OK"
             KeyEvent.KEYCODE_DPAD_LEFT -> "LEFT" to "LEFT"
             KeyEvent.KEYCODE_DPAD_RIGHT -> "RIGHT" to "RIGHT"
             KeyEvent.KEYCODE_DPAD_UP -> "UP" to "UP"
             KeyEvent.KEYCODE_DPAD_DOWN -> "DOWN" to "DOWN"
             KeyEvent.KEYCODE_BACK -> "BACK" to "BACK"
-            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-            KeyEvent.KEYCODE_MEDIA_PLAY,
-            KeyEvent.KEYCODE_MEDIA_PAUSE -> "MEDIA_PLAY_PAUSE" to "OK"
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> "MEDIA_PLAY_PAUSE" to "PLAY_PAUSE"
+            KeyEvent.KEYCODE_MEDIA_PLAY -> "MEDIA_PLAY" to "PLAY"
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> "MEDIA_PAUSE" to "PAUSE"
+            KeyEvent.KEYCODE_MEDIA_REWIND -> "MEDIA_REWIND" to "SEEK_BACKWARD"
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> "MEDIA_FAST_FORWARD" to "SEEK_FORWARD"
             else -> null
         } ?: return super.dispatchKeyEvent(event)
 
@@ -572,6 +618,15 @@ class MainActivity : ComponentActivity() {
             if (pair.second == "BACK") handlePlayerBack() else routePlayerKey(pair.second)
         }
         return true
+    }
+
+    private fun isMediaPlaybackKey(keyCode: Int): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        KeyEvent.KEYCODE_MEDIA_PLAY,
+        KeyEvent.KEYCODE_MEDIA_PAUSE,
+        KeyEvent.KEYCODE_MEDIA_REWIND,
+        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> true
+        else -> false
     }
 
     private fun showBrowseFailure(reason: String) {
@@ -643,16 +698,43 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        browseWebView?.onResume()
-        browseWebView?.resumeTimers()
-        playerWebView?.onResume()
-        playerWebView?.resumeTimers()
+        val player = playerWebView
+        if (player == null) {
+            browseWebView?.onResume()
+            browseWebView?.resumeTimers()
+        } else {
+            // Do not revive browse-page trailer audio behind the top-level
+            // player when Fire OS resumes this Activity after sleep/app switch.
+            browseWebView?.onPause()
+            player.onResume()
+            player.resumeTimers()
+        }
+        dispatchTvAppVisibility(visible = true)
+        enterImmersiveMode()
+        (player ?: browseWebView)?.requestFocus()
+        Log.i(TAG, "activity resumed platform=$tvPlatform playerAttached=${playerWebView != null}")
     }
 
     override fun onPause() {
+        dispatchTvAppVisibility(visible = false)
         browseWebView?.onPause()
         playerWebView?.onPause()
+        (playerWebView ?: browseWebView)?.pauseTimers()
+        Log.i(TAG, "activity paused platform=$tvPlatform playerAttached=${playerWebView != null}")
         super.onPause()
+    }
+
+    private fun dispatchTvAppVisibility(visible: Boolean) {
+        val platform = tvPlatform.name
+        val browseVisible = visible && playerWebView == null
+        browseWebView?.evaluateJavascript(
+            "window.dispatchEvent(new CustomEvent('daitign:tv-app-visibility',{detail:{visible:$browseVisible,platform:'$platform'}}))",
+            null,
+        )
+        playerWebView?.evaluateJavascript(
+            "Boolean(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.${if (visible) "resume" else "suspend"}())",
+            null,
+        )
     }
 
     override fun onDestroy() {
