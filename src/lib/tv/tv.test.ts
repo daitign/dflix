@@ -230,6 +230,10 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
   assert.ok(controller.includes('finishMenuClose'));
   assert.ok(controller.includes("dispatchKey(popupBefore, 'Escape')"));
   assert.ok(controller.includes("if (state === MENU) { closeMenu(); return true; }"));
+  assert.ok(controller.includes("[class*=\"timeline\"]"));
+  assert.ok(controller.includes('controlVisible'));
+  assert.ok(controller.includes("key === 'SEEK_BACKWARD_REPEAT'"));
+  assert.ok(controller.includes("return seekPlayback(key === 'RIGHT' ? 'SEEK_FORWARD' : 'SEEK_BACKWARD', false)"));
   assert.ok(controller.includes('background:rgba(255,255,255,.19)'));
   assert.ok(controller.includes('box-shadow:none'));
   assert.ok(controller.includes('transform:none'));
@@ -283,6 +287,11 @@ test('14. Android TV player owns D-pad input and loads VIDSTUCK without a synthe
   assert.ok(activity.includes('handleMediaUnlock'));
   assert.ok(activity.includes('[PREVIEW WEBVIEW]'));
   assert.ok(activity.includes('The previous async'));
+  assert.ok(activity.includes('[PLAYER SEEK HOLD]'));
+  assert.ok(activity.includes('PLAYER_SEEK_REPEAT_INTERVAL_MS'));
+  assert.ok(activity.includes('PlayerState.PLAYER_TIMELINE'));
+  assert.ok(activity.includes('SEEK_FORWARD_REPEAT'));
+  assert.ok(activity.includes('SEEK_BACKWARD_REPEAT'));
   assert.ok(!activity.includes('runSyntheticPlayerTest'));
   assert.ok(!activity.includes('PLAYER_TEST_URL'));
   assert.ok(!activity.includes('loadDataWithBaseURL'));

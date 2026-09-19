@@ -33,13 +33,18 @@
     try { window.AndroidTVBridge && window.AndroidTVBridge.setPlayerState(next); } catch (_) {}
   }
 
-  function visible(element) {
+  function rendered(element) {
     if (!element || !element.isConnected) return false;
     var rect = element.getBoundingClientRect();
-    if (rect.width < 4 || rect.height < 4) return false;
     if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) return false;
     var computed = getComputedStyle(element);
     return computed.display !== 'none' && computed.visibility !== 'hidden' && computed.opacity !== '0';
+  }
+
+  function visible(element) {
+    if (!rendered(element)) return false;
+    var rect = element.getBoundingClientRect();
+    return rect.width >= 4 && rect.height >= 4;
   }
 
   function enabled(element) {
@@ -56,6 +61,17 @@
 
   function isTimeline(element) {
     return element.matches('input[type="range"],[role="slider"],[aria-valuenow]') || /timeline|progress|scrub|seek/.test(label(element));
+  }
+
+  function controlVisible(element) {
+    if (!rendered(element)) return false;
+    var rect = element.getBoundingClientRect();
+    return (rect.width >= 4 && rect.height >= 4) || (isTimeline(element) && rect.width >= 40 && rect.height >= 1);
+  }
+
+  function timelinePriority(element) {
+    if (element.matches('input[type="range"],[role="slider"],[aria-valuenow]')) return 2;
+    return isTimeline(element) ? 1 : 0;
   }
 
   function controlKind(element) {
@@ -77,14 +93,21 @@
 
   function candidates(force) {
     if (!force && !candidatesDirty) {
-      candidateCache = candidateCache.filter(function (element) { return visible(element) && enabled(element); });
+      candidateCache = candidateCache.filter(function (element) { return controlVisible(element) && enabled(element); });
       return candidateCache.slice();
     }
-    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title]';
+    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title],[class*="timeline"],[class*="progress"],[class*="scrub"],[class*="seek"]';
     candidateCache = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
-      if (!visible(element) || !enabled(element) || element.matches('video,iframe')) return false;
+      if (!controlVisible(element) || !enabled(element) || element.matches('video,iframe')) return false;
       var rect = element.getBoundingClientRect();
       return !(rect.width > innerWidth * .82 && rect.height > innerHeight * .82);
+    }).filter(function (element, index, all) {
+      if (!isTimeline(element)) return true;
+      return !all.some(function (other, otherIndex) {
+        if (other === element || !isTimeline(other) || (!other.contains(element) && !element.contains(other))) return false;
+        var priorityDifference = timelinePriority(other) - timelinePriority(element);
+        return priorityDifference > 0 || (priorityDifference === 0 && otherIndex < index);
+      });
     });
     if (candidateCache.length < 12) {
       Array.prototype.slice.call(document.querySelectorAll('svg')).forEach(function (icon) {
@@ -187,7 +210,7 @@
 
   function setSelected(element, nextState) {
     clearSelection();
-    selected = visible(element) ? element : null;
+    selected = controlVisible(element) ? element : null;
     if (!selected) return;
     var resolvedState = nextState || (isTimeline(selected) ? TIMELINE : CONTROLS);
     if (resolvedState === MENU) selected.classList.add('daitign-tv-player-menu-selected');
@@ -258,8 +281,9 @@
     return true;
   }
 
-  function seekPlayback(direction) {
-    var seconds = direction === 'SEEK_FORWARD' ? 10 : -10;
+  function seekPlayback(direction, repeated) {
+    var forward = direction === 'SEEK_FORWARD' || direction === 'SEEK_FORWARD_REPEAT';
+    var seconds = (repeated ? 5 : 10) * (forward ? 1 : -1);
     var video = primaryVideo();
     if (video && isFinite(video.duration)) {
       video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + seconds));
@@ -357,7 +381,7 @@
 
   function moveControl(direction) {
     var all = candidates(false);
-    if (!selected || !visible(selected) || all.indexOf(selected) < 0) { focusDefault(0); return; }
+    if (!selected || !controlVisible(selected) || all.indexOf(selected) < 0) { focusDefault(0); return; }
     var grouped = rows(all);
     var rowIndex = grouped.findIndex(function (row) { return row.elements.indexOf(selected) >= 0; });
     if (rowIndex < 0) { focusDefault(0); return; }
@@ -539,7 +563,8 @@
       }
       showControls();
       if (key === 'PLAY_PAUSE' || key === 'PLAY' || key === 'PAUSE') return setPlayback(key);
-      if (key === 'SEEK_BACKWARD' || key === 'SEEK_FORWARD') return seekPlayback(key);
+      if (key === 'SEEK_BACKWARD' || key === 'SEEK_FORWARD') return seekPlayback(key, false);
+      if (key === 'SEEK_BACKWARD_REPEAT' || key === 'SEEK_FORWARD_REPEAT') return seekPlayback(key, true);
       if (state === MENU) {
         if (!activePopup || !visible(activePopup)) { activePopup = null; focusDefault(0); return true; }
         if (key === 'UP' || key === 'DOWN') { moveMenu(key); return true; }
@@ -547,9 +572,12 @@
         if (key === 'OK') { activateMenuItem(); return true; }
         return true;
       }
-      if (state === HIDDEN || !selected || !visible(selected)) { focusDefault(0); return true; }
-      if ((key === 'LEFT' || key === 'RIGHT') && state === TIMELINE) { dispatchKey(selected, key === 'LEFT' ? 'ArrowLeft' : 'ArrowRight'); return true; }
+      if (state === HIDDEN || !selected || !controlVisible(selected)) { focusDefault(0); return true; }
+      if ((key === 'LEFT' || key === 'RIGHT') && state === TIMELINE) {
+        return seekPlayback(key === 'RIGHT' ? 'SEEK_FORWARD' : 'SEEK_BACKWARD', false);
+      }
       if (key === 'LEFT' || key === 'RIGHT' || key === 'UP' || key === 'DOWN') { moveControl(key); return true; }
+      if (key === 'OK' && state === TIMELINE) return true;
       if (key === 'OK') { activateControl(); return true; }
       return false;
     },

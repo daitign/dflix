@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
         private const val FIRE_TV_FEATURE = "amazon.hardware.fire_tv"
         private const val STARTUP_TIMEOUT_MS = 10_000L
         private const val EXIT_INTERVAL_MS = 2_000L
+        private const val PLAYER_SEEK_REPEAT_INTERVAL_MS = 140L
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
     private var browseMediaUnlocked = false
     private var pendingPlayerUrl: String? = null
     private var lastBackAt = 0L
+    private var lastPlayerSeekRepeatAt = 0L
     private lateinit var tvPlatform: TvPlatform
 
     @Volatile
@@ -613,9 +615,29 @@ class MainActivity : ComponentActivity() {
             else -> null
         } ?: return super.dispatchKeyEvent(event)
 
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            Log.i(TAG, "[PLAYER KEY] ${pair.first}; state=$playerState focus=${playerWebView?.hasFocus()}")
-            if (pair.second == "BACK") handlePlayerBack() else routePlayerKey(pair.second)
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            if (event.repeatCount == 0) {
+                Log.i(TAG, "[PLAYER KEY] ${pair.first}; state=$playerState focus=${playerWebView?.hasFocus()}")
+                if (pair.second == "BACK") handlePlayerBack() else routePlayerKey(pair.second)
+            } else {
+                val dpadTimelineSeek = playerState == PlayerState.PLAYER_TIMELINE &&
+                    (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+                val mediaSeek = event.keyCode == KeyEvent.KEYCODE_MEDIA_REWIND ||
+                    event.keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
+                if (dpadTimelineSeek || mediaSeek) {
+                    val now = android.os.SystemClock.uptimeMillis()
+                    if (now - lastPlayerSeekRepeatAt >= PLAYER_SEEK_REPEAT_INTERVAL_MS) {
+                        lastPlayerSeekRepeatAt = now
+                        val repeatCommand = when (event.keyCode) {
+                            KeyEvent.KEYCODE_DPAD_LEFT,
+                            KeyEvent.KEYCODE_MEDIA_REWIND -> "SEEK_BACKWARD_REPEAT"
+                            else -> "SEEK_FORWARD_REPEAT"
+                        }
+                        Log.d(TAG, "[PLAYER SEEK HOLD] command=$repeatCommand repeat=${event.repeatCount}")
+                        routePlayerKey(repeatCommand)
+                    }
+                }
+            }
         }
         return true
     }
