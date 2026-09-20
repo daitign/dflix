@@ -20,6 +20,11 @@
   var lastControlRevealAt = 0;
   var wasPlayingBeforeSuspend = false;
   var CONTROLS_IDLE_MS = 3200;
+  var DEBUG = new URLSearchParams(window.location.search).get('tvDebug') === '1';
+
+  function debugLog() {
+    if (DEBUG) console.log.apply(console, arguments);
+  }
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
@@ -29,7 +34,7 @@
   function notify(next) {
     if (state === next) return;
     state = next;
-    console.log('[DAITIGN TV Player] state = ' + next);
+    debugLog('[DAITIGN TV Player] state = ' + next);
     try { window.AndroidTVBridge && window.AndroidTVBridge.setPlayerState(next); } catch (_) {}
   }
 
@@ -178,7 +183,7 @@
       return center(a).y - center(b).y || center(a).x - center(b).x;
     });
     menuCandidatesDirty = false;
-    console.log('[DAITIGN TV Player] menu items discovered = ' + menuCandidateCache.length + ': ' + menuCandidateCache.map(label).join(' | '));
+    debugLog('[DAITIGN TV Player] menu items discovered = ' + menuCandidateCache.length + ': ' + menuCandidateCache.map(label).join(' | '));
     return menuCandidateCache.slice();
   }
 
@@ -217,7 +222,7 @@
     else selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     preferredX = center(selected).x;
-    console.log('[DAITIGN TV Player] selected', resolvedState === MENU ? 'menu-option' : controlKind(selected), label(selected));
+    debugLog('[DAITIGN TV Player] selected', resolvedState === MENU ? 'menu-option' : controlKind(selected), label(selected));
     notify(resolvedState);
   }
 
@@ -271,13 +276,13 @@
         var promise = video.play();
         if (promise && typeof promise.catch === 'function') promise.catch(function () {});
       } else if (command === 'PAUSE' || command === 'PLAY_PAUSE') video.pause();
-      console.log('[DAITIGN TV Player] media command ' + command + ' handled by video');
+      debugLog('[DAITIGN TV Player] media command ' + command + ' handled by video');
       return true;
     }
     var control = playPauseControl();
     if (!control) return false;
     control.click();
-    console.log('[DAITIGN TV Player] media command ' + command + ' handled by play control');
+    debugLog('[DAITIGN TV Player] media command ' + command + ' handled by play control');
     return true;
   }
 
@@ -287,7 +292,7 @@
     var video = primaryVideo();
     if (video && isFinite(video.duration)) {
       video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + seconds));
-      console.log('[DAITIGN TV Player] media seek ' + seconds + ' seconds');
+      debugLog('[DAITIGN TV Player] media seek ' + seconds + ' seconds');
       return true;
     }
     var timeline = candidates(true).find(isTimeline);
@@ -301,7 +306,7 @@
     wasPlayingBeforeSuspend = !!(video && !video.paused && !video.ended);
     if (video) video.pause();
     hideControls();
-    console.log('[DAITIGN TV Player] suspended; wasPlaying=' + wasPlayingBeforeSuspend);
+    debugLog('[DAITIGN TV Player] suspended; wasPlaying=' + wasPlayingBeforeSuspend);
     return true;
   }
 
@@ -309,7 +314,7 @@
     // Resume with playback paused. The next Select or Play/Pause action is an
     // intentional user gesture and avoids surprise audio after Fire TV wake.
     showControls();
-    console.log('[DAITIGN TV Player] resumed; playback remains paused');
+    debugLog('[DAITIGN TV Player] resumed; playback remains paused');
     return true;
   }
 
@@ -333,7 +338,7 @@
         rect: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) }
       };
     });
-    if (logResults) result.forEach(function (control) { console.log('[DAITIGN TV Player] control', JSON.stringify(control)); });
+    if (logResults) result.forEach(function (control) { debugLog('[DAITIGN TV Player] control', JSON.stringify(control)); });
     return result;
   }
 
@@ -368,7 +373,7 @@
       var chosen = items.find(function (item) {
         return item.getAttribute('aria-selected') === 'true' || item.getAttribute('aria-checked') === 'true';
       }) || items[0];
-      console.log('[DAITIGN TV Player] popup open; entering PLAYER_MENU');
+      debugLog('[DAITIGN TV Player] popup open; entering PLAYER_MENU');
       setSelected(chosen, MENU);
     }, attempt === 0 ? 90 : 120);
   }
@@ -419,7 +424,7 @@
     element.dispatchEvent(new MouseEvent('mousedown', options));
     element.dispatchEvent(new MouseEvent('mouseup', options));
     element.dispatchEvent(new MouseEvent('click', options));
-    console.log('[DAITIGN TV Player] menu activation pointer fallback:', label(element));
+    debugLog('[DAITIGN TV Player] menu activation pointer fallback:', label(element));
   }
 
   function selectionSignature(element) {
@@ -430,17 +435,19 @@
     if (!selected || !activePopup || !activePopup.contains(selected) || !visible(selected)) { syncMenu(0); return; }
     var item = selected;
     var popupBefore = activePopup;
-    var singleChoiceMenu = /subtitle|quality|server|fit/.test(controlKind(menuOpener));
+    var singleChoiceMenu = /subtitle|caption|quality|server|source|fit|aspect/.test(
+      controlKind(menuOpener) + ' ' + controlKind(popupBefore) + ' ' + label(popupBefore)
+    );
     var before = selectionSignature(item);
     try { item.focus({ preventScroll: true }); } catch (_) {}
     item.click();
-    console.log('[DAITIGN TV Player] menu option click:', label(item));
+    debugLog('[DAITIGN TV Player] menu option click:', label(item));
     window.setTimeout(function () {
       if (visible(popupBefore) && popupBefore.contains(item) && selectionSignature(item) === before) pointerFallback(item);
       menuCandidatesDirty = true;
       window.setTimeout(function () {
         if (singleChoiceMenu && visible(popupBefore)) {
-          console.log('[DAITIGN TV Player] single-choice option activated; closing popup');
+          debugLog('[DAITIGN TV Player] single-choice option activated; closing popup');
           closeMenu();
           return;
         }
@@ -458,8 +465,8 @@
           else focusDefault(0);
           scheduleControlsIdle();
         }
-      }, 80);
-    }, 80);
+      }, singleChoiceMenu ? 40 : 80);
+    }, singleChoiceMenu ? 40 : 80);
   }
 
   function activateControl() {
@@ -591,6 +598,6 @@
       };
     }
   };
-  console.log('[DAITIGN TV Player] controller ready; document visibility=' + document.visibilityState);
+  debugLog('[DAITIGN TV Player] controller ready; document visibility=' + document.visibilityState);
   notify(HIDDEN);
 }());

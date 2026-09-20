@@ -26,7 +26,6 @@ import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
-import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -64,6 +63,7 @@ class MainActivity : ComponentActivity() {
         private const val STARTUP_TIMEOUT_MS = 10_000L
         private const val EXIT_INTERVAL_MS = 2_000L
         private const val PLAYER_SEEK_REPEAT_INTERVAL_MS = 140L
+        private const val INPUT_DIAGNOSTICS = false
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -332,7 +332,7 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createPlayerWebView(): WebView = WebView(this).also { webView ->
         configureWebView(webView)
-        webView.settings.cacheMode = WebSettings.LOAD_NO_CACHE
+        webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
         webView.addJavascriptInterface(PlayerBridge(this), "AndroidTVBridge")
         webView.webChromeClient = chromeClientFor(webView)
         webView.webViewClient = object : WebViewClient() {
@@ -345,7 +345,6 @@ class MainActivity : ComponentActivity() {
                 Log.i(TAG, "player onPageFinished: $url")
                 injectPlayerAdapter(view) {
                     view?.requestFocus()
-                    playerHandler.postDelayed({ logPlayerInventory(view, "VIDSTUCK initial") }, 700L)
                 }
             }
 
@@ -386,12 +385,6 @@ class MainActivity : ComponentActivity() {
             Log.i(TAG, "player controller injected")
             onInjected?.invoke()
         }
-    }
-
-    private fun logPlayerInventory(webView: WebView?, source: String) {
-        webView?.evaluateJavascript(
-            "JSON.stringify(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.snapshot())",
-        ) { result -> Log.i(TAG, "$source controls: $result") }
     }
 
     fun setPlayerState(value: String) {
@@ -442,14 +435,12 @@ class MainActivity : ComponentActivity() {
         playerWebView = null
     }
 
-    private fun sendPlayerKey(key: String, callback: ValueCallback<String>? = null) {
+    private fun sendPlayerKey(key: String) {
         val player = playerWebView ?: return
         player.evaluateJavascript(
             "Boolean(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.handle('$key'))",
-        ) { handled ->
-            Log.i(TAG, "player controller key=$key handled=$handled state=$playerState")
-            callback?.onReceiveValue(handled)
-        }
+            null,
+        )
     }
 
     private fun wakePlayerControls() {
@@ -497,7 +488,12 @@ class MainActivity : ComponentActivity() {
     private fun chromeClientFor(owner: WebView) = object : WebChromeClient() {
         override fun onConsoleMessage(message: ConsoleMessage?): Boolean {
             message ?: return false
-            Log.d(TAG, "WebView console ${message.messageLevel()}: ${message.message()} (${message.sourceId()}:${message.lineNumber()})")
+            val formatted = "WebView console ${message.messageLevel()}: ${message.message()} (${message.sourceId()}:${message.lineNumber()})"
+            when (message.messageLevel()) {
+                ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, formatted)
+                ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, formatted)
+                else -> Unit
+            }
             return true
         }
 
@@ -585,12 +581,12 @@ class MainActivity : ComponentActivity() {
             // focused DOM element received its genuine WebView key event.
             // Spatial navigation handles that real event and invokes the
             // element's original React/anchor click behavior.
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+            if (INPUT_DIAGNOSTICS && event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                 Log.i(TAG, "[BROWSE KEY PASS-THROUGH] ${KeyEvent.keyCodeToString(event.keyCode)}")
             }
             return super.dispatchKeyEvent(event)
         }
-        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+        if (INPUT_DIAGNOSTICS && event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             Log.i(
                 TAG,
                 "[PLAYER KEY RAW] ${KeyEvent.keyCodeToString(event.keyCode)} " +
@@ -617,7 +613,9 @@ class MainActivity : ComponentActivity() {
 
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (event.repeatCount == 0) {
-                Log.i(TAG, "[PLAYER KEY] ${pair.first}; state=$playerState focus=${playerWebView?.hasFocus()}")
+                if (INPUT_DIAGNOSTICS) {
+                    Log.i(TAG, "[PLAYER KEY] ${pair.first}; state=$playerState focus=${playerWebView?.hasFocus()}")
+                }
                 if (pair.second == "BACK") handlePlayerBack() else routePlayerKey(pair.second)
             } else {
                 val dpadTimelineSeek = playerState == PlayerState.PLAYER_TIMELINE &&
@@ -633,7 +631,9 @@ class MainActivity : ComponentActivity() {
                             KeyEvent.KEYCODE_MEDIA_REWIND -> "SEEK_BACKWARD_REPEAT"
                             else -> "SEEK_FORWARD_REPEAT"
                         }
-                        Log.d(TAG, "[PLAYER SEEK HOLD] command=$repeatCommand repeat=${event.repeatCount}")
+                        if (INPUT_DIAGNOSTICS) {
+                            Log.d(TAG, "[PLAYER SEEK HOLD] command=$repeatCommand repeat=${event.repeatCount}")
+                        }
                         routePlayerKey(repeatCommand)
                     }
                 }

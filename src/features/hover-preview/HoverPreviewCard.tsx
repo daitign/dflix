@@ -14,9 +14,10 @@ import type {
 import { usePreviewPlaybackEligibility } from './usePreviewPlaybackEligibility';
 import { YouTubePreview } from './YouTubePreview';
 import { logTVPreviewStage } from './tvPreviewDiagnostics';
-import { usePreviewAudio } from '../preview-audio';
 import { useMyList } from '../my-list';
 import { isTVMode } from '../../lib/tv';
+
+const TV_TRAILER_INTENT_DELAY_MS = 220;
 
 interface HoverPreviewCardProps {
   anchorElement: HTMLElement;
@@ -56,20 +57,7 @@ export function HoverPreviewCard({
   const [previewVideo, setPreviewVideo] = useState<TmdbVideo | null>(null);
   const [previewCandidates, setPreviewCandidates] = useState<TmdbVideo[]>([]);
   const canPlayPreview = usePreviewPlaybackEligibility();
-  const { setHoverActive } = usePreviewAudio();
   const previewSurface = anchorElement.closest('.ranked-card') ? 'top10' : 'card';
-
-  // Arbitrate audio playback with Hero banner
-  useEffect(() => {
-    if (phase === 'open') {
-      setHoverActive(true);
-    } else {
-      setHoverActive(false);
-    }
-    return () => {
-      setHoverActive(false);
-    };
-  }, [phase, setHoverActive]);
 
   const matchPercentage = Math.max(
     74,
@@ -88,29 +76,42 @@ export function HoverPreviewCard({
     });
     if (!canPlayPreview || !data.tmdbId) return undefined;
 
+    const tmdbId = data.tmdbId;
     const controller = new AbortController();
-    getMediaVideos(data.playbackType, data.tmdbId, { signal: controller.signal })
-      .then((videos) => {
-        if (!controller.signal.aborted) {
-          const candidates = selectPreviewVideoCandidates(videos);
-          logTVPreviewStage('trailer key resolved', {
-            surface: previewSurface,
-            title: data.title,
-            key: candidates[0]?.key ?? null,
-            candidateCount: candidates.length,
-          });
-          setPreviewCandidates(candidates);
-          setPreviewVideo(candidates[0] ?? null);
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setPreviewVideo(null);
-          setPreviewCandidates([]);
-        }
-      });
+    const loadTrailer = () => {
+      getMediaVideos(data.playbackType, tmdbId, { signal: controller.signal })
+        .then((videos) => {
+          if (!controller.signal.aborted) {
+            const candidates = selectPreviewVideoCandidates(videos);
+            logTVPreviewStage('trailer key resolved', {
+              surface: previewSurface,
+              title: data.title,
+              key: candidates[0]?.key ?? null,
+              candidateCount: candidates.length,
+            });
+            setPreviewCandidates(candidates);
+            setPreviewVideo(candidates[0] ?? null);
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setPreviewVideo(null);
+            setPreviewCandidates([]);
+          }
+        });
+    };
 
-    return () => controller.abort();
+    // Expansion is immediate, while expensive network/iframe work waits for a
+    // brief focus intent so quickly passing over cards stays responsive.
+    const trailerTimer = isTVMode()
+      ? window.setTimeout(loadTrailer, TV_TRAILER_INTENT_DELAY_MS)
+      : null;
+    if (trailerTimer === null) loadTrailer();
+
+    return () => {
+      if (trailerTimer !== null) window.clearTimeout(trailerTimer);
+      controller.abort();
+    };
   }, [canPlayPreview, data.playbackType, data.tmdbId, data.title, phase, previewSurface]);
 
   const handleBlur = (event: FocusEvent<HTMLElement>) => {

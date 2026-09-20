@@ -385,9 +385,17 @@ test('17. TV preview expands in-row and reserves space for regular and Top 10 ca
   assert.ok(provider.includes("if (!isTVMode() && lastPointerTypeRef.current !== '') return"));
   assert.ok(!provider.includes('window.setTimeout(activate, 575)'));
   assert.ok(provider.includes('activePreview.referenceElement'));
-  assert.ok(provider.includes("scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })"));
+  assert.ok(!provider.includes("scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })"));
+  assert.ok(provider.includes('setHoverActive(hasActivePreview)'));
   assert.ok(provider.includes('key={`${activePreview.data.playbackType}-${String(activePreview.data.id)}`}'));
   assert.ok(!provider.includes('activePreview.left}-${activePreview.top'));
+
+  const card = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/HoverPreviewCard.tsx'),
+    'utf-8',
+  );
+  assert.ok(card.includes('TV_TRAILER_INTENT_DELAY_MS = 220'));
+  assert.ok(card.includes('window.setTimeout(loadTrailer, TV_TRAILER_INTENT_DELAY_MS)'));
 
   const styles = fs.readFileSync(path.resolve(process.cwd(), 'src/styles/tv.css'), 'utf-8');
   assert.ok(styles.includes('--tv-poster-height: calc(var(--tv-poster-width) * 1.5)'));
@@ -397,6 +405,28 @@ test('17. TV preview expands in-row and reserves space for regular and Top 10 ca
   assert.ok(styles.includes('.details-hero__trailer-mount'));
   assert.ok(styles.includes('scroll-behavior: auto'));
   assert.ok(styles.includes('transform: translate(-50%, -50%) scale(1)'));
+});
+
+test('17b. TV navigation preserves semantic row order and can return to page/modal tops', () => {
+  const spatial = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/lib/tv/spatialNavigation.ts'),
+    'utf-8',
+  );
+  const hero = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/home/components/HeroBanner.tsx'),
+    'utf-8',
+  );
+  const detailsHero = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/details-modal/components/DetailsHero.tsx'),
+    'utf-8',
+  );
+  assert.ok(spatial.includes('return rows.sort((a, b) => a.order - b.order)'));
+  assert.ok(spatial.includes("closest('[data-tv-page-top=\"true\"]')"));
+  assert.ok(spatial.includes("closest('[data-tv-modal-top=\"true\"]')"));
+  assert.ok(hero.includes('data-tv-page-top="true"'));
+  assert.ok(detailsHero.includes('data-tv-modal-top="true"'));
+  assert.ok(spatial.includes("attributeFilter: [\n      'aria-hidden',"));
+  assert.ok(!spatial.includes("attributeFilter: ['class'"));
 });
 
 test('18. TV preview confirms real playback, retries muted, and responds to remote media unlock', () => {

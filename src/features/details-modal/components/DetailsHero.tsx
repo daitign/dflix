@@ -83,7 +83,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
   }, [canPlayVideo, details.playbackType, details.title, details.tmdbId, details.type]);
 
   return (
-    <section className="details-hero" data-details-video-slot>
+    <section className="details-hero" data-details-video-slot data-tv-modal-top="true">
       <ResponsiveImage
         alt=""
         className={`details-hero__backdrop${isTrailerPlaying ? ' details-hero__backdrop--under-trailer' : ''}`}
@@ -113,7 +113,7 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
         ) : (
           <p aria-hidden="true" className="details-hero__title">{details.title}</p>
         )}
-        <div className="details-hero__bottom-row">
+        <div className="details-hero__bottom-row" data-tv-row>
           <div className="details-hero__actions">
             <Button data-tv-focusable="true" onClick={onPlay} size="lg" startIcon={<Icon name="play" />}>
               Play

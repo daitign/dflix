@@ -176,7 +176,9 @@ test('14d. YouTubePreview reveals a created iframe when Windows/WebView callback
   );
   assert.ok(preview.includes("mountRef.current.querySelector('iframe')"));
   assert.ok(preview.includes("logTVPreviewStage('iframe readiness fallback revealed preview'"));
-  assert.ok(preview.includes('}, 650)'));
+  assert.ok(preview.includes('}, 1200)'));
+  assert.ok(preview.includes("event === 'onStateChange'"));
+  assert.ok(preview.includes('setHasStarted(false)'));
 });
 
 test('14e. YouTubePreview falls back to a direct privacy-enhanced embed when iframe_api stalls', () => {
@@ -188,6 +190,17 @@ test('14e. YouTubePreview falls back to a direct privacy-enhanced embed when ifr
   assert.ok(preview.includes("mountDirectIframeFallback('iframe API readiness timeout')"));
   assert.ok(preview.includes("command('playVideo')"));
   assert.ok(preview.includes('}, 900)'));
+});
+
+test('14f. TV media unlock survives partially initialized YouTube player methods', () => {
+  const preview = fs.readFileSync(
+    path.resolve(process.cwd(), 'src/features/hover-preview/YouTubePreview.tsx'),
+    'utf-8',
+  );
+  assert.ok(preview.includes('function sendPlayerCommand'));
+  assert.ok(preview.includes("sendPlayerCommand(player, 'unMute')"));
+  assert.ok(preview.includes("sendPlayerCommand(player, 'playVideo')"));
+  assert.ok(preview.includes("event: 'command', func: command, args"));
 });
 
 test('15. PreviewAudioContext: initializes sound to ON by default and supports wheel/scroll gesture activation', () => {

@@ -71,7 +71,7 @@ export function HeroBanner({ item }: HeroBannerProps) {
   }, [isHoverActive, isModalActive]);
 
   return (
-    <section aria-labelledby="hero-title" className="hero-banner" id="home" ref={heroRef}>
+    <section aria-labelledby="hero-title" className="hero-banner" data-tv-page-top="true" id="home" ref={heroRef}>
       <ResponsiveImage
         alt=""
         className={`hero-banner__backdrop${isTrailerPlaying ? ' hero-banner__backdrop--under-trailer' : ''}`}

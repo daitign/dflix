@@ -112,8 +112,9 @@ interface HoverPreviewProviderProps {
 
 export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
   const isTv = isTVMode();
-  const { isModalActive } = usePreviewAudio();
+  const { isModalActive, setHoverActive } = usePreviewAudio();
   const [activePreview, setActivePreviewState] = useState<ActivePreview | null>(null);
+  const hasActivePreview = Boolean(activePreview);
   const [announcement, setAnnouncement] = useState('');
   const activePreviewRef = useRef<ActivePreview | null>(null);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -137,9 +138,6 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
       if (preview.referenceElement.matches('.ranked-card--double-digit')) {
         previewItem?.setAttribute('data-tv-ranked-double', 'true');
       }
-      window.requestAnimationFrame(() => {
-        preview.referenceElement.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-      });
     }
     activePreviewRef.current = preview;
     setActivePreviewState(preview);
@@ -191,6 +189,14 @@ export function HoverPreviewProvider({ children }: HoverPreviewProviderProps) {
       close({ immediate: true, reason: 'details-modal-opened' });
     }
   }, [isModalActive, close]);
+
+  // Keep Hero/preview audio arbitration stable while focus moves between
+  // cards. Card-to-card transitions remain active instead of toggling the
+  // global hover state off and back on during every D-pad movement.
+  useEffect(() => {
+    setHoverActive(hasActivePreview);
+    return () => setHoverActive(false);
+  }, [hasActivePreview, setHoverActive]);
 
   const scheduleClose = useCallback((anchorElement?: HTMLElement) => {
     clearTimer(openTimerRef);

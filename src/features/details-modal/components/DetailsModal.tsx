@@ -121,7 +121,7 @@ export function DetailsModal({
       title={`${details?.title ?? title} details`}
       variant="cinematic"
     >
-      <div className="details-modal__close-wrap">
+      <div className="details-modal__close-wrap" data-tv-modal-top="true">
         <IconButton aria-label="Close details" className="details-modal__close" data-tv-focusable="true" onClick={onClose} size="sm" tone="glass" tooltip="Close">
           <Icon name="close" size={16} />
         </IconButton>

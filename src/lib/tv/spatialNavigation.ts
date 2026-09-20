@@ -7,6 +7,7 @@ type Direction = 'down' | 'left' | 'right' | 'up';
 interface FocusRow {
   elements: HTMLElement[];
   centerY: number;
+  order: number;
 }
 
 let preferredX: number | null = null;
@@ -78,6 +79,7 @@ function rememberRowFocus(element: HTMLElement) {
 }
 
 function rowsFor(elements: HTMLElement[]): FocusRow[] {
+  const documentOrder = new Map(elements.map((element, index) => [element, index]));
   const centers = new Map<HTMLElement, { x: number; y: number }>();
   const pointFor = (element: HTMLElement) => {
     const cached = centers.get(element);
@@ -101,6 +103,7 @@ function rowsFor(elements: HTMLElement[]): FocusRow[] {
   const rows: FocusRow[] = Array.from(explicit.values()).map((rowElements) => ({
     centerY: rowElements.reduce((sum, item) => sum + pointFor(item).y, 0) / rowElements.length,
     elements: rowElements.sort((a, b) => pointFor(a).x - pointFor(b).x),
+    order: Math.min(...rowElements.map((item) => documentOrder.get(item) ?? Number.MAX_SAFE_INTEGER)),
   }));
 
   loose.sort((a, b) => pointFor(a).y - pointFor(b).y || pointFor(a).x - pointFor(b).x);
@@ -111,12 +114,20 @@ function rowsFor(elements: HTMLElement[]): FocusRow[] {
       row.elements.push(element);
       row.elements.sort((a, b) => pointFor(a).x - pointFor(b).x);
       row.centerY = row.elements.reduce((sum, item) => sum + pointFor(item).y, 0) / row.elements.length;
+      row.order = Math.min(row.order, documentOrder.get(element) ?? Number.MAX_SAFE_INTEGER);
     } else {
-      rows.push({ centerY: point.y, elements: [element] });
+      rows.push({
+        centerY: point.y,
+        elements: [element],
+        order: documentOrder.get(element) ?? Number.MAX_SAFE_INTEGER,
+      });
     }
   });
 
-  return rows.sort((a, b) => a.centerY - b.centerY);
+  // Screen-space Y is unstable when the fixed navigation bar remains visible
+  // while the Hero scrolls above the viewport. DOM order always represents the
+  // intended TV sequence: navigation -> Hero -> Top 10 -> catalog rows.
+  return rows.sort((a, b) => a.order - b.order);
 }
 
 export function findClosestInRow(elements: HTMLElement[], targetX: number): HTMLElement | null {
@@ -150,7 +161,20 @@ export function findNextSpatialElement(current: HTMLElement, direction: Directio
 
 export function scrollElementIntoOptimalView(element: HTMLElement) {
   window.requestAnimationFrame(() => {
-    if (element.isConnected) element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+    if (!element.isConnected) return;
+
+    const modalScroll = element.closest<HTMLElement>('.detailsModalScroll');
+    if (modalScroll && element.closest('[data-tv-modal-top="true"]')) {
+      modalScroll.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+
+    if (element.closest('[data-tv-page-top="true"]')) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+
+    element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
   });
 }
 
@@ -176,7 +200,9 @@ function signalTVMediaInteraction() {
   if (window.DAITIGN_TV?.tvMediaInteractionUnlocked) return;
   window.DAITIGN_TV = { ...window.DAITIGN_TV, tvMediaInteractionUnlocked: true };
   try { window.sessionStorage.setItem('daitign-tv-media-unlocked', 'true'); } catch {}
-  console.log('[DAITIGN TV Preview] media interaction unlocked by remote');
+  if (new URLSearchParams(window.location.search).get('tvDebug') === '1') {
+    console.log('[DAITIGN TV Preview] media interaction unlocked by remote');
+  }
   // One physical gesture unlocks subsequent previews. Replaying this event on
   // every D-pad move caused redundant YouTube commands and visible TV input lag.
   window.dispatchEvent(new CustomEvent('daitign:tv-media-interaction'));
@@ -232,6 +258,9 @@ export function initSpatialNavigation(): () => void {
     }
   };
 
+  let lastRepeatedNavigationAt = 0;
+  const perfDebug = new URLSearchParams(window.location.search).get('tvDebug') === '1';
+
   const handleKey = (event: KeyboardEvent) => {
     if (!isTVMode()) return;
     if (event.key.startsWith('Arrow')) {
@@ -260,6 +289,16 @@ export function initSpatialNavigation(): () => void {
     const direction = directions[event.key];
     if (!direction) return;
 
+    if (event.repeat) {
+      const now = window.performance.now();
+      if (now - lastRepeatedNavigationAt < 75) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      lastRepeatedNavigationAt = now;
+    }
+
     const active = document.activeElement as HTMLElement | null;
     const menuScope = active?.closest<HTMLElement>('[data-tv-focus-scope="menu"]');
     if (menuScope && direction === 'left') {
@@ -281,15 +320,31 @@ export function initSpatialNavigation(): () => void {
     event.stopImmediatePropagation();
     if (!next) return;
     focusElement(next, direction === 'up' || direction === 'down');
-    window.requestAnimationFrame(() => {
-      console.debug(`[DAITIGN TV Perf] key-to-focus ${Math.round(window.performance.now() - startedAt)}ms`);
-    });
+    if (perfDebug) {
+      window.requestAnimationFrame(() => {
+        console.debug(`[DAITIGN TV Perf] key-to-focus ${Math.round(window.performance.now() - startedAt)}ms`);
+      });
+    }
   };
 
-  const observer = new MutationObserver(invalidateNavigationCache);
+  let invalidationFrame = 0;
+  const observer = new MutationObserver(() => {
+    if (invalidationFrame) return;
+    invalidationFrame = window.requestAnimationFrame(() => {
+      invalidationFrame = 0;
+      invalidateNavigationCache();
+    });
+  });
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['aria-hidden', 'class', 'data-tv-focusable', 'disabled', 'hidden'],
+    attributeFilter: [
+      'aria-hidden',
+      'data-tv-focusable',
+      'data-tv-preview-expanded',
+      'data-tv-row',
+      'disabled',
+      'hidden',
+    ],
     childList: true,
     subtree: true,
   });
@@ -310,6 +365,7 @@ export function initSpatialNavigation(): () => void {
     document.removeEventListener('focusin', handleFocus, true);
     window.removeEventListener('keydown', handleKey, true);
     observer.disconnect();
+    window.cancelAnimationFrame(invalidationFrame);
     if (window.DAITIGN_TV) {
       delete window.DAITIGN_TV.handleMediaUnlock;
       delete window.DAITIGN_TV.handleRemoteKey;
