@@ -19,7 +19,7 @@
   var controlsIdleTimer = 0;
   var lastControlRevealAt = 0;
   var wasPlayingBeforeSuspend = false;
-  var CONTROLS_IDLE_MS = 3200;
+  var CONTROLS_IDLE_MS = 6000;
   var DEBUG = new URLSearchParams(window.location.search).get('tvDebug') === '1';
 
   function debugLog() {
@@ -228,23 +228,30 @@
 
   function scheduleControlsIdle() {
     window.clearTimeout(controlsIdleTimer);
+    if (state === MENU || (activePopup && visible(activePopup))) {
+      controlsIdleTimer = 0;
+      return;
+    }
     controlsIdleTimer = window.setTimeout(function () {
-      if (state !== MENU) hideControls();
+      if (state !== MENU && (!activePopup || !visible(activePopup))) hideControls();
     }, CONTROLS_IDLE_MS);
   }
 
   function showControls() {
     var now = Date.now();
-    if (now - lastControlRevealAt < 80) {
-      scheduleControlsIdle();
-      return;
-    }
     lastControlRevealAt = now;
     var target = document.querySelector('video') || document.body;
     [document, target].forEach(function (node) {
       node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true, clientX: innerWidth / 2, clientY: innerHeight * .86 }));
     });
-    scheduleControlsIdle();
+    var wrap = document.querySelector('.art-controls, .art-bottom, div.z-30, [class*="controls"], [class*="player-bottom"]');
+    if (wrap) {
+      wrap.style.opacity = '1';
+      wrap.style.visibility = 'visible';
+    }
+    if (state !== MENU && (!activePopup || !visible(activePopup))) {
+      scheduleControlsIdle();
+    }
   }
 
   function hideControls() {
@@ -345,18 +352,33 @@
   function focusDefault(attempt) {
     attempt = attempt || 0;
     showControls();
+    if (candidateCache.length > 0) {
+      var cached = defaultControl(candidateCache);
+      if (cached && controlVisible(cached)) {
+        setSelected(cached, CONTROLS);
+        return;
+      }
+    }
+    var immediateAll = candidates(true);
+    var immediateControl = defaultControl(immediateAll);
+    if (immediateControl && controlVisible(immediateControl)) {
+      setSelected(immediateControl, CONTROLS);
+      return;
+    }
     window.setTimeout(function () {
       var all = candidates(true);
       var control = defaultControl(all);
       if (control) setSelected(control, CONTROLS);
-      else if (attempt < 12) focusDefault(attempt + 1);
+      else if (attempt < 8) focusDefault(attempt + 1);
       else console.warn('[DAITIGN TV Player] no visible controls discovered after reveal attempts');
-    }, attempt === 0 ? 90 : 120);
+    }, attempt === 0 ? 40 : 80);
   }
 
   function syncMenu(attempt) {
     attempt = attempt || 0;
     window.clearTimeout(menuSyncTimer);
+    window.clearTimeout(controlsIdleTimer);
+    controlsIdleTimer = 0;
     menuSyncTimer = window.setTimeout(function () {
       var popup = detectPopup();
       if (!popup) {
@@ -364,7 +386,7 @@
         return;
       }
       activePopup = popup;
-      menuCandidatesDirty = true;
+      menuCandidatesDirty = false;
       var items = discoverMenuItems(popup, true);
       if (!items.length) {
         if (attempt < 8) syncMenu(attempt + 1);
@@ -375,7 +397,7 @@
       }) || items[0];
       debugLog('[DAITIGN TV Player] popup open; entering PLAYER_MENU');
       setSelected(chosen, MENU);
-    }, attempt === 0 ? 90 : 120);
+    }, attempt === 0 ? 40 : 80);
   }
 
   function dispatchKey(element, key) {
@@ -563,6 +585,7 @@
     suspend: suspendPlayback,
     wake: function () { focusDefault(0); return true; },
     handle: function (key) {
+      window.clearTimeout(controlsIdleTimer);
       if (key === 'BACK') {
         if (state === MENU) { closeMenu(); return true; }
         if (state !== HIDDEN) { hideControls(); return true; }

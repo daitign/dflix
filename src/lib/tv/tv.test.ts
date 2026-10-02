@@ -104,6 +104,10 @@ test('5. TV Spatial Navigation: isFocusCandidate excludes headings, containers, 
   // Informational badges must NEVER be focus candidates
   assert.equal(isFocusCandidate(createMockElement('DIV', {}, ['netflix-badge'])), false);
 
+  // Audio toggle buttons must NEVER be focus candidates in TV mode
+  assert.equal(isFocusCandidate(createMockElement('BUTTON', { 'data-tv-focusable': 'true', class: 'hero-banner__audio-toggle' }, ['hero-banner__audio-toggle'])), false);
+  assert.equal(isFocusCandidate(createMockElement('BUTTON', { 'data-tv-focusable': 'true', class: 'details-hero__audio-toggle' }, ['details-hero__audio-toggle'])), false);
+
   // Valid media cards and buttons ARE allowed focus candidates
   assert.equal(isFocusCandidate(createMockElement('BUTTON', { 'data-tv-focusable': 'true' }, ['media-card__surface'])), true);
   assert.equal(isFocusCandidate(createMockElement('BUTTON', { 'data-tv-focusable': 'true' }, ['hero-banner__play-button'])), true);
@@ -224,7 +228,7 @@ test('11. VIDSTUCK adapter discovers semantic controls without a DAITIGN toolbar
   assert.ok(controller.includes('closeMenu()'));
   assert.ok(controller.includes('singleChoiceMenu'));
   assert.ok(controller.includes('single-choice option activated; closing popup'));
-  assert.ok(controller.includes('CONTROLS_IDLE_MS = 3200'));
+  assert.ok(controller.includes('CONTROLS_IDLE_MS = 6000'));
   assert.ok(controller.includes('scheduleControlsIdle'));
   assert.ok(controller.includes('popup remains open; Back will retry close'));
   assert.ok(controller.includes('finishMenuClose'));

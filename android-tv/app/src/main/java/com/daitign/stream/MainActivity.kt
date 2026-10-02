@@ -62,6 +62,9 @@ class MainActivity : ComponentActivity() {
         private const val FIRE_TV_FEATURE = "amazon.hardware.fire_tv"
         private const val STARTUP_TIMEOUT_MS = 10_000L
         private const val EXIT_INTERVAL_MS = 2_000L
+        private const val BROWSE_INITIAL_REPEAT_DELAY_MS = 220L
+        private const val BROWSE_REPEAT_INTERVAL_MS = 80L
+        private const val PLAYER_NAV_REPEAT_INTERVAL_MS = 90L
         private const val PLAYER_SEEK_REPEAT_INTERVAL_MS = 140L
         private const val INPUT_DIAGNOSTICS = false
     }
@@ -87,6 +90,42 @@ class MainActivity : ComponentActivity() {
     private var lastBackAt = 0L
     private var lastPlayerSeekRepeatAt = 0L
     private lateinit var tvPlatform: TvPlatform
+
+    private var activeBrowseRepeatDirection: String? = null
+    private val browseRepeatRunnable = object : Runnable {
+        override fun run() {
+            val dir = activeBrowseRepeatDirection ?: return
+            browseWebView?.evaluateJavascript(
+                "Boolean(window.DAITIGN_TV&&window.DAITIGN_TV.handleRepeatKey&&window.DAITIGN_TV.handleRepeatKey('$dir'))",
+                null,
+            )
+            mainHandler.postDelayed(this, BROWSE_REPEAT_INTERVAL_MS)
+        }
+    }
+
+    private var activePlayerRepeatKey: String? = null
+    private val playerNavRepeatRunnable = object : Runnable {
+        override fun run() {
+            val key = activePlayerRepeatKey ?: return
+            routePlayerKey(key)
+            val interval = if (playerState == PlayerState.PLAYER_TIMELINE) {
+                PLAYER_SEEK_REPEAT_INTERVAL_MS
+            } else {
+                PLAYER_NAV_REPEAT_INTERVAL_MS
+            }
+            playerHandler.postDelayed(this, interval)
+        }
+    }
+
+    private fun cancelBrowseKeyRepeat() {
+        activeBrowseRepeatDirection = null
+        mainHandler.removeCallbacks(browseRepeatRunnable)
+    }
+
+    private fun cancelPlayerNavRepeat() {
+        activePlayerRepeatKey = null
+        playerHandler.removeCallbacks(playerNavRepeatRunnable)
+    }
 
     @Volatile
     private var playerState = PlayerState.PLAYER_HIDDEN
@@ -548,6 +587,7 @@ class MainActivity : ComponentActivity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (playerWebView == null) {
+            cancelPlayerNavRepeat()
             if (isMediaPlaybackKey(event.keyCode)) {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     Log.i(TAG, "[BROWSE MEDIA KEY IGNORED] ${KeyEvent.keyCodeToString(event.keyCode)}")
@@ -576,6 +616,32 @@ class MainActivity : ComponentActivity() {
                     "Boolean(window.DAITIGN_TV&&window.DAITIGN_TV.handleMediaUnlock&&window.DAITIGN_TV.handleMediaUnlock())",
                 ) { unlocked -> Log.i(TAG, "[PREVIEW] media unlock bridge result=$unlocked") }
             }
+
+            val browseDirection = when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_LEFT -> "left"
+                KeyEvent.KEYCODE_DPAD_RIGHT -> "right"
+                KeyEvent.KEYCODE_DPAD_UP -> "up"
+                KeyEvent.KEYCODE_DPAD_DOWN -> "down"
+                else -> null
+            }
+            if (browseDirection != null) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    if (event.repeatCount == 0) {
+                        cancelBrowseKeyRepeat()
+                        activeBrowseRepeatDirection = browseDirection
+                        mainHandler.postDelayed(browseRepeatRunnable, BROWSE_INITIAL_REPEAT_DELAY_MS)
+                    } else {
+                        // Suppress Android OS's slow/inconsistent default hardware repeat
+                        // since browseRepeatRunnable drives 220ms initial + 80ms interval.
+                        return true
+                    }
+                } else if (event.action == KeyEvent.ACTION_UP) {
+                    cancelBrowseKeyRepeat()
+                }
+            } else if (event.action == KeyEvent.ACTION_DOWN) {
+                cancelBrowseKeyRepeat()
+            }
+
             // Do not consume Browse Enter/Center here. The previous async
             // evaluateJavascript path intercepted the physical key before the
             // focused DOM element received its genuine WebView key event.
@@ -586,6 +652,7 @@ class MainActivity : ComponentActivity() {
             }
             return super.dispatchKeyEvent(event)
         }
+        cancelBrowseKeyRepeat()
         if (INPUT_DIAGNOSTICS && event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
             Log.i(
                 TAG,
@@ -611,12 +678,31 @@ class MainActivity : ComponentActivity() {
             else -> null
         } ?: return super.dispatchKeyEvent(event)
 
+        if (event.action == KeyEvent.ACTION_UP) {
+            cancelPlayerNavRepeat()
+            return true
+        }
+
         if (event.action == KeyEvent.ACTION_DOWN) {
             if (event.repeatCount == 0) {
+                cancelPlayerNavRepeat()
                 if (INPUT_DIAGNOSTICS) {
                     Log.i(TAG, "[PLAYER KEY] ${pair.first}; state=$playerState focus=${playerWebView?.hasFocus()}")
                 }
-                if (pair.second == "BACK") handlePlayerBack() else routePlayerKey(pair.second)
+                if (pair.second == "BACK") {
+                    handlePlayerBack()
+                } else {
+                    routePlayerKey(pair.second)
+                    if (pair.second in listOf("LEFT", "RIGHT", "UP", "DOWN")) {
+                        if (playerState == PlayerState.PLAYER_CONTROLS || playerState == PlayerState.PLAYER_MENU) {
+                            activePlayerRepeatKey = pair.second
+                            playerHandler.postDelayed(playerNavRepeatRunnable, BROWSE_INITIAL_REPEAT_DELAY_MS)
+                        } else if (playerState == PlayerState.PLAYER_TIMELINE && (pair.second == "LEFT" || pair.second == "RIGHT")) {
+                            activePlayerRepeatKey = if (pair.second == "LEFT") "SEEK_BACKWARD_REPEAT" else "SEEK_FORWARD_REPEAT"
+                            playerHandler.postDelayed(playerNavRepeatRunnable, BROWSE_INITIAL_REPEAT_DELAY_MS)
+                        }
+                    }
+                }
             } else {
                 val dpadTimelineSeek = playerState == PlayerState.PLAYER_TIMELINE &&
                     (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT || event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
@@ -637,6 +723,7 @@ class MainActivity : ComponentActivity() {
                         routePlayerKey(repeatCommand)
                     }
                 }
+                return true
             }
         }
         return true
@@ -738,6 +825,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        cancelBrowseKeyRepeat()
+        cancelPlayerNavRepeat()
         dispatchTvAppVisibility(visible = false)
         browseWebView?.onPause()
         playerWebView?.onPause()
@@ -760,6 +849,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        cancelBrowseKeyRepeat()
+        cancelPlayerNavRepeat()
         mainHandler.removeCallbacksAndMessages(null)
         playerHandler.removeCallbacksAndMessages(null)
         if (customView != null) hideCustomView()

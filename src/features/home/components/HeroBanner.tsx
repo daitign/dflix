@@ -169,7 +169,6 @@ export function HeroBanner({ item }: HeroBannerProps) {
             aria-label={isAudible ? 'Mute preview' : 'Unmute preview'}
             aria-pressed={isAudible}
             className="hero-banner__audio-toggle"
-            data-tv-focusable="true"
             onClick={toggleSound}
             type="button"
           >

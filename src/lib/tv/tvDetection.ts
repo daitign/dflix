@@ -21,6 +21,7 @@ declare global {
       handleBack?: () => boolean;
       handleMediaUnlock?: () => boolean;
       handleRemoteKey?: (key: 'OK') => boolean;
+      handleRepeatKey?: (direction: 'down' | 'left' | 'right' | 'up') => boolean;
       isTV?: boolean;
       onNativeBack?: () => boolean;
       onPlayerClosed?: () => void;

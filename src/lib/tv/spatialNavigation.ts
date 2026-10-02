@@ -41,6 +41,8 @@ export function isFocusCandidate(element: HTMLElement): boolean {
   if (element.getAttribute('data-tv-focusable') !== 'true') return false;
   if (element.getAttribute('disabled') !== null || element.getAttribute('aria-hidden') === 'true') return false;
   if (/^(H[1-6]|HEADER|SECTION|ARTICLE)$/.test(element.tagName)) return false;
+  const className = element.getAttribute('class') || (typeof element.className === 'string' ? element.className : '');
+  if (className.includes('audio-toggle')) return false;
   return element.getAttribute('role') !== 'heading';
 }
 
@@ -62,6 +64,16 @@ export function getFocusableElements(scope: HTMLElement = getActiveScope()): HTM
   cachedElements = Array.from(scope.querySelectorAll<HTMLElement>(TV_FOCUSABLE_SELECTOR)).filter(isVisible);
   cachedRows = null;
   return cachedElements;
+}
+
+const centerCache = new WeakMap<HTMLElement, { x: number; y: number }>();
+
+function cachedCenter(element: HTMLElement): { x: number; y: number } {
+  const existing = centerCache.get(element);
+  if (existing) return existing;
+  const point = center(element);
+  centerCache.set(element, point);
+  return point;
 }
 
 function center(element: HTMLElement) {
@@ -133,7 +145,7 @@ function rowsFor(elements: HTMLElement[]): FocusRow[] {
 export function findClosestInRow(elements: HTMLElement[], targetX: number): HTMLElement | null {
   return elements.reduce<HTMLElement | null>((closest, element) => {
     if (!closest) return element;
-    return Math.abs(center(element).x - targetX) < Math.abs(center(closest).x - targetX) ? element : closest;
+    return Math.abs(cachedCenter(element).x - targetX) < Math.abs(cachedCenter(closest).x - targetX) ? element : closest;
   }, null);
 }
 
@@ -156,7 +168,7 @@ export function findNextSpatialElement(current: HTMLElement, direction: Directio
   const nextExplicitRow = nextRow.elements[0] ? explicitRowFor(nextRow.elements[0]) : null;
   const remembered = nextExplicitRow ? lastFocusedByRow.get(nextExplicitRow) : null;
   if (remembered && nextRow.elements.includes(remembered) && isVisible(remembered)) return remembered;
-  return findClosestInRow(nextRow.elements, preferredX ?? center(current).x);
+  return findClosestInRow(nextRow.elements, preferredX ?? cachedCenter(current).x);
 }
 
 export function scrollElementIntoOptimalView(element: HTMLElement) {
@@ -183,7 +195,7 @@ function focusElement(element: HTMLElement, preserveX = false) {
   try {
     element.focus({ preventScroll: true });
     rememberRowFocus(element);
-    if (!preserveX) preferredX = center(element).x;
+    if (!preserveX) preferredX = cachedCenter(element).x;
   } finally {
     preservePreferredXDuringFocus = false;
   }
@@ -254,7 +266,7 @@ export function initSpatialNavigation(): () => void {
       && isVisible(target)
     ) {
       rememberRowFocus(target);
-      preferredX = center(target).x;
+      preferredX = cachedCenter(target).x;
     }
   };
 
@@ -291,7 +303,7 @@ export function initSpatialNavigation(): () => void {
 
     if (event.repeat) {
       const now = window.performance.now();
-      if (now - lastRepeatedNavigationAt < 75) {
+      if (now - lastRepeatedNavigationAt < 70) {
         event.preventDefault();
         event.stopImmediatePropagation();
         return;
@@ -340,7 +352,6 @@ export function initSpatialNavigation(): () => void {
     attributeFilter: [
       'aria-hidden',
       'data-tv-focusable',
-      'data-tv-preview-expanded',
       'data-tv-row',
       'disabled',
       'hidden',
@@ -358,6 +369,17 @@ export function initSpatialNavigation(): () => void {
       return true;
     },
     handleRemoteKey: (key) => key === 'OK' && activateTVFocusedElement(),
+    handleRepeatKey: (direction: Direction) => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || !isFocusCandidate(active) || !isVisible(active)) {
+        focusInitial();
+        return true;
+      }
+      const next = findNextSpatialElement(active, direction);
+      if (!next) return false;
+      focusElement(next, direction === 'up' || direction === 'down');
+      return true;
+    },
     tvMediaInteractionUnlocked: window.sessionStorage.getItem('daitign-tv-media-unlocked') === 'true',
   };
   return () => {

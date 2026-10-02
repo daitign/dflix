@@ -143,11 +143,20 @@ html.daitign-tv .hero-banner__wash {
 }
 
 html.daitign-tv .hero-banner__trailer-mount {
-  transform: translate(-50%, -50%) scale(1.16);
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
 }
 
 html.daitign-tv .hero-banner__trailer iframe {
-  transform: none;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: none !important;
+  border: 0 !important;
 }
 
 /* Rows sit naturally below the hero; no overlap or negative spacing. */
@@ -218,10 +227,17 @@ html.daitign-tv .tv-deferred-row {
 }
 
 html.daitign-tv .top-navigation,
-html.daitign-tv .netflix-browse-popover,
-html.daitign-tv .hero-banner__audio-toggle,
-html.daitign-tv .hover-preview-card__audio-toggle {
+html.daitign-tv .netflix-browse-popover {
   backdrop-filter: none !important;
+}
+
+html.daitign-tv .hero-banner__audio-toggle,
+html.daitign-tv .hover-preview-card__audio-toggle,
+html.daitign-tv .details-hero__audio-toggle,
+html.daitign-tv [class*="audio-toggle"] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 html.daitign-tv .top-navigation__vip-btn,
@@ -326,11 +342,20 @@ html.daitign-tv .hover-preview-card__media .responsive-image {
 }
 
 html.daitign-tv .hover-preview-card__video-mount {
-  transform: translate(-50%, -50%) scale(1);
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
 }
 
 html.daitign-tv .hover-preview-card__video iframe {
-  transform: none;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: none !important;
+  border: 0 !important;
 }
 
 html.daitign-tv .media-card[data-tv-preview-expanded='true'] .media-card__surface,
@@ -417,11 +442,20 @@ html.daitign-tv .details-loading__hero {
 }
 
 html.daitign-tv .details-hero__trailer-mount {
-  transform: translate(-50%, -50%) scale(1.04);
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
 }
 
 html.daitign-tv .details-hero__trailer iframe {
-  transform: none;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  transform: none !important;
+  border: 0 !important;
 }
 
 html.daitign-tv .details-hero__content {

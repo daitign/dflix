@@ -153,7 +153,6 @@ export function DetailsHero({ details, onAction, onPlay }: DetailsHeroProps) {
             aria-label={isTrailerAudible ? `Mute trailer for ${details.title}` : `Unmute trailer for ${details.title}`}
             aria-pressed={isTrailerAudible}
             className="details-hero__audio-toggle"
-            data-tv-focusable="true"
             onClick={handleAudioToggle}
             size="lg"
             tone="glass"
