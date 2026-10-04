@@ -1,18 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getTmdbHomeCatalog, type HomeCatalog, type MediaItem } from '../../features/catalog';
-import { useTvFocus } from '../focus/TvFocusContext.tsx';
-import { TvFooter } from '../components/TvFooter.tsx';
-import { TvHero } from '../components/TvHero.tsx';
-import { TvMediaRow } from '../components/TvMediaRow.tsx';
-import { TvNavRail } from '../components/TvNavRail.tsx';
+import { searchMulti } from '../../lib/tmdb';
+import { useTvFocus } from '../focus/TvFocusContext';
+import { TvFooter } from '../components/TvFooter';
+import { TvHero } from '../components/TvHero';
+import { TvMediaRow } from '../components/TvMediaRow';
+import { TvNavRail } from '../components/TvNavRail';
 import {
   fetchTvGenreCatalog,
   TV_V2_MOVIE_GENRES,
   TV_V2_TV_GENRES,
   type TvGenreCatalogData,
-} from '../catalog/tvGenreCatalog.ts';
-import { TvSearchScreen } from './TvSearchScreen.tsx';
-import { TvMyListScreen } from './TvMyListScreen.tsx';
+} from '../catalog/tvGenreCatalog';
+import {
+  fetchTvNewPopularCatalog,
+  type TvNewPopularCatalogData,
+} from '../catalog/tvNewPopularCatalog';
+import {
+  fetchTvNotifications,
+  getUnreadNotificationCount,
+  markNotificationAsRead,
+  type TvNotificationItem,
+} from '../notifications/tvNotificationCatalog';
+import {
+  TvAccountModal,
+  TvHelpModal,
+  TvSettingsModal,
+  TvSignOutModal,
+} from '../components/TvProfileModals';
+import type { TvProfileAction } from '../components/TvProfileDropdown';
+import { TvSearchScreen } from './TvSearchScreen';
+import { TvMyListScreen } from './TvMyListScreen';
+import { TvLanguagesScreen } from './TvLanguagesScreen';
 import './TvScreens.css';
 
 interface TvHomeScreenProps {
@@ -30,17 +49,35 @@ export function TvHomeScreen({
   onPlay,
   onToggleList,
 }: TvHomeScreenProps) {
-  const { ensureInitialFocus, setFocus } = useTvFocus();
+  const { ensureInitialFocus, popScope, pushScope, setFocus } = useTvFocus();
   const [catalog, setCatalog] = useState<HomeCatalog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('home');
+
+  // Search states for in-header Netflix search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Genre states for Movies and TV Shows
   const [selectedMovieGenre, setSelectedMovieGenre] = useState('all');
   const [selectedTvGenre, setSelectedTvGenre] = useState('all');
   const [movieGenreCatalog, setMovieGenreCatalog] = useState<TvGenreCatalogData | null>(null);
   const [tvGenreCatalog, setTvGenreCatalog] = useState<TvGenreCatalogData | null>(null);
+
+  // New & Popular catalog
+  const [newPopularCatalog, setNewPopularCatalog] = useState<TvNewPopularCatalogData | null>(null);
+
+  // Notifications
+  const [notifications, setNotifications] = useState<TvNotificationItem[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+
+  // Profile modal state
+  const [activeProfileModal, setActiveProfileModal] = useState<
+    'settings' | 'account' | 'help' | 'signout' | null
+  >(null);
 
   useEffect(() => {
     let active = true;
@@ -67,22 +104,140 @@ export function TvHomeScreen({
     };
   }, []);
 
+  // Fetch real notifications
+  useEffect(() => {
+    let active = true;
+    fetchTvNotifications()
+      .then((items) => {
+        if (active) {
+          setNotifications(items);
+          setUnreadNotifCount(getUnreadNotificationCount(items));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Fetch New & Popular when tab is activated
+  useEffect(() => {
+    if (activeTab === 'new-popular' && !newPopularCatalog) {
+      fetchTvNewPopularCatalog().then((data) => {
+        if (data) setNewPopularCatalog(data);
+      });
+    }
+  }, [activeTab, newPopularCatalog]);
+
   useEffect(() => {
     if (!loading && catalog) {
       ensureInitialFocus('nav-home');
     }
   }, [loading, catalog, ensureInitialFocus]);
 
+  // Debounced search query
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      searchMulti(trimmed)
+        .then((items) => {
+          const filtered = items.filter(
+            (item) => item && item.title && (item.posterUrl || item.backdropUrl)
+          );
+          setSearchResults(filtered);
+        })
+        .catch(() => {
+          setSearchResults([]);
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleOpenSearch = () => {
+    setIsSearchExpanded(true);
+    setActiveTab('search');
+    setFocus('nav-search');
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearchExpanded(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setActiveTab('home');
+    setFocus('nav-search');
+  };
+
   const handleSelectTab = (tabId: string) => {
+    if (tabId === 'search') {
+      handleOpenSearch();
+      return;
+    }
+
+    if (isSearchExpanded) {
+      setIsSearchExpanded(false);
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+
     setActiveTab(tabId);
     if (tabId === 'home') {
-      // Returning home resets genre state
       setSelectedMovieGenre('all');
       setSelectedTvGenre('all');
     }
-    if (tabId !== 'search') {
-      setFocus(`nav-${tabId}`);
+    setFocus(`nav-${tabId}`);
+  };
+
+  const handleSelectNotification = (notif: TvNotificationItem) => {
+    markNotificationAsRead(notif.id);
+    setUnreadNotifCount(getUnreadNotificationCount(notifications));
+    if (notif.item) {
+      onOpenDetails(notif.item);
     }
+  };
+
+  const handleSelectProfileAction = (action: TvProfileAction) => {
+    if (action === 'my-list') {
+      handleSelectTab('my-list');
+      return;
+    }
+    if (action === 'settings') {
+      pushScope('profile-settings-scope', 'profile-settings-item-1');
+      setActiveProfileModal('settings');
+      return;
+    }
+    if (action === 'account') {
+      pushScope('profile-account-scope', 'profile-account-close-btn');
+      setActiveProfileModal('account');
+      return;
+    }
+    if (action === 'help') {
+      pushScope('profile-help-scope', 'profile-help-close-btn');
+      setActiveProfileModal('help');
+      return;
+    }
+    if (action === 'signout') {
+      pushScope('profile-signout-scope', 'profile-signout-btn-0');
+      setActiveProfileModal('signout');
+      return;
+    }
+  };
+
+  const handleCloseProfileModal = () => {
+    popScope();
+    setActiveProfileModal(null);
+    setFocus('nav-profile');
   };
 
   // Baseline content for TV Shows and Movies tabs
@@ -215,20 +370,31 @@ export function TvHomeScreen({
     <div className="tv-v2-home-screen">
       <TvNavRail
         activeTab={activeTab}
+        hasSearchResults={searchResults.length > 0}
+        isSearchExpanded={isSearchExpanded}
+        notifications={notifications}
+        onClearSearch={() => setSearchQuery('')}
+        onCollapseSearch={handleCloseSearch}
+        onExpandSearch={handleOpenSearch}
+        onSearchQueryChange={setSearchQuery}
         onSelectMovieGenre={(genreId) => setSelectedMovieGenre(genreId)}
+        onSelectNotification={handleSelectNotification}
+        onSelectProfileAction={handleSelectProfileAction}
         onSelectTab={handleSelectTab}
         onSelectTvGenre={(genreId) => setSelectedTvGenre(genreId)}
+        searchQuery={searchQuery}
         selectedMovieGenre={selectedMovieGenre}
         selectedTvGenre={selectedTvGenre}
+        unreadNotificationCount={unreadNotifCount}
       />
 
       {activeTab === 'search' && (
         <TvSearchScreen
-          onClose={() => {
-            setActiveTab('home');
-            setFocus('nav-search');
-          }}
+          isSearching={isSearching}
+          onClose={handleCloseSearch}
           onOpenDetails={onOpenDetails}
+          query={searchQuery}
+          results={searchResults}
         />
       )}
 
@@ -241,6 +407,58 @@ export function TvHomeScreen({
           }}
           onOpenDetails={onOpenDetails}
         />
+      )}
+
+      {activeTab === 'languages' && (
+        <TvLanguagesScreen
+          onOpenDetails={onOpenDetails}
+          onReturnToNav={() => setFocus('nav-languages')}
+        />
+      )}
+
+      {activeTab === 'new-popular' && (
+        <main className="tv-v2-home-content">
+          {newPopularCatalog ? (
+            <>
+              <TvHero
+                isInList={isInList(newPopularCatalog.hero.id)}
+                item={newPopularCatalog.hero}
+                onOpenDetails={onOpenDetails}
+                onPlay={onPlay}
+                onToggleList={onToggleList}
+              />
+
+              {newPopularCatalog.topTen && newPopularCatalog.topTen.length > 0 && (
+                <TvMediaRow
+                  id="row-new-top-10"
+                  isRanked
+                  items={newPopularCatalog.topTen}
+                  onSelectItem={onOpenDetails}
+                  order={2}
+                  title="Top 10 Today"
+                />
+              )}
+
+              {newPopularCatalog.rows.map((row, idx) => (
+                <TvMediaRow
+                  id={`row-${row.id}`}
+                  items={row.items}
+                  key={row.id}
+                  onSelectItem={onOpenDetails}
+                  order={idx + 3}
+                  title={row.title}
+                />
+              ))}
+
+              <TvFooter onBackToTop={() => setFocus('nav-new-popular')} />
+            </>
+          ) : (
+            <div className="tv-v2-loading-screen">
+              <div className="tv-v2-loading-spinner" />
+              <span>Loading New & Popular…</span>
+            </div>
+          )}
+        </main>
       )}
 
       {activeTab === 'shows' && effectiveShows && (
@@ -370,6 +588,30 @@ export function TvHomeScreen({
           <TvFooter onBackToTop={() => setFocus('nav-home')} />
         </main>
       )}
+
+      {/* Global Modals for Profile Actions */}
+      <TvSettingsModal
+        isOpen={activeProfileModal === 'settings'}
+        onClose={handleCloseProfileModal}
+      />
+
+      <TvAccountModal
+        isOpen={activeProfileModal === 'account'}
+        onClose={handleCloseProfileModal}
+      />
+
+      <TvHelpModal
+        isOpen={activeProfileModal === 'help'}
+        onClose={handleCloseProfileModal}
+      />
+
+      <TvSignOutModal
+        isOpen={activeProfileModal === 'signout'}
+        onClose={handleCloseProfileModal}
+        onConfirmSignOut={() => {
+          handleSelectTab('home');
+        }}
+      />
     </div>
   );
 }

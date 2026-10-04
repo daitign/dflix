@@ -9,6 +9,7 @@ import type { Direction } from '../focus/TvFocusEngine.ts';
 import { useTvFocusNode, useTvFocusRow } from '../focus/useTvFocus.ts';
 import { tvPreviewManager } from '../previews/TvPreviewManager.ts';
 import { TvPreviewPlayer } from '../previews/TvPreviewPlayer.tsx';
+import { TvDetailsMetadataRow } from '../components/TvDetailsMetadataRow';
 import './TvScreens.css';
 
 interface TvDetailScreenProps {
@@ -192,28 +193,6 @@ export function TvDetailScreen({
   const backdropUrl =
     details?.backdropUrl || item.backdrop?.fallback || item.backdropUrl || '';
 
-  // Metadata computation
-  const itemYear =
-    item.year ??
-    (item.releaseDate
-      ? parseInt(item.releaseDate, 10)
-      : item.firstAirDate
-        ? parseInt(item.firstAirDate, 10)
-        : undefined);
-  const year = details?.year || itemYear;
-  const formattedRuntime = isMovie
-    ? formatRuntime(details?.runtime || item.runtime)
-    : undefined;
-  const seasonCount = details?.seasons?.length ?? 1;
-  const seasonCountText =
-    !isMovie ? (seasonCount > 1 ? `${seasonCount} Seasons` : '1 Season') : undefined;
-  const maturityRating = details?.maturityRating || item.maturityRating;
-  const quality = details?.quality || 'HD';
-  const descriptorsText =
-    details?.descriptors && details.descriptors.length > 0
-      ? details.descriptors.join(', ')
-      : undefined;
-
   // Right column info
   const castString =
     details?.cast && details.cast.length > 0
@@ -368,18 +347,7 @@ export function TvDetailScreen({
           <div className="tv-v2-detail__columns">
             {/* Left Column */}
             <div className="tv-v2-detail__main-col">
-              <div className="tv-v2-detail__meta">
-                {year && <span>{year}</span>}
-                {formattedRuntime && <span>{formattedRuntime}</span>}
-                {seasonCountText && <span>{seasonCountText}</span>}
-                {maturityRating && (
-                  <span className="tv-v2-detail__rating-badge">{maturityRating}</span>
-                )}
-                {quality && <span className="tv-v2-detail__quality">{quality}</span>}
-                {descriptorsText && (
-                  <span className="tv-v2-detail__descriptors">{descriptorsText}</span>
-                )}
-              </div>
+              <TvDetailsMetadataRow details={details} item={item} />
 
               <p className="tv-v2-detail__overview">
                 {details?.overview || item.overview || 'No synopsis is currently available.'}

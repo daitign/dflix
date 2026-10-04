@@ -34,6 +34,20 @@ export function parseTvKeyEvent(event: KeyboardEvent): TvKeyAction | null {
     return null;
   }
 
+  // ArrowLeft / ArrowRight inside text input: do not break text editing when cursor can move
+  if (isInput && (key === 'ArrowLeft' || key === 'Left' || keyCode === 37 || keyCode === 21)) {
+    const inputEl = (target as HTMLInputElement) || (document.activeElement as HTMLInputElement);
+    if (inputEl && inputEl.selectionStart !== null && inputEl.selectionStart > 0) {
+      return null;
+    }
+  }
+  if (isInput && (key === 'ArrowRight' || key === 'Right' || keyCode === 39 || keyCode === 22)) {
+    const inputEl = (target as HTMLInputElement) || (document.activeElement as HTMLInputElement);
+    if (inputEl && inputEl.selectionEnd !== null && inputEl.selectionEnd < (inputEl.value?.length ?? 0)) {
+      return null;
+    }
+  }
+
   if (
     key === 'Enter' ||
     key === 'Select' ||
@@ -236,30 +250,39 @@ export class TvFocusEngine {
   public setFocus(nodeId: string | null): boolean {
     if (nodeId === this.activeNodeId) return true;
 
+    let targetId = nodeId;
+    if (targetId && !this.nodes.has(targetId)) {
+      if (targetId === 'search-input' && this.nodes.has('nav-search')) {
+        targetId = 'nav-search';
+      } else if (targetId === 'nav-search' && this.nodes.has('search-input')) {
+        targetId = 'search-input';
+      }
+    }
+
     const prevId = this.activeNodeId;
     const prevNode = prevId ? this.nodes.get(prevId) : null;
 
-    if (nodeId === null) {
+    if (targetId === null) {
       this.activeNodeId = null;
       prevNode?.onBlur?.();
       this.notifyListeners(null, prevId);
       return true;
     }
 
-    const nextNode = this.nodes.get(nodeId);
+    const nextNode = this.nodes.get(targetId);
     if (!nextNode || nextNode.disabled) return false;
     if (!this.isRowInActiveScope(nextNode.rowId)) return false;
 
-    this.activeNodeId = nodeId;
-    this.rowFocusMemory.set(nextNode.rowId, nodeId);
+    this.activeNodeId = targetId;
+    this.rowFocusMemory.set(nextNode.rowId, targetId);
 
     prevNode?.onBlur?.();
     nextNode.onFocus?.();
-    this.notifyListeners(nodeId, prevId);
+    this.notifyListeners(targetId, prevId);
 
     // Synchronize DOM focus if element exists, preventing scroll
     if (typeof document !== 'undefined') {
-      const domEl = document.getElementById(nodeId);
+      const domEl = document.getElementById(targetId);
       if (domEl && typeof domEl.focus === 'function' && document.activeElement !== domEl) {
         try {
           domEl.focus({ preventScroll: true });

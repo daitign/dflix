@@ -28,6 +28,12 @@
   flex-shrink: 0;
 }
 
+.tv-v2-nav-rail__brand .brand-mark__wordmark {
+  width: clamp(96px, 8.5vw, 132px);
+  height: auto;
+  display: block;
+}
+
 .tv-v2-nav-rail__brand .brand-mark__monogram {
   width: auto;
   height: clamp(34px, 3.8vh, 44px);
@@ -43,7 +49,203 @@
   display: flex;
   align-items: center;
   margin-left: auto;
-  gap: clamp(12px, 1.2vw, 20px);
+  gap: clamp(10px, 1.1vw, 18px);
+  justify-content: flex-end;
+}
+
+/* Right-Side Action Controls: Search, Notifications, Profile */
+.tv-v2-nav-action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: clamp(34px, 4.2vh, 42px);
+  padding: 0 clamp(8px, 0.8vw, 12px);
+  border-radius: 9999px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: #e5e5e5;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+  outline: none;
+}
+
+.tv-v2-nav-action-btn--focused {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.tv-v2-nav-action-btn--active {
+  color: #ffffff;
+}
+
+/* Notification Bell Badge */
+.tv-v2-notif-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background-color: #e50914;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Profile Button */
+.tv-v2-profile-avatar-pill {
+  width: clamp(26px, 3vh, 32px);
+  height: clamp(26px, 3vh, 32px);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #222;
+}
+
+.tv-v2-profile-avatar-pill img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tv-v2-profile-chevron {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+/* TV V2 Nav Search - Netflix-Style Expand In Place */
+.tv-v2-nav-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: clamp(34px, 4.2vh, 42px);
+  border-radius: 9999px;
+  box-sizing: border-box;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: #e5e5e5;
+  transition:
+    width 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 150ms ease;
+  overflow: hidden;
+  will-change: width;
+}
+
+/* Collapsed State: [search icon] Search */
+.tv-v2-nav-search--collapsed {
+  width: 104px;
+  padding: 0 clamp(12px, 1vw, 16px);
+  gap: 6px;
+  justify-content: center;
+}
+
+.tv-v2-nav-search--collapsed.tv-v2-nav-search--focused {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
+}
+
+.tv-v2-nav-search--collapsed.tv-v2-nav-search--active {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Expanded State: Netflix-Style Pill Input */
+.tv-v2-nav-search--expanded {
+  width: clamp(260px, 24vw, 380px);
+  background-color: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  padding: 0 12px 0 14px;
+  gap: 8px;
+}
+
+.tv-v2-nav-search--expanded.tv-v2-nav-search--focused {
+  border-color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25), 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.tv-v2-nav-search__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.tv-v2-nav-search__label {
+  font-size: clamp(0.95rem, 1.05vw, 1.15rem);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tv-v2-nav-search__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: clamp(0.9rem, 1vw, 1.1rem);
+  font-weight: 400;
+  font-family: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.tv-v2-nav-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.tv-v2-nav-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.tv-v2-nav-search__clear:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .tv-v2-nav-btn-wrapper {
@@ -109,6 +311,455 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* TV V2 Notifications Floating Dropdown */
+.tv-v2-notifications-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 200;
+  width: clamp(340px, 30vw, 440px);
+  background-color: rgba(20, 20, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.95);
+  overflow: hidden;
+  user-select: none;
+  animation: tv-dropdown-appear 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tv-dropdown-appear {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tv-v2-dropdown-header {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tv-v2-dropdown-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.tv-v2-notifications-list {
+  display: flex;
+  flex-direction: column;
+  max-height: clamp(300px, 50vh, 460px);
+  overflow-y: auto;
+  padding: 8px;
+  gap: 4px;
+  scrollbar-width: none;
+}
+
+.tv-v2-notifications-list::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-v2-notification-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.tv-v2-notification-card--focused {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-left-color: #e50914;
+}
+
+.tv-v2-notification-card__thumb {
+  width: 72px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #262626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-v2-notification-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tv-v2-notification-card__fallback {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.tv-v2-notification-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tv-v2-notification-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.tv-v2-notification-card__title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-v2-notification-card__time {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.tv-v2-notification-card__msg {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tv-v2-notification-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px;
+  color: rgba(255, 255, 255, 0.5);
+  gap: 10px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.tv-v2-notification-empty--focused {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+/* TV V2 Profile Floating Dropdown */
+.tv-v2-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 200;
+  width: clamp(230px, 18vw, 290px);
+  background-color: rgba(20, 20, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.95);
+  padding: 10px 0;
+  overflow: hidden;
+  user-select: none;
+  animation: tv-dropdown-appear 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tv-v2-profile-dropdown__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px 12px;
+}
+
+.tv-v2-profile-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #222;
+}
+
+.tv-v2-profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tv-v2-profile-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-v2-profile-name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: #ffffff;
+}
+
+.tv-v2-profile-badge {
+  font-size: 0.72rem;
+  color: #e50914;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.tv-v2-profile-dropdown__divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 6px 0;
+}
+
+.tv-v2-profile-dropdown__list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px;
+  gap: 2px;
+}
+
+.tv-v2-profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.tv-v2-profile-menu-item--focused {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.tv-v2-profile-menu-item--danger {
+  color: #ff6b6b;
+}
+
+.tv-v2-profile-menu-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.tv-v2-profile-menu-item__label {
+  flex: 1;
+}
+
+/* TV V2 Profile Modals: Settings, Account, Help, Sign Out */
+.tv-v2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  animation: tv-detail-fade 180ms ease forwards;
+}
+
+.tv-v2-modal-card {
+  width: clamp(520px, 54vw, 760px);
+  max-height: 85vh;
+  background-color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.95);
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tv-v2-modal-card::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-v2-modal-card--compact {
+  width: clamp(440px, 44vw, 580px);
+}
+
+.tv-v2-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 16px;
+}
+
+.tv-v2-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+}
+
+.tv-v2-modal-title-wrap h2 {
+  font-size: clamp(1.3rem, 1.6vw, 1.8rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.tv-v2-modal-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid transparent;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 120ms ease;
+}
+
+.tv-v2-modal-close-btn--focused {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
+}
+
+.tv-v2-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tv-v2-modal-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.tv-v2-modal-setting-row--focused {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+}
+
+.tv-v2-modal-setting-label {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.tv-v2-modal-setting-value {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+}
+
+.tv-v2-modal-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+.tv-v2-modal-info-label {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tv-v2-modal-info-val {
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tv-v2-modal-shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tv-v2-modal-shortcut-key {
+  min-width: 130px;
+  font-weight: 700;
+  color: #e50914;
+  font-size: 0.95rem;
+}
+
+.tv-v2-modal-shortcut-desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+}
+
+.tv-v2-modal-signout-msg {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.tv-v2-modal-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.tv-v2-modal-action-btn {
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+.tv-v2-modal-action-btn--primary {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.tv-v2-modal-action-btn--danger {
+  background: #e50914;
+  color: #ffffff;
+}
+
+.tv-v2-modal-action-btn--focused {
+  border-color: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 
@@ -510,19 +1161,138 @@
   font-weight: 800;
 }
 
-.tv-v2-card__badge {
+/* ==========================================================================
+   TV V2 / TV V1 Parity Netflix-Style Card Merchandising Badges
+   - Top-Left Corner Top 10 Stacked Badge
+   - Bottom Artwork-Attached Red Freshness Badges
+   ========================================================================== */
+
+/* 1. Top-Left Netflix Top 10 Corner Badge */
+.tv-v2-card__top10-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background-color: #e50914;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 3px;
-  letter-spacing: 0.05em;
+  top: 0;
+  left: 0;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(1.4rem, 1.55vw, 1.85rem);
+  padding: clamp(3px, 0.22vw, 5px) clamp(5px, 0.4vw, 8px) clamp(4px, 0.28vw, 6px);
+  background-color: #e50914;
+  color: #ffffff;
+  border-radius: 0 0 4px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  transition: opacity 200ms ease;
 }
+
+.tv-v2-card__top10-text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(0.42rem, 0.5vw, 0.56rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+.tv-v2-card__top10-rank {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(0.8rem, 0.94vw, 1.12rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+}
+
+/* 2. Bottom Centered Netflix Freshness Badge (Flush with lower artwork edge) */
+.tv-v2-card__badge-container {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+  user-select: none;
+  max-width: calc(100% - 8px);
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  transition: opacity 200ms ease;
+}
+
+.tv-v2-card__bottom-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e50914;
+  color: #ffffff;
+  height: clamp(1.24rem, 1.45vw, 1.55rem);
+  padding: 0 clamp(0.48rem, 0.68vw, 0.74rem);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: clamp(0.62rem, 0.74vw, 0.78rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  max-width: 100%;
+  box-sizing: border-box;
+  vertical-align: bottom;
+  line-height: 1;
+}
+
+.tv-v2-card__bottom-badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Split badge variant (New Episode + Watch Now) */
+.tv-v2-card__bottom-badge--split {
+  padding: 0;
+  overflow: hidden;
+  background-color: transparent;
+}
+
+.tv-v2-card__badge-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 clamp(0.42rem, 0.58vw, 0.64rem);
+  font-size: clamp(0.6rem, 0.72vw, 0.74rem);
+  box-sizing: border-box;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.tv-v2-card__badge-segment--red {
+  background-color: #e50914;
+  color: #ffffff;
+  font-weight: 800;
+  border-radius: 3px 0 0 0;
+}
+
+.tv-v2-card__badge-segment--white {
+  background-color: #ffffff;
+  color: #000000;
+  font-weight: 800;
+  border-radius: 0 3px 0 0;
+}
+
+/* Fades cleanly during active inline video playback */
+.tv-v2-card__badge--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 
 /* TV V2 Footer */
 .tv-v2-footer {

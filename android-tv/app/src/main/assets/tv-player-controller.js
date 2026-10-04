@@ -37,7 +37,7 @@
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}[role="dialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] > div,.art-settings,.art-setting,.art-selector,.art-layer-selector,[class*="popup"],[class*="modal"]{max-height:min(78vh,calc(100vh - 120px))!important;max-width:min(72vw,680px)!important;box-sizing:border-box!important;overflow-y:auto!important;bottom:clamp(70px,12vh,120px)!important;margin-bottom:0!important}[role="dialog"]::-webkit-scrollbar,[role="menu"]::-webkit-scrollbar,.art-settings::-webkit-scrollbar,[class*="popup"]::-webkit-scrollbar{width:6px!important}[role="dialog"]::-webkit-scrollbar-thumb,.art-settings::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3)!important;border-radius:4px!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-episode-selected{outline:3px solid #ffffff!important;outline-offset:3px!important;border-radius:8px!important;box-shadow:0 0 16px rgba(255,255,255,.45)!important;transform:scale(1.02)!important;transition:transform 120ms ease,box-shadow 120ms ease!important;z-index:10!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}[role="dialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] > div,.art-settings,.art-setting,.art-selector,.art-layer-selector,[class*="popup"],[class*="modal"]{max-height:min(78vh,calc(100vh - 120px))!important;max-width:min(72vw,680px)!important;box-sizing:border-box!important;overflow-y:auto!important;bottom:clamp(70px,12vh,120px)!important;margin-bottom:0!important}[data-slot*="drawer"],[data-vaul-drawer],[data-vaul-drawer-wrapper],[data-slot*="drawer-content"],[data-slot*="drawer-popup"],.max-w-5xl{max-width:min(94vw,1200px)!important;max-height:92vh!important;bottom:auto!important}[role="dialog"]::-webkit-scrollbar,[role="menu"]::-webkit-scrollbar,.art-settings::-webkit-scrollbar,[class*="popup"]::-webkit-scrollbar{width:6px!important}[role="dialog"]::-webkit-scrollbar-thumb,.art-settings::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3)!important;border-radius:4px!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -109,7 +109,8 @@
     var semantic = label(element);
     if (isTimeline(element)) return 'timeline';
     if (/play|pause/.test(semantic)) return 'play-pause';
-    if (/next|episode/.test(semantic)) return 'next';
+    if (/episode/.test(semantic)) return 'episodes';
+    if (/next/.test(semantic)) return 'next';
     if (/volume|mute|sound/.test(semantic)) return 'volume';
     if (/aspect|fit|ratio/.test(semantic)) return 'fit';
     if (/subtitle|caption|\bcc\b|english\s*\d*/.test(semantic)) return 'subtitle';
@@ -174,12 +175,140 @@
     return result.sort(function (a, b) { return a.y - b.y; });
   }
 
+  function isEpisodesPopup(element) {
+    if (!element) return false;
+    var text = (element.textContent || '').toLowerCase();
+    var hasEpisodeLinks = false;
+    var hasEpisodeCards = false;
+    var hasEpisodeGrid = false;
+    if (typeof element.querySelectorAll === 'function') {
+      try {
+        hasEpisodeLinks = element.querySelectorAll('a[href*="/tv/"], a[href*="/embed/tv/"]').length > 0;
+        hasEpisodeCards = element.querySelectorAll('.daitign-tv-episode-card, [class*="episode-card"]').length > 0;
+        hasEpisodeGrid = element.querySelectorAll('[class*="grid"]').length > 0 && (/episode/i.test(text) || /season\s*\d+/i.test(text));
+      } catch (_) {}
+    }
+    var hasEpisodeText = /select an episode/i.test(text) || (/episodes/i.test(text) && (/season\s*\d+/i.test(text) || /episode\s*\d+/i.test(text)));
+    return hasEpisodeLinks || hasEpisodeCards || hasEpisodeGrid || hasEpisodeText;
+  }
+
+  function isEpisodeCard(element) {
+    if (!element) return false;
+    if (element.matches && (element.matches('a[href*="/tv/"], a[href*="/embed/tv/"]') || element.matches('.daitign-tv-episode-card, [class*="episode-card"]'))) return true;
+    if (element.closest && !!element.closest('[class*="grid"]') && /^\s*\d+\.\s+/m.test(element.textContent || '')) return true;
+    return false;
+  }
+
+  function findEpisodeCards(popup) {
+    if (!popup || typeof popup.querySelectorAll !== 'function') return [];
+    var links = Array.prototype.slice.call(popup.querySelectorAll('a[href*="/tv/"], a[href*="/embed/tv/"], a.group.block, .daitign-tv-episode-card, [class*="episode-card"]')).filter(visible);
+    if (links.length) return links;
+
+    var grid = typeof popup.querySelector === 'function' ? popup.querySelector('[class*="grid"]') : null;
+    if (grid) {
+      var gridChildren = Array.prototype.slice.call(grid.children).filter(visible);
+      var cards = [];
+      gridChildren.forEach(function (child) {
+        var a = child.tagName === 'A' ? child : (typeof child.querySelector === 'function' ? child.querySelector('a') : null);
+        cards.push(a || child);
+      });
+      if (cards.length) return cards;
+    }
+
+    var headings = Array.prototype.slice.call(popup.querySelectorAll('h3, h4, [class*="font-semibold"]')).filter(function (h) {
+      return visible(h) && /^\s*\d+\.\s+/.test(h.textContent || '');
+    });
+    if (headings.length) {
+      return headings.map(function (h) {
+        return (typeof h.closest === 'function' && h.closest('a, [role="button"], [class*="group"]')) || h.parentElement;
+      }).filter(function (el, idx, arr) {
+        return el && visible(el) && arr.indexOf(el) === idx;
+      });
+    }
+    return [];
+  }
+
+  function findCurrentEpisodeCard(cards) {
+    return cards.find(function (card) {
+      if (!card) return false;
+      if (typeof card.getAttribute === 'function' && (card.getAttribute('aria-current') === 'true' || card.getAttribute('aria-selected') === 'true')) return true;
+      if (card.classList && (card.classList.contains('active') || card.classList.contains('selected') || card.classList.contains('current'))) return true;
+      var borderEl = typeof card.querySelector === 'function' ? card.querySelector('.border-2, [class*="border-red"], [style*="border-color"], [style*="outline-color"]') : null;
+      if (borderEl) return true;
+      if (card.style && (card.style.borderColor || card.style.borderWidth)) return true;
+      return false;
+    }) || null;
+  }
+
+  function findSeasonSelector(popup) {
+    if (!popup || typeof popup.querySelectorAll !== 'function') return null;
+    var buttons = Array.prototype.slice.call(popup.querySelectorAll('button, [role="button"]')).filter(visible);
+    return buttons.find(function (b) {
+      return /season\s*\d+/i.test(b.textContent || '');
+    }) || null;
+  }
+
+  function findShowMoreButton(popup) {
+    if (!popup || typeof popup.querySelectorAll !== 'function') return null;
+    var buttons = Array.prototype.slice.call(popup.querySelectorAll('button, [role="button"]')).filter(visible);
+    return buttons.find(function (b) {
+      return /show\s*(more|less)/i.test(b.textContent || '');
+    }) || null;
+  }
+
+  function findCloseButton(popup) {
+    if (!popup || typeof popup.querySelectorAll !== 'function') return null;
+    var buttons = Array.prototype.slice.call(popup.querySelectorAll('button, [role="button"]')).filter(visible);
+    return buttons.find(function (b) {
+      return /close|done|exit/i.test((b.textContent || '').trim());
+    }) || null;
+  }
+
+  function detectSeasonDropdown() {
+    var candidates = Array.prototype.slice.call(document.querySelectorAll(
+      '[data-radix-popper-content-wrapper], [role="menu"], [role="listbox"], [data-slot*="popover"], div.w-32, [class*="popover"]'
+    )).filter(visible);
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      var buttons = Array.prototype.slice.call(c.querySelectorAll('button, [role="menuitem"], [role="option"]')).filter(function (b) {
+        return visible(b) && /season\s*\d+/i.test(b.textContent || '');
+      });
+      if (buttons.length > 0) return c;
+    }
+    var allDivs = Array.prototype.slice.call(document.querySelectorAll('div, ul')).filter(visible);
+    for (var j = 0; j < allDivs.length; j++) {
+      var div = allDivs[j];
+      if (div.getBoundingClientRect().height > 500) continue;
+      var seasonBtns = Array.prototype.slice.call(div.querySelectorAll('button')).filter(function (b) {
+        return visible(b) && /^season\s*\d+$/i.test((b.textContent || '').trim());
+      });
+      if (seasonBtns.length >= 2) return div;
+    }
+    return null;
+  }
+
+  function discoverSeasonItems(dropdown) {
+    if (!dropdown) return [];
+    return Array.prototype.slice.call(dropdown.querySelectorAll('button, [role="menuitem"], [role="option"]')).filter(function (b) {
+      return visible(b) && /season\s*\d+/i.test(b.textContent || '');
+    });
+  }
+
+  function scrollCardIntoView(element) {
+    if (!element || typeof element.scrollIntoView !== 'function') return;
+    try {
+      element.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    } catch (_) {}
+  }
+
   function isMenuItem(element, container) {
     if (!element || element === container || !visible(element) || !enabled(element)) return false;
+    var isEpisodes = isEpisodesPopup(container);
     var rect = element.getBoundingClientRect();
     var parentRect = container.getBoundingClientRect();
-    if (rect.top < parentRect.top - 2 || rect.bottom > parentRect.bottom + 2) return false;
-    if (rect.height < 12 || rect.height > Math.min(160, parentRect.height * .7)) return false;
+    if (!isEpisodes && (rect.top < parentRect.top - 2 || rect.bottom > parentRect.bottom + 2)) return false;
+    var maxHeight = isEpisodes ? parentRect.height * 1.5 : Math.min(160, parentRect.height * .7);
+    if (rect.height < 12 || rect.height > maxHeight) return false;
     var semantic = element.matches('[role="menuitem"],[role="option"],button,a[href],input,select,li,[aria-selected],[aria-checked],[tabindex]:not([tabindex="-1"])');
     var computed = getComputedStyle(element);
     return semantic || typeof element.onclick === 'function' || computed.cursor === 'pointer';
@@ -187,6 +316,18 @@
 
   function discoverMenuItems(container, force) {
     if (!container || !visible(container)) return [];
+    if (isEpisodesPopup(container)) {
+      var cards = findEpisodeCards(container);
+      var seasonBtn = findSeasonSelector(container);
+      var showMore = findShowMoreButton(container);
+      var closeBtn = findCloseButton(container);
+      var allEpisodesItems = [];
+      if (seasonBtn) allEpisodesItems.push(seasonBtn);
+      cards.forEach(function (card) { allEpisodesItems.push(card); });
+      if (showMore) allEpisodesItems.push(showMore);
+      if (closeBtn) allEpisodesItems.push(closeBtn);
+      return allEpisodesItems;
+    }
     if (!force && !menuCandidatesDirty && activePopup === container) {
       menuCandidateCache = menuCandidateCache.filter(function (item) { return container.contains(item) && isMenuItem(item, container); });
       return menuCandidateCache.slice();
@@ -214,18 +355,18 @@
   }
 
   function detectPopup() {
-    var semantic = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"],[role="menu"],[role="listbox"],[aria-modal="true"]')).filter(visible);
+    var semantic = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"],[role="menu"],[role="listbox"],[aria-modal="true"],[data-slot*="drawer"],[data-vaul-drawer]')).filter(visible);
     if (semantic.length) return semantic[semantic.length - 1];
 
-    var selector = '[class*="menu"],[class*="popup"],[class*="popover"],[class*="setting"],[class*="server"],[class*="subtitle"],[class*="quality"],[class*="source"],body > div';
+    var selector = '[class*="menu"],[class*="popup"],[class*="popover"],[class*="setting"],[class*="server"],[class*="subtitle"],[class*="quality"],[class*="source"],[class*="drawer"],body > div';
     var possible = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
       if (!visible(element) || element === document.body) return false;
       var rect = element.getBoundingClientRect();
       if (rect.width < innerWidth * .10 || rect.height < innerHeight * .10) return false;
-      if (rect.width > innerWidth * .88 || rect.height > innerHeight * .9) return false;
+      if (rect.width > innerWidth * .98 || rect.height > innerHeight * .98) return false;
       var computed = getComputedStyle(element);
       if (computed.position !== 'fixed' && computed.position !== 'absolute' && element.parentElement !== document.body) return false;
-      return discoverMenuItems(element, true).length > 0;
+      return isEpisodesPopup(element) || discoverMenuItems(element, true).length > 0;
     });
     possible.sort(function (a, b) {
       var ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
@@ -235,7 +376,14 @@
   }
 
   function clearSelection() {
-    if (selected) selected.classList.remove('daitign-tv-player-selected', 'daitign-tv-player-menu-selected', 'daitign-tv-player-timeline');
+    if (selected) {
+      selected.classList.remove(
+        'daitign-tv-player-selected',
+        'daitign-tv-player-menu-selected',
+        'daitign-tv-player-timeline',
+        'daitign-tv-episode-selected'
+      );
+    }
     selected = null;
   }
 
@@ -244,15 +392,22 @@
     selected = controlVisible(element) ? element : null;
     if (!selected) return;
     var resolvedState = nextState || (isTimeline(selected) ? TIMELINE : CONTROLS);
-    if (resolvedState === MENU) selected.classList.add('daitign-tv-player-menu-selected');
-    else selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
+    if (resolvedState === MENU) {
+      if (isEpisodeCard(selected)) {
+        selected.classList.add('daitign-tv-episode-selected');
+      } else {
+        selected.classList.add('daitign-tv-player-menu-selected');
+      }
+    } else {
+      selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
+    }
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     preferredX = center(selected).x;
     if (resolvedState !== MENU) {
       lastFocusedControlKind = controlKind(selected);
       lastFocusedControlLabel = label(selected);
     }
-    debugLog('[DAITIGN TV Player] selected', resolvedState === MENU ? 'menu-option' : controlKind(selected), label(selected));
+    debugLog('[DAITIGN TV Player] selected', resolvedState === MENU ? (isEpisodeCard(selected) ? 'episode-card' : 'menu-option') : controlKind(selected), label(selected));
     notify(resolvedState);
   }
 
@@ -826,12 +981,38 @@
     return wakeAndFocusControls();
   }
 
+  function syncEpisodesMenu(popup) {
+    var cards = findEpisodeCards(popup);
+    if (!cards.length) {
+      var fallbackItem = findSeasonSelector(popup) || findCloseButton(popup);
+      if (fallbackItem) setSelected(fallbackItem, MENU);
+      return;
+    }
+    var currentCard = findCurrentEpisodeCard(cards);
+    var target = currentCard || cards[0];
+    setSelected(target, MENU);
+    scrollCardIntoView(target);
+  }
+
   function syncMenu(attempt) {
     attempt = attempt || 0;
     window.clearTimeout(menuSyncTimer);
     window.clearTimeout(controlsIdleTimer);
     controlsIdleTimer = 0;
     menuSyncTimer = window.setTimeout(function () {
+      var seasonDropdown = detectSeasonDropdown();
+      if (seasonDropdown && visible(seasonDropdown)) {
+        activePopup = seasonDropdown;
+        var seasonItems = discoverSeasonItems(seasonDropdown);
+        if (seasonItems.length) {
+          var currentSeason = seasonItems.find(function (item) {
+            return item.getAttribute('aria-selected') === 'true' || item.getAttribute('aria-checked') === 'true' || item.classList.contains('active');
+          }) || seasonItems[0];
+          setSelected(currentSeason, MENU);
+          return;
+        }
+      }
+
       var popup = detectPopup();
       if (!popup) {
         if (attempt < 8) syncMenu(attempt + 1);
@@ -839,6 +1020,12 @@
       }
       activePopup = popup;
       menuCandidatesDirty = false;
+
+      if (isEpisodesPopup(popup)) {
+        syncEpisodesMenu(popup);
+        return;
+      }
+
       var items = discoverMenuItems(popup, true);
       if (!items.length) {
         if (attempt < 8) syncMenu(attempt + 1);
@@ -882,6 +1069,202 @@
     }
   }
 
+  function findClosestByX(elements, targetX) {
+    if (!elements || !elements.length) return null;
+    return elements.reduce(function (best, item) {
+      if (!best) return item;
+      return Math.abs(center(item).x - targetX) < Math.abs(center(best).x - targetX) ? item : best;
+    }, null);
+  }
+
+  function navigateEpisodes(direction) {
+    registerUserActivity();
+    var popup = activePopup || detectPopup();
+    if (!popup || !visible(popup)) { syncMenu(0); return; }
+    activePopup = popup;
+
+    var cards = findEpisodeCards(popup);
+    var seasonBtn = findSeasonSelector(popup);
+    var showMoreBtn = findShowMoreButton(popup);
+    var closeBtn = findCloseButton(popup);
+
+    var gridRows = rows(cards);
+
+    if (selected === seasonBtn) {
+      if (direction === 'DOWN') {
+        if (gridRows.length > 0) {
+          var row0 = gridRows[0].elements;
+          var targetCard = findClosestByX(row0, center(seasonBtn).x);
+          if (targetCard) {
+            setSelected(targetCard, MENU);
+            scrollCardIntoView(targetCard);
+          }
+        }
+      }
+      return;
+    }
+
+    if (selected === showMoreBtn) {
+      if (direction === 'UP') {
+        if (gridRows.length > 0) {
+          var lastRow = gridRows[gridRows.length - 1].elements;
+          var targetUp = findClosestByX(lastRow, center(showMoreBtn).x);
+          if (targetUp) {
+            setSelected(targetUp, MENU);
+            scrollCardIntoView(targetUp);
+          }
+        }
+      } else if (direction === 'DOWN') {
+        if (closeBtn && visible(closeBtn)) {
+          setSelected(closeBtn, MENU);
+          scrollCardIntoView(closeBtn);
+        }
+      }
+      return;
+    }
+
+    if (selected === closeBtn) {
+      if (direction === 'UP') {
+        if (showMoreBtn && visible(showMoreBtn)) {
+          setSelected(showMoreBtn, MENU);
+          scrollCardIntoView(showMoreBtn);
+        } else if (gridRows.length > 0) {
+          var lastRowElements = gridRows[gridRows.length - 1].elements;
+          var targetCardUp = findClosestByX(lastRowElements, center(closeBtn).x);
+          if (targetCardUp) {
+            setSelected(targetCardUp, MENU);
+            scrollCardIntoView(targetCardUp);
+          }
+        }
+      }
+      return;
+    }
+
+    var curRowIndex = -1;
+    var curColIndex = -1;
+    for (var r = 0; r < gridRows.length; r++) {
+      var cIdx = gridRows[r].elements.indexOf(selected);
+      if (cIdx >= 0) {
+        curRowIndex = r;
+        curColIndex = cIdx;
+        break;
+      }
+    }
+
+    if (curRowIndex < 0) {
+      var defaultTarget = (cards.length > 0 ? cards[0] : seasonBtn) || closeBtn;
+      if (defaultTarget) {
+        setSelected(defaultTarget, MENU);
+        scrollCardIntoView(defaultTarget);
+      }
+      return;
+    }
+
+    var currentRow = gridRows[curRowIndex];
+
+    if (direction === 'LEFT') {
+      if (curColIndex > 0) {
+        var nextLeft = currentRow.elements[curColIndex - 1];
+        setSelected(nextLeft, MENU);
+        scrollCardIntoView(nextLeft);
+      }
+    } else if (direction === 'RIGHT') {
+      if (curColIndex < currentRow.elements.length - 1) {
+        var nextRight = currentRow.elements[curColIndex + 1];
+        setSelected(nextRight, MENU);
+        scrollCardIntoView(nextRight);
+      }
+    } else if (direction === 'UP') {
+      if (curRowIndex > 0) {
+        var prevRow = gridRows[curRowIndex - 1].elements;
+        var targetAbove = findClosestByX(prevRow, center(selected).x);
+        if (targetAbove) {
+          setSelected(targetAbove, MENU);
+          scrollCardIntoView(targetAbove);
+        }
+      } else {
+        if (seasonBtn && visible(seasonBtn)) {
+          setSelected(seasonBtn, MENU);
+          scrollCardIntoView(seasonBtn);
+        }
+      }
+    } else if (direction === 'DOWN') {
+      if (curRowIndex < gridRows.length - 1) {
+        var nextRow = gridRows[curRowIndex + 1].elements;
+        var targetBelow = findClosestByX(nextRow, center(selected).x);
+        if (targetBelow) {
+          setSelected(targetBelow, MENU);
+          scrollCardIntoView(targetBelow);
+        }
+      } else {
+        if (showMoreBtn && visible(showMoreBtn)) {
+          setSelected(showMoreBtn, MENU);
+          scrollCardIntoView(showMoreBtn);
+        } else if (closeBtn && visible(closeBtn)) {
+          setSelected(closeBtn, MENU);
+          scrollCardIntoView(closeBtn);
+        }
+      }
+    }
+  }
+
+  function moveSeasonMenu(direction) {
+    registerUserActivity();
+    var dropdown = detectSeasonDropdown();
+    if (!dropdown || !visible(dropdown)) return;
+    var items = discoverSeasonItems(dropdown);
+    if (!items.length) return;
+    var index = items.indexOf(selected);
+    if (index < 0) index = 0;
+    var next = Math.max(0, Math.min(items.length - 1, index + (direction === 'DOWN' ? 1 : -1)));
+    setSelected(items[next], MENU);
+    registerUserActivity();
+  }
+
+  function activateSeasonItem() {
+    registerUserActivity();
+    var item = selected;
+    if (!item) return;
+    try { item.focus({ preventScroll: true }); } catch (_) {}
+    item.click();
+    pointerFallback(item);
+    window.setTimeout(function () {
+      var popup = detectPopup();
+      if (popup && isEpisodesPopup(popup)) {
+        activePopup = popup;
+        syncEpisodesMenu(popup);
+      } else {
+        finishMenuClose();
+      }
+    }, 120);
+  }
+
+  function closeSeasonDropdown(dropdown) {
+    registerUserActivity();
+    if (dropdown) {
+      dispatchKey(dropdown, 'Escape');
+      try { dropdown.style.setProperty('display', 'none', 'important'); } catch (_) {}
+    }
+    dispatchKey(document.body, 'Escape');
+    var popup = detectPopup();
+    var seasonBtn = popup ? findSeasonSelector(popup) : null;
+    if (seasonBtn) {
+      try { seasonBtn.click(); } catch (_) {}
+    }
+    window.setTimeout(function () {
+      if (popup && isEpisodesPopup(popup)) {
+        activePopup = popup;
+        if (seasonBtn && visible(seasonBtn)) {
+          setSelected(seasonBtn, MENU);
+        } else {
+          syncEpisodesMenu(popup);
+        }
+      } else {
+        finishMenuClose();
+      }
+    }, 60);
+  }
+
   function moveMenu(direction) {
     registerUserActivity();
     if (!activePopup || !visible(activePopup)) { syncMenu(0); return; }
@@ -913,7 +1296,7 @@
 
   function dismissPopup(popup) {
     if (!popup) return;
-    var closeBtn = discoverMenuItems(popup, false).find(function (element) {
+    var closeBtn = findCloseButton(popup) || discoverMenuItems(popup, false).find(function (element) {
       return /close|back|done|exit/.test(label(element));
     });
     if (closeBtn) {
@@ -943,6 +1326,54 @@
     if (!selected || !activePopup || !activePopup.contains(selected) || !visible(selected)) { syncMenu(0); return; }
     var item = selected;
     var popupBefore = activePopup;
+    var seasonBtn = findSeasonSelector(popupBefore);
+    var showMoreBtn = findShowMoreButton(popupBefore);
+    var closeBtn = findCloseButton(popupBefore);
+
+    if (item === seasonBtn) {
+      try { item.focus({ preventScroll: true }); } catch (_) {}
+      item.click();
+      pointerFallback(item);
+      window.setTimeout(function () {
+        syncMenu(0);
+      }, 60);
+      return;
+    }
+
+    if (item === showMoreBtn) {
+      try { item.focus({ preventScroll: true }); } catch (_) {}
+      item.click();
+      pointerFallback(item);
+      window.setTimeout(function () {
+        if (isEpisodesPopup(popupBefore)) {
+          syncEpisodesMenu(popupBefore);
+        }
+      }, 100);
+      return;
+    }
+
+    if (item === closeBtn) {
+      dismissPopup(popupBefore);
+      window.setTimeout(function () {
+        finishMenuClose();
+      }, 50);
+      return;
+    }
+
+    if (isEpisodeCard(item)) {
+      try { item.focus({ preventScroll: true }); } catch (_) {}
+      item.click();
+      pointerFallback(item);
+      debugLog('[DAITIGN TV Player] episode card clicked:', label(item));
+      window.setTimeout(function () {
+        dismissPopup(popupBefore);
+        window.setTimeout(function () {
+          finishMenuClose();
+        }, 50);
+      }, 80);
+      return;
+    }
+
     var itemText = label(item);
     var openerText = controlKind(menuOpener) + ' ' + label(menuOpener);
     var popupText = controlKind(popupBefore) + ' ' + label(popupBefore);
@@ -995,15 +1426,23 @@
     selected.click();
     candidatesDirty = true;
     menuCandidatesDirty = true;
-    if (/subtitle|quality|server|settings|fit|volume/.test(openerKind)) {
+    if (/subtitle|quality|server|settings|fit|volume|episode/.test(openerKind)) {
       clearIdleTimer();
       notify(MENU);
       startMenuKeepAlive();
       syncMenu(0);
     } else {
       window.setTimeout(function () {
-        if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
-        registerUserActivity();
+        var popup = detectPopup();
+        if (popup) {
+          clearIdleTimer();
+          notify(MENU);
+          startMenuKeepAlive();
+          syncMenu(0);
+        } else {
+          if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
+          registerUserActivity();
+        }
       }, 90);
     }
   }
@@ -1027,7 +1466,7 @@
       return true;
     }
 
-    var close = discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
+    var close = findCloseButton(popupBefore) || discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
     if (close) {
       try { close.click(); pointerFallback(close); } catch (_) {}
     }
@@ -1071,6 +1510,17 @@
       clearIdleTimer();
       window.clearTimeout(menuSyncTimer);
       menuSyncTimer = window.setTimeout(function () {
+        if (isEpisodesPopup(activePopup)) {
+          var cards = findEpisodeCards(activePopup);
+          var seasonBtn = findSeasonSelector(activePopup);
+          var closeBtn = findCloseButton(activePopup);
+          if (selected && (cards.indexOf(selected) >= 0 || selected === seasonBtn || selected === closeBtn)) {
+            setSelected(selected, MENU);
+          } else {
+            syncEpisodesMenu(activePopup);
+          }
+          return;
+        }
         var items = discoverMenuItems(activePopup, true);
         if (selected && items.indexOf(selected) >= 0) setSelected(selected, MENU);
         else if (items[0]) setSelected(items[0], MENU);
@@ -1097,6 +1547,13 @@
     wake: function () { return wakeAndFocusControls(); },
     handle: function (key) {
       if (key === 'BACK') {
+        if (state === MENU) {
+          var seasonDropdown = detectSeasonDropdown();
+          if (seasonDropdown && visible(seasonDropdown)) {
+            closeSeasonDropdown(seasonDropdown);
+            return true;
+          }
+        }
         if (state === MENU) { closeMenu(); return true; }
         if (state === TIMELINE) {
           var control = defaultControl(candidates(true));
@@ -1118,7 +1575,21 @@
       if (key === 'SEEK_BACKWARD' || key === 'SEEK_FORWARD') return seekPlayback(key, false);
       if (key === 'SEEK_BACKWARD_REPEAT' || key === 'SEEK_FORWARD_REPEAT') return seekPlayback(key, true);
       if (state === MENU) {
+        var seasonDropdown = detectSeasonDropdown();
+        if (seasonDropdown && visible(seasonDropdown)) {
+          if (key === 'UP' || key === 'DOWN') { moveSeasonMenu(key); return true; }
+          if (key === 'OK') { activateSeasonItem(); return true; }
+          return true;
+        }
         if (!activePopup || !visible(activePopup)) { finishMenuClose(); return true; }
+        if (isEpisodesPopup(activePopup)) {
+          if (key === 'UP' || key === 'DOWN' || key === 'LEFT' || key === 'RIGHT') {
+            navigateEpisodes(key);
+            return true;
+          }
+          if (key === 'OK') { activateMenuItem(); return true; }
+          return true;
+        }
         if (key === 'UP' || key === 'DOWN') { moveMenu(key); return true; }
         if ((key === 'LEFT' || key === 'RIGHT') && selected && isTimeline(selected)) {
           dispatchKey(selected, key === 'LEFT' ? 'ArrowLeft' : 'ArrowRight');
@@ -1147,9 +1618,9 @@
     snapshot: function () {
       return {
         state: state,
-        selected: selected ? { kind: state === MENU ? 'menu-option' : controlKind(selected), label: label(selected) } : null,
+        selected: selected ? { kind: state === MENU ? (isEpisodeCard(selected) ? 'episode-card' : 'menu-option') : controlKind(selected), label: label(selected) } : null,
         controls: inventory(false),
-        menu: activePopup && visible(activePopup) ? discoverMenuItems(activePopup, false).map(label) : [],
+        menu: activePopup && visible(activePopup) ? (isEpisodesPopup(activePopup) ? findEpisodeCards(activePopup).map(label) : discoverMenuItems(activePopup, false).map(label)) : [],
         lastFocused: lastFocusedControlLabel ? { kind: lastFocusedControlKind, label: lastFocusedControlLabel } : null,
         idleTimerActive: !!controlsIdleTimer
       };

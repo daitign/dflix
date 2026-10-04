@@ -251,6 +251,101 @@
   gap: 14px;
 }
 
+.tv-v2-detail__meta-container {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 0.9vh, 10px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tv-v2-detail__meta-row-1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(10px, 1.1vw, 18px);
+  color: #bcbcbc;
+  font-size: clamp(0.95rem, 1.1vw, 1.25rem);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tv-v2-detail__meta-text {
+  color: #bcbcbc;
+  font-weight: 500;
+}
+
+/* Compact Netflix-Style Badges */
+.tv-v2-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 0.76em;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tv-v2-meta-badge--rating {
+  font-size: 0.8em;
+  font-weight: 600;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.tv-v2-meta-badge--quality {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.tv-v2-meta-badge--ad {
+  font-weight: 700;
+}
+
+.tv-v2-meta-badge--cc {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Spatial / Multi-channel Audio Indicator */
+.tv-v2-meta-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #ffffff;
+  font-size: 0.88em;
+  font-weight: 500;
+}
+
+.tv-v2-meta-icon--spatial {
+  width: 15px;
+  height: 15px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+/* Row 2: Content Descriptors preceded by Rating */
+.tv-v2-detail__meta-row-2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(8px, 0.9vw, 12px);
+  color: #9e9e9e;
+  font-size: clamp(0.85rem, 0.95vw, 1.05rem);
+  line-height: 1.35;
+}
+
+.tv-v2-detail__descriptors-text {
+  color: #a3a3a3;
+  font-size: 0.95em;
+  font-weight: 400;
+}
+
+/* Legacy fallback */
 .tv-v2-detail__meta {
   display: flex;
   flex-wrap: wrap;
@@ -259,28 +354,6 @@
   color: #bbb;
   font-size: clamp(0.9rem, 1.05vw, 1.15rem);
   font-weight: 600;
-}
-
-.tv-v2-detail__rating-badge {
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 1px 7px;
-  border-radius: 3px;
-  font-size: 0.85em;
-  color: #ddd;
-}
-
-.tv-v2-detail__quality {
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 0.8em;
-  font-weight: 700;
-  color: #ddd;
-}
-
-.tv-v2-detail__descriptors {
-  color: #999;
-  font-size: 0.9em;
 }
 
 .tv-v2-detail__overview {
@@ -647,64 +720,27 @@
   position: relative;
   width: 100vw;
   min-height: 100vh;
-  padding: 14vh 5vw 8vh 5vw;
+  padding: clamp(74px, 10vh, 96px) clamp(28px, 4vw, 56px) 8vh clamp(28px, 4vw, 56px);
   background-color: #141414;
   box-sizing: border-box;
 }
 
-.tv-v2-search-header {
-  margin-bottom: 4vh;
+.tv-v2-search-heading {
+  color: #a3a3a3;
+  font-size: clamp(0.95rem, 1.15vw, 1.3rem);
+  font-weight: 500;
+  margin: 0 0 clamp(10px, 1.2vh, 18px) 0;
 }
 
-.tv-v2-search-input-box {
-  display: flex;
-  align-items: center;
-  gap: 1vw;
-  width: min(840px, 68vw);
-  padding: 1.4vh 1.8vw;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 2px solid transparent;
-  border-radius: 12px;
-  color: #fff;
-  transition: all 140ms ease;
-}
-
-.tv-v2-search-input-box--focused {
-  background-color: rgba(255, 255, 255, 0.22);
-  border-color: #fff;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
-}
-
-.tv-v2-search-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #fff;
-  font-size: clamp(1.2rem, 1.8vw, 2.2rem);
-  font-weight: 600;
-  font-family: inherit;
-}
-
-.tv-v2-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.tv-v2-search-clear-btn {
-  background: transparent;
-  border: none;
-  color: #aaa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5vh;
-  cursor: pointer;
+.tv-v2-search-heading strong {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .tv-v2-search-results {
   display: flex;
   flex-direction: column;
-  gap: 3vh;
+  gap: clamp(10px, 1.2vh, 18px);
 }
 
 .tv-v2-search-status,
@@ -712,9 +748,9 @@
   display: flex;
   align-items: center;
   gap: 1.2vw;
-  padding: 6vh 0;
-  color: #888;
-  font-size: clamp(1.1rem, 1.3vw, 1.5rem);
+  padding: 8vh 0;
+  color: #888888;
+  font-size: clamp(1.05rem, 1.2vw, 1.4rem);
   font-weight: 500;
 }
 
@@ -724,31 +760,86 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 8vh 0;
-  color: #888;
-  gap: 1.5vh;
+  padding: 10vh 0;
+  color: #888888;
+  gap: 1.2vh;
 }
 
 .tv-v2-search-empty h3 {
-  color: #fff;
-  font-size: clamp(1.4rem, 2vw, 2.2rem);
+  color: #ffffff;
+  font-size: clamp(1.3rem, 1.8vw, 2rem);
+  font-weight: 700;
   margin: 0;
 }
 
 .tv-v2-search-empty p {
-  color: #888;
-  font-size: clamp(1rem, 1.2vw, 1.3rem);
+  color: #888888;
+  font-size: clamp(0.95rem, 1.1vw, 1.2rem);
   margin: 0;
 }
 
 .tv-v2-search-row {
   width: 100%;
+  padding: 4px 0;
 }
 
 .tv-v2-search-row__grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.5vw;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 9vw, 180px), 1fr));
+  gap: clamp(14px, 1.2vw, 22px);
+  justify-content: start;
+}
+
+/* Dense 2:3 Netflix poster styling in search & languages grid */
+.tv-v2-search-screen .tv-v2-card,
+.tv-v2-languages-screen .tv-v2-card {
+  flex: none;
+  width: 100%;
+  max-width: clamp(140px, 9vw, 180px);
+  aspect-ratio: 2 / 3;
+  height: auto;
+  min-width: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+  will-change: transform;
+}
+
+.tv-v2-search-screen .tv-v2-card--expanded,
+.tv-v2-languages-screen .tv-v2-card--expanded {
+  width: 100%;
+  max-width: clamp(140px, 9vw, 180px);
+  min-width: 0;
+  flex: none;
+}
+
+.tv-v2-search-screen .tv-v2-card .tv-v2-card__surface,
+.tv-v2-languages-screen .tv-v2-card .tv-v2-card__surface {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.tv-v2-search-screen .tv-v2-card .tv-v2-card__image,
+.tv-v2-languages-screen .tv-v2-card .tv-v2-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tv-v2-search-screen .tv-v2-card--focused,
+.tv-v2-languages-screen .tv-v2-card--focused {
+  transform: scale(1.06);
+  border-color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  z-index: 10;
 }
 
 /* TV V2 My List Screen */
@@ -862,5 +953,153 @@
   margin: 0;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
+
+/* TV V2 Browse by Languages Screen */
+.tv-v2-languages-screen {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: clamp(74px, 10vh, 96px) clamp(28px, 4vw, 56px) 8vh;
+  background-color: #141414;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+.tv-v2-languages-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: clamp(24px, 3.2vh, 36px);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tv-v2-languages-title {
+  color: #ffffff;
+  font-size: clamp(1.8rem, 2.4vw, 3rem);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.tv-v2-languages-preferences {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.4vw, 20px);
+}
+
+.tv-v2-languages-pref-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: clamp(0.85rem, 0.95vw, 1.05rem);
+  font-weight: 500;
+}
+
+.tv-v2-languages-selectors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tv-v2-dropdown-anchor {
+  position: relative;
+}
+
+.tv-v2-lang-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(8px, 1vh, 12px) clamp(14px, 1.2vw, 20px);
+  background-color: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: clamp(0.9rem, 1vw, 1.1rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+  user-select: none;
+}
+
+.tv-v2-lang-pill-btn--focused {
+  border-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.28);
+  transform: scale(1.04);
+}
+
+.tv-v2-lang-pill-chevron {
+  opacity: 0.8;
+  font-size: 0.8em;
+}
+
+.tv-v2-lang-floating-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  min-width: 220px;
+  max-height: clamp(260px, 45vh, 420px);
+  overflow-y: auto;
+  background-color: rgba(18, 18, 18, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.92);
+  padding: 6px 0;
+  scrollbar-width: none;
+}
+
+.tv-v2-lang-floating-menu::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-v2-lang-floating-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(8px, 1.1vh, 12px) 18px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: clamp(0.9rem, 1vw, 1.05rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tv-v2-lang-floating-item--focused {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.tv-v2-lang-floating-item--active {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.tv-v2-lang-checkmark {
+  color: #e50914;
+  font-weight: 700;
+}
+
+.tv-v2-languages-content {
+  position: relative;
+  width: 100%;
+}
+
+.tv-v2-languages-loading,
+.tv-v2-languages-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.15rem;
+}
+
 
 

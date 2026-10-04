@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react';
 import type { MediaItem } from '../../features/catalog';
 import { getMediaVideos, selectPreviewVideoCandidates } from '../../lib/tmdb/videos';
 import { useTvFocusNode } from '../focus/useTvFocus.ts';
+import type { Direction } from '../focus/TvFocusEngine.ts';
 import { tvPreviewManager } from '../previews/TvPreviewManager.ts';
 import { TvPreviewPlayer } from '../previews/TvPreviewPlayer.tsx';
+import { TvMediaBadge } from './TvMediaBadge.tsx';
 import './TvComponents.css';
 
 interface TvMediaCardProps {
   colIndex: number;
   customNodeId?: string;
+  disablePreview?: boolean;
   isRanked?: boolean;
   item: MediaItem;
   onBack?: () => boolean | void;
+  onDirection?: (direction: Direction) => boolean | void;
   onFocus?: (item: MediaItem) => void;
   onSelect: (item: MediaItem) => void;
   rank?: number;
@@ -24,9 +28,11 @@ const trailerCache = new Map<string | number, string | null>();
 export function TvMediaCard({
   colIndex,
   customNodeId,
+  disablePreview = false,
   isRanked = false,
   item,
   onBack,
+  onDirection,
   onFocus,
   onSelect,
   rank,
@@ -39,6 +45,7 @@ export function TvMediaCard({
     colIndex,
     id: nodeId,
     onBack,
+    onDirection,
     onFocus: () => onFocus?.(item),
     onSelect: () => onSelect(item),
     rowId,
@@ -55,6 +62,7 @@ export function TvMediaCard({
 
   // Request preview on focus with 500ms settling delay; cancel immediately on blur
   useEffect(() => {
+    if (disablePreview) return;
     if (isFocused) {
       tvPreviewManager.requestPreview(previewId, { delayMs: 500 });
     } else {
@@ -65,7 +73,7 @@ export function TvMediaCard({
     return () => {
       tvPreviewManager.stop(previewId);
     };
-  }, [isFocused, previewId]);
+  }, [disablePreview, isFocused, previewId]);
 
   // Subscribe to preview manager activations
   useEffect(() => {
@@ -111,7 +119,7 @@ export function TvMediaCard({
 
   const isDoubleDigit = rank === 10;
   const isRankOne = rank === 1;
-  const isExpanded = isFocused;
+  const isExpanded = !disablePreview && isFocused;
 
   return (
     <div
@@ -170,21 +178,16 @@ export function TvMediaCard({
             <div className="tv-v2-card__info-meta">
               {item.rating && <span className="tv-v2-card__info-rating">{item.rating}</span>}
               {item.year && <span>{item.year}</span>}
-              {item.badge && (
-                <span className="tv-v2-card__info-badge">
-                  {item.badge === 'top-10' ? 'TOP 10' : item.badge.toUpperCase()}
-                </span>
-              )}
             </div>
           </div>
         )}
 
-        {/* Normal portrait card badge */}
-        {!isExpanded && item.badge && (
-          <span className="tv-v2-card__badge">
-            {item.badge === 'top-10' ? 'TOP 10' : item.badge.toUpperCase()}
-          </span>
-        )}
+        {/* TV V1 / Netflix-Style Media Badges */}
+        <TvMediaBadge
+          isRanked={isRanked}
+          isPreviewActive={isExpanded && isPreviewActive && Boolean(trailerKey)}
+          item={item}
+        />
       </div>
     </div>
   );

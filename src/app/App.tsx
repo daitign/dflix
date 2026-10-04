@@ -339,9 +339,11 @@ function DeferredMediaRow({ eager = false, row }: { eager?: boolean; row: HomeCa
 
 function isTvV2Route(): boolean {
   if (typeof window === 'undefined') return false;
+  const tvParam = new URLSearchParams(window.location.search).get('tv');
   return (
     window.location.pathname.startsWith('/tv-v2') ||
-    new URLSearchParams(window.location.search).get('tv') === '2'
+    tvParam === '2' ||
+    tvParam === 'v2'
   );
 }
 

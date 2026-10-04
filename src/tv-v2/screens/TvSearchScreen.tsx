@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import type { MediaItem } from '../../features/catalog';
-import { searchMulti } from '../../lib/tmdb';
 import { useTvFocus } from '../focus/TvFocusContext.tsx';
-import { useTvFocusNode, useTvFocusRow } from '../focus/useTvFocus.ts';
+import type { Direction } from '../focus/TvFocusEngine.ts';
+import { useTvFocusRow } from '../focus/useTvFocus.ts';
 import { TvMediaCard } from '../components/TvMediaCard.tsx';
+import { getSearchItemsPerRow } from './tvSearchLayout.ts';
 import './TvScreens.css';
 
-interface TvSearchScreenProps {
+export { getSearchItemsPerRow };
+
+export interface TvSearchScreenProps {
+  isSearching: boolean;
   onClose: () => void;
   onOpenDetails: (item: MediaItem) => void;
+  query: string;
+  results: MediaItem[];
 }
-
-const ITEMS_PER_ROW = 5;
 
 function chunkArray<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -23,163 +27,65 @@ function chunkArray<T>(items: T[], size: number): T[][] {
 }
 
 export function TvSearchScreen({
+  isSearching,
   onClose,
   onOpenDetails,
+  query,
+  results,
 }: TvSearchScreenProps) {
   const { setFocus } = useTvFocus();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [itemsPerRow, setItemsPerRow] = useState(getSearchItemsPerRow);
 
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<MediaItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  // Register the Search Input Row at order 1 (directly below nav-row order 0)
-  useTvFocusRow({ id: 'search-input-row', order: 1 });
-
-  const handleInputBack = useCallback(() => {
-    onClose();
-    setFocus('nav-search');
-    return true;
-  }, [onClose, setFocus]);
-
-  const { isFocused: isInputFocused } = useTvFocusNode({
-    colIndex: 0,
-    id: 'search-input',
-    onBack: handleInputBack,
-    onFocus: () => {
-      inputRef.current?.focus();
-      if (typeof window !== 'undefined' && window.AndroidTVBridge?.showKeyboard) {
-        try {
-          window.AndroidTVBridge.showKeyboard();
-        } catch {}
-      }
-    },
-    onSelect: () => {
-      inputRef.current?.focus();
-    },
-    rowId: 'search-input-row',
-  });
-
-  // Focus search-input immediately when Search screen mounts
   useEffect(() => {
-    setFocus('search-input');
-    const timer = setTimeout(() => {
-      inputRef.current?.focus();
-      if (typeof window !== 'undefined' && window.AndroidTVBridge?.showKeyboard) {
-        try {
-          window.AndroidTVBridge.showKeyboard();
-        } catch {}
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [setFocus]);
+    const handleResize = () => {
+      setItemsPerRow(getSearchItemsPerRow());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Debounced search query
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const timer = setTimeout(() => {
-      searchMulti(trimmed)
-        .then((items) => {
-          const filtered = items.filter(
-            (item) => item && item.title && (item.posterUrl || item.backdropUrl)
-          );
-          setResults(filtered);
-        })
-        .catch(() => {
-          setResults([]);
-        })
-        .finally(() => {
-          setIsSearching(false);
-        });
-    }, 280);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const resultRows = chunkArray(results, ITEMS_PER_ROW);
+  const resultRows = chunkArray(results, itemsPerRow);
 
   return (
     <div className="tv-v2-search-screen">
-      <div className="tv-v2-search-header" data-row-id="search-input-row">
-        <div
-          className={`tv-v2-search-input-box ${
-            isInputFocused ? 'tv-v2-search-input-box--focused' : ''
-          }`}
-          onClick={() => {
-            setFocus('search-input');
-            inputRef.current?.focus();
-          }}
-        >
-          <Icon name="search" size={24} />
-          <input
-            autoComplete="off"
-            className="tv-v2-search-input"
-            data-testid="search-input"
-            data-tv-focusable="true"
-            id="search-input"
-            inputMode="search"
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search movies, TV shows, anime..."
-            ref={inputRef}
-            type="search"
-            value={query}
-          />
-          {query.length > 0 && (
-            <button
-              className="tv-v2-search-clear-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setQuery('');
-                setFocus('search-input');
-                inputRef.current?.focus();
-              }}
-              tabIndex={-1}
-              type="button"
-            >
-              <Icon name="close" size={18} />
-            </button>
-          )}
+      {isSearching && (
+        <div className="tv-v2-search-status">
+          <div className="tv-v2-loading-spinner" />
+          <span>Searching titles…</span>
         </div>
-      </div>
+      )}
+
+      {!isSearching && query.trim() && results.length === 0 && (
+        <div className="tv-v2-search-empty">
+          <Icon name="search" size={48} />
+          <h3>No titles found</h3>
+          <p>Try another title, person, or genre.</p>
+        </div>
+      )}
+
+      {!isSearching && !query.trim() && (
+        <div className="tv-v2-search-prompt">
+          <p>Use your remote or soft keyboard to search DAITIGN TV</p>
+        </div>
+      )}
+
+      {!isSearching && results.length > 0 && (
+        <div className="tv-v2-search-heading">
+          Search Results {query.trim() && <>for <strong>&ldquo;{query.trim()}&rdquo;</strong></>}
+        </div>
+      )}
 
       <div className="tv-v2-search-results">
-        {isSearching && (
-          <div className="tv-v2-search-status">
-            <div className="tv-v2-loading-spinner" />
-            <span>Searching titles…</span>
-          </div>
-        )}
-
-        {!isSearching && query.trim() && results.length === 0 && (
-          <div className="tv-v2-search-empty">
-            <Icon name="search" size={48} />
-            <h3>No titles found for &ldquo;{query}&rdquo;</h3>
-            <p>Try searching for a different movie, series, actor, or genre.</p>
-          </div>
-        )}
-
-        {!isSearching && !query.trim() && (
-          <div className="tv-v2-search-prompt">
-            <p>Use your remote or soft keyboard to search DAITIGN TV</p>
-          </div>
-        )}
-
         {resultRows.map((rowItems, rowIdx) => (
           <SearchRow
             items={rowItems}
             key={`search-row-${rowIdx}`}
-            onBackToSearch={() => setFocus('search-input')}
+            onBack={onClose}
+            onReturnToSearch={() => setFocus('nav-search')}
             onSelectItem={onOpenDetails}
-            order={rowIdx + 2}
+            order={rowIdx + 1}
             rowIdx={rowIdx}
-            startIndex={rowIdx * ITEMS_PER_ROW}
+            startIndex={rowIdx * itemsPerRow}
           />
         ))}
       </div>
@@ -189,14 +95,16 @@ export function TvSearchScreen({
 
 function SearchRow({
   items,
-  onBackToSearch,
+  onBack,
+  onReturnToSearch,
   onSelectItem,
   order,
   rowIdx,
   startIndex,
 }: {
   items: MediaItem[];
-  onBackToSearch: () => void;
+  onBack: () => void;
+  onReturnToSearch: () => void;
   onSelectItem: (item: MediaItem) => void;
   order: number;
   rowIdx: number;
@@ -214,11 +122,19 @@ function SearchRow({
             <TvMediaCard
               colIndex={colIdx}
               customNodeId={`search-result-${globalIdx}`}
+              disablePreview={true}
               item={item}
               key={item.id}
               onBack={() => {
-                onBackToSearch();
+                onBack();
                 return true;
+              }}
+              onDirection={(direction: Direction) => {
+                if (rowIdx === 0 && direction === 'up') {
+                  onReturnToSearch();
+                  return true;
+                }
+                return false;
               }}
               onSelect={onSelectItem}
               rowId={rowId}
