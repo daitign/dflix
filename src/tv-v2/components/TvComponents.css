@@ -51,7 +51,7 @@
 .tv-v2-hero {
   position: relative;
   width: 100%;
-  height: clamp(26rem, 54vh, 38rem);
+  height: clamp(20rem, 45vh, 28rem);
   overflow: hidden;
   user-select: none;
 }
@@ -68,13 +68,13 @@
 
 .tv-v2-hero__content {
   position: absolute;
-  bottom: 4vh;
+  bottom: 3vh;
   left: 5vw;
   max-width: min(720px, 48vw);
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 1.2vh;
+  gap: 1vh;
 }
 
 .tv-v2-hero__badge span {
@@ -158,15 +158,15 @@
 
 /* TV V2 Media Row */
 .tv-v2-row {
-  margin-bottom: 3.5vh;
+  margin-bottom: 2.8vh;
   padding-left: 5vw;
 }
 
 .tv-v2-row__title {
   color: #fff;
-  font-size: clamp(1.2rem, 1.5vw, 1.8rem);
+  font-size: clamp(1.1rem, 1.35vw, 1.6rem);
   font-weight: 700;
-  margin: 0 0 1.5vh 0;
+  margin: 0 0 1vh 0;
 }
 
 .tv-v2-row__viewport {
@@ -175,17 +175,21 @@
 
 .tv-v2-row__track {
   display: flex;
-  gap: 24px;
+  gap: clamp(14px, 1.2vw, 20px);
   transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
   will-change: transform;
 }
 
 /* TV V2 Card */
+:root {
+  --tv-card-width: clamp(9.5rem, 11.5vw, 13.5rem);
+}
+
 .tv-v2-card {
   position: relative;
-  flex: 0 0 190px;
-  width: 190px;
-  height: 285px; /* 2:3 poster ratio */
+  flex: 0 0 var(--tv-card-width);
+  width: var(--tv-card-width);
+  height: calc(var(--tv-card-width) * 1.5); /* 2:3 poster ratio */
   border-radius: 8px;
   cursor: pointer;
   border: 2px solid transparent;
@@ -194,15 +198,15 @@
 }
 
 .tv-v2-card--ranked {
-  flex: 0 0 260px;
-  width: 260px;
+  flex: 0 0 clamp(13rem, 16vw, 18rem);
+  width: clamp(13rem, 16vw, 18rem);
   display: flex;
   align-items: center;
 }
 
 .tv-v2-card__rank {
-  flex: 0 0 95px;
-  font-size: clamp(6rem, 8vw, 9rem);
+  flex: 0 0 clamp(4.5rem, 5.5vw, 6.5rem);
+  font-size: clamp(5rem, 6.5vw, 7.5rem);
   font-weight: 900;
   line-height: 1;
   color: #141414;

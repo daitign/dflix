@@ -47,31 +47,54 @@ export function TvHero({
     };
   }, [item]);
 
-  // Request preview when Hero mounts or changes
+  const previewId = `hero-${item.id}`;
+  const [isHeroActive, setIsHeroActive] = useState(() => tvPreviewManager.isPreviewActive(previewId));
+
+  // Subscribe to preview manager state
   useEffect(() => {
-    const previewId = `hero-${item.id}`;
+    const unsubscribe = tvPreviewManager.subscribe((activeId) => {
+      setIsHeroActive(activeId === previewId);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [previewId]);
+
+  // Register Hero as baseline preview once trailer key resolves
+  useEffect(() => {
     if (trailerKey) {
-      tvPreviewManager.requestPreview(previewId, { delayMs: 700 });
+      tvPreviewManager.registerHero(previewId, { delayMs: 400 });
     }
 
     return () => {
-      tvPreviewManager.stop(previewId);
+      tvPreviewManager.unregisterHero(previewId);
     };
-  }, [item.id, trailerKey]);
+  }, [previewId, trailerKey]);
 
   const backdropUrl = item.backdrop?.fallback || item.backdropUrl || '';
 
   return (
     <section className="tv-v2-hero" data-hero-id={item.id} data-row-id="hero-row">
-      {/* Background Trailer Player / Backdrop */}
-      <TvPreviewPlayer
-        aspectRatio="full-bleed"
-        backdropUrl={backdropUrl}
-        id={`hero-${item.id}`}
-        title={item.title}
-        variant="hero"
-        videoKey={trailerKey}
-      />
+      {/* Background Trailer Player / Static Backdrop */}
+      {isHeroActive && trailerKey ? (
+        <TvPreviewPlayer
+          aspectRatio="full-bleed"
+          backdropUrl={backdropUrl}
+          id={previewId}
+          title={item.title}
+          variant="hero"
+          videoKey={trailerKey}
+        />
+      ) : (
+        <img
+          alt=""
+          aria-hidden="true"
+          className="tv-v2-hero__backdrop-img"
+          loading="eager"
+          src={backdropUrl}
+        />
+      )}
 
       {/* Cinematic Gradient Washes */}
       <div className="tv-v2-hero__vignette" />

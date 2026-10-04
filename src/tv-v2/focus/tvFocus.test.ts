@@ -634,4 +634,29 @@ test('TV V2 My List Empty State: Explore button returns focus to nav-home', () =
   assert.equal(engine.getActiveNodeId(), 'nav-home');
 });
 
+test('TV V2 Focus Engine: pushScope preserves pendingFocusId and applies focus as soon as requested node registers', () => {
+  const engine = new TvFocusEngine();
+
+  engine.registerRow({ id: 'row-1', order: 1 });
+  engine.registerNode({ id: 'card-1', rowId: 'row-1', colIndex: 0 });
+  assert.equal(engine.getActiveNodeId(), 'card-1');
+
+  // Push detail modal scope with initial node 'detail-action-play' before it is registered in DOM
+  engine.pushScope('detail-scope', 'detail-action-play');
+  assert.equal(engine.getScope(), 'detail-scope');
+
+  // Now the detail modal component registers its row and nodes
+  engine.registerRow({ id: 'detail-actions-row', order: 1 });
+  engine.registerNode({ id: 'detail-action-play', rowId: 'detail-actions-row', colIndex: 0 });
+  engine.registerNode({ id: 'detail-action-list', rowId: 'detail-actions-row', colIndex: 1 });
+
+  // Focus must land directly on detail-action-play without extra clicks
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+
+  // Popping scope restores previous scope and card focus
+  engine.popScope();
+  assert.equal(engine.getScope(), 'root');
+  assert.equal(engine.getActiveNodeId(), 'card-1');
+});
+
 

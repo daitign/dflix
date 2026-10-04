@@ -71,10 +71,50 @@ export class TvPreviewManager {
     this.notify();
   }
 
+  private baselineHeroId: string | null = null;
+  private heroResumeTimer: number | null = null;
+
+  public registerHero(id: string, options: PreviewRequestOptions = {}): void {
+    this.baselineHeroId = id;
+    if (!this.activePreviewId || this.activePreviewId === id) {
+      this.requestPreview(id, options);
+    }
+  }
+
+  public unregisterHero(id: string): void {
+    if (this.baselineHeroId === id) {
+      this.baselineHeroId = null;
+      if (this.heroResumeTimer !== null) {
+        clearTimeout(this.heroResumeTimer);
+        this.heroResumeTimer = null;
+      }
+      if (this.activePreviewId === id) {
+        this.stopActive();
+      }
+    }
+  }
+
+  public resumeHero(delayMs = 500): void {
+    if (!this.baselineHeroId) return;
+    if (this.heroResumeTimer !== null) {
+      clearTimeout(this.heroResumeTimer);
+    }
+    this.heroResumeTimer = setTimeout(() => {
+      this.heroResumeTimer = null;
+      if (!this.activePreviewId && this.baselineHeroId) {
+        this.requestPreview(this.baselineHeroId, { delayMs: 0 });
+      }
+    }, delayMs) as unknown as number;
+  }
+
   public cancelPending(): void {
     if (this.pendingTimer !== null) {
       clearTimeout(this.pendingTimer);
       this.pendingTimer = null;
+    }
+    if (this.heroResumeTimer !== null) {
+      clearTimeout(this.heroResumeTimer);
+      this.heroResumeTimer = null;
     }
     this.pendingId = null;
   }
@@ -88,9 +128,13 @@ export class TvPreviewManager {
   }
 
   public stop(id?: string): void {
+    const wasHero = Boolean(id && id === this.baselineHeroId);
     if (!id || this.activePreviewId === id || this.pendingId === id) {
       this.cancelPending();
       this.stopActive();
+      if (!wasHero && this.baselineHeroId) {
+        this.resumeHero(500);
+      }
     }
   }
 

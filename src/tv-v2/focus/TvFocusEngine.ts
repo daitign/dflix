@@ -102,6 +102,7 @@ export class TvFocusEngine {
   private focusStack: Array<{ activeId: string | null; scopeId: string }> = [];
   private activeScope = 'root';
   private activeNodeId: string | null = null;
+  private pendingFocusId: string | null = null;
   private listeners = new Set<FocusChangeListener>();
 
   private customKeyHandler: ((event: KeyboardEvent) => boolean) | null = null;
@@ -160,6 +161,13 @@ export class TvFocusEngine {
       const nodeB = this.nodes.get(b);
       return (nodeA?.colIndex ?? 0) - (nodeB?.colIndex ?? 0);
     });
+
+    // If a scope switch requested an initial node that wasn't mounted yet, focus it as soon as it registers
+    if (this.pendingFocusId && node.id === this.pendingFocusId && !node.disabled) {
+      this.pendingFocusId = null;
+      this.setFocus(node.id);
+      return;
+    }
 
     // If no node is focused yet, focus the first registered valid node
     if (!this.activeNodeId && !node.disabled) {
@@ -276,12 +284,15 @@ export class TvFocusEngine {
     });
     this.activeScope = scopeId;
     if (initialNodeId) {
-      this.setFocus(initialNodeId);
+      if (!this.setFocus(initialNodeId)) {
+        this.pendingFocusId = initialNodeId;
+      }
     }
   }
 
   public popScope(): boolean {
     if (this.focusStack.length === 0) return false;
+    this.pendingFocusId = null;
     const previous = this.focusStack.pop()!;
     this.activeScope = previous.scopeId;
     if (previous.activeId && this.nodes.has(previous.activeId)) {

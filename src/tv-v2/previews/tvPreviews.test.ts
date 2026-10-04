@@ -91,3 +91,33 @@ test('TV V2 Preview Manager: rapid card fly-over only activates the final restin
   manager.stopActive();
 });
 
+test('TV V2 Preview Manager: registers baseline hero, pauses during card/detail preview, and resumes hero after stop', async () => {
+  const manager = new TvPreviewManager();
+
+  // Register baseline Hero
+  manager.registerHero('hero-main', { delayMs: 20 });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(manager.getActivePreviewId(), 'hero-main');
+  assert.equal(manager.isPreviewActive('hero-main'), true);
+
+  // User focuses a movie card
+  manager.requestPreview('card-preview-1', { delayMs: 20 });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(manager.getActivePreviewId(), 'card-preview-1');
+  assert.equal(manager.isPreviewActive('hero-main'), false);
+
+  // User blurs the card; card preview stops with short resume delay for test
+  manager.stop('card-preview-1');
+  assert.equal(manager.getActivePreviewId(), null);
+
+  // Hero automatically resumes after delay
+  manager.resumeHero(40);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(manager.getActivePreviewId(), 'hero-main');
+  assert.equal(manager.isPreviewActive('hero-main'), true);
+
+  // Clean unregister hero
+  manager.unregisterHero('hero-main');
+  assert.equal(manager.getActivePreviewId(), null);
+});
+

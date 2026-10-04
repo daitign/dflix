@@ -33,7 +33,7 @@
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}[role="dialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] > div,.art-settings,.art-setting,.art-selector,.art-layer-selector,[class*="popup"],[class*="modal"]{max-height:min(78vh,calc(100vh - 120px))!important;max-width:min(72vw,680px)!important;box-sizing:border-box!important;overflow-y:auto!important;bottom:clamp(70px,12vh,120px)!important;margin-bottom:0!important}[role="dialog"]::-webkit-scrollbar,[role="menu"]::-webkit-scrollbar,.art-settings::-webkit-scrollbar,[class*="popup"]::-webkit-scrollbar{width:6px!important}[role="dialog"]::-webkit-scrollbar-thumb,.art-settings::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3)!important;border-radius:4px!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -807,25 +807,58 @@
     return [element.className, element.getAttribute('aria-selected'), element.getAttribute('aria-checked'), element.getAttribute('data-state')].join('|');
   }
 
+  function dismissPopup(popup) {
+    if (!popup) return;
+    var closeBtn = discoverMenuItems(popup, false).find(function (element) {
+      return /close|back|done|exit/.test(label(element));
+    });
+    if (closeBtn) {
+      try { closeBtn.click(); pointerFallback(closeBtn); } catch (_) {}
+    }
+    if (visible(menuOpener)) {
+      try { menuOpener.click(); pointerFallback(menuOpener); } catch (_) {}
+    }
+    var mask = document.querySelector('.art-mask, .art-layers, .art-video-player, #artplayer, video') || document.body;
+    if (mask) {
+      try { pointerFallback(mask); } catch (_) {}
+    }
+    dispatchKey(popup, 'Escape');
+    dispatchKey(document.body, 'Escape');
+    window.setTimeout(function () {
+      if (visible(popup)) {
+        try {
+          popup.style.setProperty('display', 'none', 'important');
+          popup.style.setProperty('visibility', 'hidden', 'important');
+        } catch (_) {}
+      }
+    }, 50);
+  }
+
   function activateMenuItem() {
     registerUserActivity();
     if (!selected || !activePopup || !activePopup.contains(selected) || !visible(selected)) { syncMenu(0); return; }
     var item = selected;
     var popupBefore = activePopup;
-    var singleChoiceMenu = /subtitle|caption|quality|server|source|fit|aspect/.test(
+    var itemText = label(item);
+    var isSubmenuNavigation = /style|delay|speed|audio|font|color/.test(itemText);
+    var singleChoiceMenu = !isSubmenuNavigation && /subtitle|caption|quality|server|source|fit|aspect/.test(
       controlKind(menuOpener) + ' ' + controlKind(popupBefore) + ' ' + label(popupBefore)
     );
     var before = selectionSignature(item);
     try { item.focus({ preventScroll: true }); } catch (_) {}
     item.click();
+    pointerFallback(item);
     debugLog('[DAITIGN TV Player] menu option click:', label(item));
     window.setTimeout(function () {
       if (visible(popupBefore) && popupBefore.contains(item) && selectionSignature(item) === before) pointerFallback(item);
       menuCandidatesDirty = true;
       window.setTimeout(function () {
-        if (singleChoiceMenu && visible(popupBefore)) {
+        if (singleChoiceMenu) {
           debugLog('[DAITIGN TV Player] single-choice option activated; closing popup');
-          closeMenu();
+          dismissPopup(popupBefore);
+          window.setTimeout(function () {
+            finishMenuClose();
+          }, 60);
           return;
         }
         if (visible(popupBefore)) {
@@ -901,15 +934,22 @@
           finishMenuClose();
           return;
         }
-        // Keep PLAYER_MENU active when closing genuinely failed so Back can
-        // retry instead of accidentally hiding controls or exiting playback.
-        activePopup = popupBefore;
-        clearIdleTimer();
-        startMenuKeepAlive();
-        menuCandidatesDirty = true;
-        var items = discoverMenuItems(popupBefore, true);
-        if (items[0]) setSelected(items[0], MENU);
-        console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
+        dismissPopup(popupBefore);
+        window.setTimeout(function () {
+          if (!visible(popupBefore)) {
+            finishMenuClose();
+            return;
+          }
+          // Keep PLAYER_MENU active when closing genuinely failed so Back can
+          // retry instead of accidentally hiding controls or exiting playback.
+          activePopup = popupBefore;
+          clearIdleTimer();
+          startMenuKeepAlive();
+          menuCandidatesDirty = true;
+          var items = discoverMenuItems(popupBefore, true);
+          if (items[0]) setSelected(items[0], MENU);
+          console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
+        }, 60);
       }, 90);
     }, 90);
     return true;

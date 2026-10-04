@@ -4,6 +4,7 @@ import type { MediaItem } from '../../features/catalog';
 import type { MediaDetails } from '../../features/details-modal/types';
 import { getMediaDetails, getMediaIdentity } from '../../lib/tmdb';
 import { getMediaVideos, selectPreviewVideoCandidates } from '../../lib/tmdb/videos';
+import { useTvFocus } from '../focus/TvFocusContext.tsx';
 import { useTvFocusNode, useTvFocusRow } from '../focus/useTvFocus.ts';
 import { tvPreviewManager } from '../previews/TvPreviewManager.ts';
 import { TvPreviewPlayer } from '../previews/TvPreviewPlayer.tsx';
@@ -26,6 +27,8 @@ export function TvDetailScreen({
   onSelectSimilar,
   onToggleList,
 }: TvDetailScreenProps) {
+  const { setFocus } = useTvFocus();
+
   useTvFocusRow({ id: 'detail-actions-row', order: 1 });
   useTvFocusRow({ id: 'detail-episodes-row', order: 2 });
   useTvFocusRow({ id: 'detail-similar-row', order: 3 });
@@ -33,6 +36,25 @@ export function TvDetailScreen({
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
+
+  const previewId = `detail-${item.id}`;
+  const [isDetailPreviewActive, setIsDetailPreviewActive] = useState(() => tvPreviewManager.isPreviewActive(previewId));
+
+  // Focus Play button as soon as modal mounts or item changes
+  useEffect(() => {
+    setFocus('detail-action-play');
+  }, [setFocus, item.id]);
+
+  // Subscribe to preview manager active changes
+  useEffect(() => {
+    const unsubscribe = tvPreviewManager.subscribe((activeId) => {
+      setIsDetailPreviewActive(activeId === previewId);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [previewId]);
 
   // Fetch full TMDB details
   useEffect(() => {
@@ -51,10 +73,10 @@ export function TvDetailScreen({
     };
   }, [item]);
 
-  // Fetch trailer
+  // Fetch trailer video candidate
   useEffect(() => {
     let active = true;
-    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : null);
+    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id), 10) || null);
     if (!tmdbId) return;
 
     getMediaVideos(item.type === 'tv' ? 'tv' : 'movie', tmdbId)
@@ -72,38 +94,96 @@ export function TvDetailScreen({
     };
   }, [item]);
 
-  // Request preview
+  // Request preview when trailer is ready; stop cleanly on unmount
   useEffect(() => {
-    const previewId = `detail-${item.id}`;
     if (trailerKey) {
-      tvPreviewManager.requestPreview(previewId, { delayMs: 800 });
+      tvPreviewManager.requestPreview(previewId, { delayMs: 400 });
     }
 
     return () => {
       tvPreviewManager.stop(previewId);
     };
-  }, [item.id, trailerKey]);
+  }, [previewId, trailerKey]);
 
   const backdropUrl = details?.backdropUrl || item.backdrop?.fallback || item.backdropUrl || '';
   const currentSeasonData = details?.seasons?.find((s) => s.seasonNumber === selectedSeason);
 
   return (
-    <div className="tv-v2-detail-screen">
-      {/* Background Player Layer */}
-      <TvPreviewPlayer
-        backdropUrl={backdropUrl}
-        id={`detail-${item.id}`}
-        title={item.title}
-        videoKey={trailerKey}
-      />
+    <div aria-modal="true" className="tv-v2-detail-backdrop" onClick={onClose} role="dialog">
+      <div className="tv-v2-detail-dialog" onClick={(e) => e.stopPropagation()}>
+        {/* Upper Hero Region (32-40% height) */}
+        <div className="tv-v2-detail__hero-region" data-row-id="detail-actions-row">
+          {isDetailPreviewActive && trailerKey ? (
+            <TvPreviewPlayer
+              aspectRatio="full-bleed"
+              backdropUrl={backdropUrl}
+              className="tv-v2-detail__hero-preview"
+              id={previewId}
+              title={details?.title || item.title}
+              variant="detail"
+              videoKey={trailerKey}
+            />
+          ) : (
+            <img
+              alt=""
+              aria-hidden="true"
+              className="tv-v2-detail__hero-img"
+              src={backdropUrl}
+            />
+          )}
 
-      <div className="tv-v2-detail__vignette" />
+          {/* Vignette Gradients */}
+          <div className="tv-v2-detail__hero-vignette" />
 
-      {/* Main Content Pane */}
-      <div className="tv-v2-detail__scrollable">
-        <div className="tv-v2-detail__hero-content">
-          <h1 className="tv-v2-detail__title">{details?.title || item.title}</h1>
+          {/* Close button in top-right */}
+          <button
+            aria-label="Close details"
+            className="tv-v2-detail__close-btn"
+            onClick={onClose}
+            tabIndex={-1}
+            type="button"
+          >
+            <Icon name="close" size={22} />
+          </button>
 
+          {/* Title & Primary Action Controls */}
+          <div className="tv-v2-detail__hero-overlay">
+            <h1 className="tv-v2-detail__title">{details?.title || item.title}</h1>
+
+            <div className="tv-v2-detail__actions">
+              <DetailActionButton
+                colIndex={0}
+                icon={<Icon name="play" size={20} />}
+                id="detail-action-play"
+                label="Play"
+                onBack={onClose}
+                onSelect={() => onPlay(item)}
+                primary
+              />
+
+              <DetailActionButton
+                colIndex={1}
+                icon={<Icon name={isInList ? 'check' : 'plus'} size={20} />}
+                id="detail-action-list"
+                label={isInList ? 'In My List' : 'My List'}
+                onBack={onClose}
+                onSelect={() => onToggleList(item)}
+              />
+
+              <DetailActionButton
+                colIndex={2}
+                icon={<Icon name="close" size={20} />}
+                id="detail-action-back"
+                label="Close"
+                onBack={onClose}
+                onSelect={onClose}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable Body below the hero region */}
+        <div className="tv-v2-detail__scrollable">
           <div className="tv-v2-detail__meta">
             {details?.voteAverage && (
               <span className="tv-v2-detail__match">
@@ -123,92 +203,61 @@ export function TvDetailScreen({
 
           <p className="tv-v2-detail__overview">{details?.overview || item.overview}</p>
 
-          {/* Action Buttons */}
-          <div className="tv-v2-detail__actions">
-            <DetailActionButton
-              colIndex={0}
-              icon={<Icon name="play" size={20} />}
-              id="detail-action-play"
-              label="Play"
-              onBack={onClose}
-              onSelect={() => onPlay(item)}
-              primary
-            />
+          {/* TV Show Episodes List */}
+          {details?.seasons && details.seasons.length > 0 && (
+            <div className="tv-v2-detail__episodes-section" data-row-id="detail-episodes-row">
+              <div className="tv-v2-detail__section-header">
+                <h3>Episodes</h3>
+                {details.seasons.length > 1 && (
+                  <div className="tv-v2-detail__season-tabs">
+                    {details.seasons.map((s) => (
+                      <button
+                        className={`tv-v2-detail__season-btn ${s.seasonNumber === selectedSeason ? 'tv-v2-detail__season-btn--active' : ''}`}
+                        key={s.seasonNumber}
+                        onClick={() => setSelectedSeason(s.seasonNumber)}
+                        type="button"
+                      >
+                        Season {s.seasonNumber}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <DetailActionButton
-              colIndex={1}
-              icon={<Icon name={isInList ? 'check' : 'plus'} size={20} />}
-              id="detail-action-list"
-              label={isInList ? 'In My List' : 'My List'}
-              onBack={onClose}
-              onSelect={() => onToggleList(item)}
-            />
+              <div className="tv-v2-detail__episodes-list">
+                {(currentSeasonData?.episodes || []).slice(0, 10).map((ep, idx) => (
+                  <EpisodeCard
+                    colIndex={idx}
+                    episode={ep}
+                    key={ep.id || idx}
+                    onBack={onClose}
+                    onSelect={() => onPlay(item, { episodeNumber: ep.episodeNumber, seasonNumber: selectedSeason })}
+                    rowId="detail-episodes-row"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-            <DetailActionButton
-              colIndex={2}
-              icon={<Icon name="close" size={20} />}
-              id="detail-action-back"
-              label="Close"
-              onBack={onClose}
-              onSelect={onClose}
-            />
-          </div>
+          {/* Similar Titles Carousel */}
+          {details?.similar && details.similar.length > 0 && (
+            <div className="tv-v2-detail__similar-section" data-row-id="detail-similar-row">
+              <h3>More Like This</h3>
+              <div className="tv-v2-detail__similar-list">
+                {details.similar.slice(0, 8).map((sim, idx) => (
+                  <SimilarCard
+                    colIndex={idx}
+                    item={sim}
+                    key={sim.id}
+                    onBack={onClose}
+                    onSelect={() => onSelectSimilar(sim)}
+                    rowId="detail-similar-row"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* TV Show Episodes List */}
-        {details?.seasons && details.seasons.length > 0 && (
-          <div className="tv-v2-detail__episodes-section">
-            <div className="tv-v2-detail__section-header">
-              <h3>Episodes</h3>
-              {details.seasons.length > 1 && (
-                <div className="tv-v2-detail__season-tabs">
-                  {details.seasons.map((s) => (
-                    <button
-                      className={`tv-v2-detail__season-btn ${s.seasonNumber === selectedSeason ? 'tv-v2-detail__season-btn--active' : ''}`}
-                      key={s.seasonNumber}
-                      onClick={() => setSelectedSeason(s.seasonNumber)}
-                      type="button"
-                    >
-                      Season {s.seasonNumber}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="tv-v2-detail__episodes-list">
-              {(currentSeasonData?.episodes || []).slice(0, 10).map((ep, idx) => (
-                <EpisodeCard
-                  colIndex={idx}
-                  episode={ep}
-                  key={ep.id || idx}
-                  onBack={onClose}
-                  onSelect={() => onPlay(item, { episodeNumber: ep.episodeNumber, seasonNumber: selectedSeason })}
-                  rowId="detail-episodes-row"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Similar Titles Carousel */}
-        {details?.similar && details.similar.length > 0 && (
-          <div className="tv-v2-detail__similar-section">
-            <h3>More Like This</h3>
-            <div className="tv-v2-detail__similar-list">
-              {details.similar.slice(0, 8).map((sim, idx) => (
-                <SimilarCard
-                  colIndex={idx}
-                  item={sim}
-                  key={sim.id}
-                  onBack={onClose}
-                  onSelect={() => onSelectSimilar(sim)}
-                  rowId="detail-similar-row"
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

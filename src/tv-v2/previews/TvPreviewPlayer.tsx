@@ -26,7 +26,8 @@ export function TvPreviewPlayer({
   const [hasStarted, setHasStarted] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const isFullBleed = aspectRatio === 'full-bleed' || variant === 'hero';
+  const isHero = variant === 'hero' || (aspectRatio === 'full-bleed' && variant !== 'detail');
+  const isDetail = variant === 'detail';
 
   useEffect(() => {
     const unsubscribe = tvPreviewManager.subscribe((activeId, muted) => {
@@ -52,7 +53,7 @@ export function TvPreviewPlayer({
 
   return (
     <div
-      className={`tv-v2-preview-frame ${isFullBleed ? 'tv-v2-preview-frame--hero' : ''} ${className}`.trim()}
+      className={`tv-v2-preview-frame ${isHero ? 'tv-v2-preview-frame--hero' : ''} ${isDetail ? 'tv-v2-preview-frame--detail' : ''} ${className}`.trim()}
     >
       {/* Fallback Artwork Layer */}
       {backdropUrl && (
@@ -68,7 +69,7 @@ export function TvPreviewPlayer({
       {/* Video Layer: uncropped 16:9 */}
       {embedUrl && (
         <div
-          className={`tv-v2-preview-video ${isFullBleed ? 'tv-v2-preview-video--full-bleed' : ''} ${
+          className={`tv-v2-preview-video ${isHero ? 'tv-v2-preview-video--full-bleed' : ''} ${isDetail ? 'tv-v2-preview-video--detail' : ''} ${
             hasStarted ? 'tv-v2-preview-video--playing' : ''
           }`.trim()}
         >
