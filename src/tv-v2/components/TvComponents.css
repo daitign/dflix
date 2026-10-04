@@ -50,10 +50,24 @@
 /* TV V2 Hero */
 .tv-v2-hero {
   position: relative;
-  width: 100%;
-  height: clamp(20rem, 45vh, 28rem);
+  width: 100vw;
+  max-width: none;
+  height: clamp(22rem, 48vh, 32rem);
   overflow: hidden;
   user-select: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.tv-v2-hero__backdrop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
 }
 
 .tv-v2-hero__vignette {
@@ -61,20 +75,20 @@
   inset: 0;
   z-index: 2;
   background:
-    linear-gradient(78deg, rgba(20, 20, 20, 0.94) 0%, rgba(20, 20, 20, 0.72) 38%, rgba(20, 20, 20, 0.25) 62%, transparent 82%),
-    linear-gradient(180deg, rgba(20, 20, 20, 0.75) 0%, transparent 22%, transparent 55%, rgba(20, 20, 20, 0.75) 82%, #141414 100%);
+    linear-gradient(90deg, rgba(20, 20, 20, 0.94) 0%, rgba(20, 20, 20, 0.65) 42%, rgba(20, 20, 20, 0.18) 75%, transparent 100%),
+    linear-gradient(180deg, rgba(20, 20, 20, 0.65) 0%, transparent 25%, transparent 55%, rgba(20, 20, 20, 0.82) 82%, #141414 100%);
   pointer-events: none;
 }
 
 .tv-v2-hero__content {
   position: absolute;
-  bottom: 3vh;
-  left: 5vw;
-  max-width: min(720px, 48vw);
+  bottom: clamp(1.5rem, 3.5vh, 2.5rem);
+  left: clamp(2rem, 5vw, 4rem);
+  max-width: min(720px, 50vw);
   z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 1vh;
+  gap: clamp(0.5rem, 1vh, 0.9rem);
 }
 
 .tv-v2-hero__badge span {
@@ -159,7 +173,7 @@
 /* TV V2 Media Row */
 .tv-v2-row {
   margin-bottom: 2.8vh;
-  padding-left: 5vw;
+  padding-left: clamp(2rem, 5vw, 4rem);
 }
 
 .tv-v2-row__title {
@@ -183,6 +197,13 @@
 /* TV V2 Card */
 :root {
   --tv-card-width: clamp(9.5rem, 11.5vw, 13.5rem);
+  --tv-rank-card-height: clamp(11.5rem, 24vh, 18rem);
+  --tv-rank-poster-radius: 4px 10px 10px 4px;
+  --tv-rank-poster-width: calc(var(--tv-rank-card-height) * 2 / 3);
+  --tv-rank-poster-left: calc(var(--tv-rank-card-height) * 0.44);
+  --tv-rank-card-width: calc(var(--tv-rank-poster-left) + var(--tv-rank-poster-width));
+  --tv-rank-poster-left-double: calc(var(--tv-rank-card-height) * 0.58);
+  --tv-rank-card-width-double: calc(var(--tv-rank-poster-left-double) + var(--tv-rank-poster-width));
 }
 
 .tv-v2-card {
@@ -197,28 +218,105 @@
   will-change: transform;
 }
 
+/* TV V2 Top 10 Ranked Card - Exact Netflix Web App Style & Proportions */
 .tv-v2-card--ranked {
-  flex: 0 0 clamp(13rem, 16vw, 18rem);
-  width: clamp(13rem, 16vw, 18rem);
-  display: flex;
-  align-items: center;
+  position: relative;
+  display: block;
+  flex: 0 0 var(--tv-rank-card-width);
+  width: var(--tv-rank-card-width);
+  min-width: var(--tv-rank-card-width);
+  height: var(--tv-rank-card-height);
+  border: none;
+  background: transparent;
+  overflow: visible;
+  isolation: isolate;
+  border-radius: 0;
 }
 
+.tv-v2-card--ranked.tv-v2-card--rank-1 {
+  --tv-rank-poster-left: calc(var(--tv-rank-card-height) * 0.38);
+  flex: 0 0 calc(var(--tv-rank-poster-left) + var(--tv-rank-poster-width));
+  width: calc(var(--tv-rank-poster-left) + var(--tv-rank-poster-width));
+  min-width: calc(var(--tv-rank-poster-left) + var(--tv-rank-poster-width));
+}
+
+.tv-v2-card--ranked.tv-v2-card--double-digit {
+  flex: 0 0 var(--tv-rank-card-width-double);
+  width: var(--tv-rank-card-width-double);
+  min-width: var(--tv-rank-card-width-double);
+}
+
+/* Rank Number: Large outlined rank typography sitting behind the poster */
 .tv-v2-card__rank {
-  flex: 0 0 clamp(4.5rem, 5.5vw, 6.5rem);
-  font-size: clamp(5rem, 6.5vw, 7.5rem);
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
   font-weight: 900;
-  line-height: 1;
-  color: #141414;
-  -webkit-text-stroke: 3px #555;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
-  text-align: center;
+  font-size: calc(var(--tv-rank-card-height) * 1.365);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: clamp(1.8px, 0.16vw, 3px) rgba(125, 125, 125, 0.85);
+  text-shadow: none;
+  transform: translateY(-3.5%) scaleX(0.95);
+  transform-origin: left center;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tv-v2-card__rank--double {
+  letter-spacing: -0.22em;
+  transform: translateY(-3%) scale(0.68, 0.97);
+  transform-origin: left center;
+  max-width: var(--tv-rank-card-width-double);
+  overflow: hidden;
+}
+
+/* Poster layer for ranked card: overlaps the right portion of the rank number */
+.tv-v2-card--ranked .tv-v2-card__surface {
+  position: relative;
+  z-index: 2;
+  margin-left: var(--tv-rank-poster-left);
+  width: var(--tv-rank-poster-width);
+  min-width: var(--tv-rank-poster-width);
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--tv-rank-poster-radius, 4px 10px 10px 4px);
+  overflow: hidden;
+  box-shadow: -8px 0 18px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.4);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  border: 2px solid transparent;
+}
+
+.tv-v2-card--ranked.tv-v2-card--double-digit .tv-v2-card__surface {
+  margin-left: var(--tv-rank-poster-left-double);
 }
 
 .tv-v2-card--focused {
   border-color: #fff;
   transform: scale(1.08);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+/* For ranked cards, highlight poster surface rather than the whole container */
+.tv-v2-card--ranked.tv-v2-card--focused {
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.tv-v2-card--ranked.tv-v2-card--focused .tv-v2-card__surface {
+  border-color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.95);
   z-index: 10;
 }
 

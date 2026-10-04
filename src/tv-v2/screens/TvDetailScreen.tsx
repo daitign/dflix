@@ -30,12 +30,14 @@ export function TvDetailScreen({
   const { setFocus } = useTvFocus();
 
   useTvFocusRow({ id: 'detail-actions-row', order: 1 });
-  useTvFocusRow({ id: 'detail-episodes-row', order: 2 });
-  useTvFocusRow({ id: 'detail-similar-row', order: 3 });
+  useTvFocusRow({ id: 'detail-seasons-row', order: 2 });
+  useTvFocusRow({ id: 'detail-episodes-row', order: 3 });
+  useTvFocusRow({ id: 'detail-similar-row', order: 4 });
 
   const [details, setDetails] = useState<MediaDetails | null>(null);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [isLiked, setIsLiked] = useState(false);
 
   const previewId = `detail-${item.id}`;
   const [isDetailPreviewActive, setIsDetailPreviewActive] = useState(() => tvPreviewManager.isPreviewActive(previewId));
@@ -172,6 +174,15 @@ export function TvDetailScreen({
 
               <DetailActionButton
                 colIndex={2}
+                icon={<Icon name="thumbUp" size={20} />}
+                id="detail-action-like"
+                label={isLiked ? 'Liked' : 'Like'}
+                onBack={onClose}
+                onSelect={() => setIsLiked((prev) => !prev)}
+              />
+
+              <DetailActionButton
+                colIndex={3}
                 icon={<Icon name="close" size={20} />}
                 id="detail-action-back"
                 label="Close"
@@ -205,26 +216,26 @@ export function TvDetailScreen({
 
           {/* TV Show Episodes List */}
           {details?.seasons && details.seasons.length > 0 && (
-            <div className="tv-v2-detail__episodes-section" data-row-id="detail-episodes-row">
+            <div className="tv-v2-detail__episodes-section">
               <div className="tv-v2-detail__section-header">
                 <h3>Episodes</h3>
                 {details.seasons.length > 1 && (
-                  <div className="tv-v2-detail__season-tabs">
-                    {details.seasons.map((s) => (
-                      <button
-                        className={`tv-v2-detail__season-btn ${s.seasonNumber === selectedSeason ? 'tv-v2-detail__season-btn--active' : ''}`}
+                  <div className="tv-v2-detail__season-tabs" data-row-id="detail-seasons-row">
+                    {details.seasons.map((s, idx) => (
+                      <SeasonTabButton
+                        colIndex={idx}
+                        isActive={s.seasonNumber === selectedSeason}
                         key={s.seasonNumber}
-                        onClick={() => setSelectedSeason(s.seasonNumber)}
-                        type="button"
-                      >
-                        Season {s.seasonNumber}
-                      </button>
+                        onBack={onClose}
+                        onSelect={() => setSelectedSeason(s.seasonNumber)}
+                        seasonNumber={s.seasonNumber}
+                      />
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="tv-v2-detail__episodes-list">
+              <div className="tv-v2-detail__episodes-list" data-row-id="detail-episodes-row">
                 {(currentSeasonData?.episodes || []).slice(0, 10).map((ep, idx) => (
                   <EpisodeCard
                     colIndex={idx}
@@ -300,6 +311,40 @@ function DetailActionButton({
       <span className="tv-v2-detail-btn__icon">{icon}</span>
       <span className="tv-v2-detail-btn__label">{label}</span>
     </div>
+  );
+}
+
+function SeasonTabButton({
+  colIndex,
+  isActive,
+  onBack,
+  onSelect,
+  seasonNumber,
+}: {
+  colIndex: number;
+  isActive: boolean;
+  onBack: () => void;
+  onSelect: () => void;
+  seasonNumber: number;
+}) {
+  const { isFocused } = useTvFocusNode({
+    colIndex,
+    id: `detail-season-${seasonNumber}`,
+    onBack,
+    onSelect,
+    rowId: 'detail-seasons-row',
+  });
+
+  return (
+    <button
+      className={`tv-v2-detail__season-btn ${isActive ? 'tv-v2-detail__season-btn--active' : ''} ${
+        isFocused ? 'tv-v2-detail__season-btn--focused' : ''
+      }`}
+      onClick={onSelect}
+      type="button"
+    >
+      Season {seasonNumber}
+    </button>
   );
 }
 

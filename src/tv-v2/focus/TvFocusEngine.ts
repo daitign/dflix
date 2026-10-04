@@ -221,6 +221,17 @@ export class TvFocusEngine {
     return this.nodes.get(id) ?? null;
   }
 
+  public isRowInActiveScope(rowId: string): boolean {
+    if (this.activeScope === 'root') {
+      return true;
+    }
+    if (this.activeScope === 'detail-scope') {
+      return rowId.startsWith('detail-');
+    }
+    const prefix = this.activeScope.replace(/-scope$/, '');
+    return rowId.startsWith(prefix);
+  }
+
   public setFocus(nodeId: string | null): boolean {
     if (nodeId === this.activeNodeId) return true;
 
@@ -236,6 +247,7 @@ export class TvFocusEngine {
 
     const nextNode = this.nodes.get(nodeId);
     if (!nextNode || nextNode.disabled) return false;
+    if (!this.isRowInActiveScope(nextNode.rowId)) return false;
 
     this.activeNodeId = nodeId;
     this.rowFocusMemory.set(nextNode.rowId, nodeId);
@@ -316,27 +328,47 @@ export class TvFocusEngine {
   public ensureInitialFocus(preferredId?: string): boolean {
     if (this.activeNodeId && this.nodes.has(this.activeNodeId)) {
       const current = this.nodes.get(this.activeNodeId);
-      if (current && !current.disabled) return true;
+      if (current && !current.disabled && this.isRowInActiveScope(current.rowId)) return true;
+    }
+
+    if (this.activeScope === 'detail-scope') {
+      if (preferredId && this.nodes.has(preferredId)) {
+        const pref = this.nodes.get(preferredId);
+        if (pref && !pref.disabled && this.isRowInActiveScope(pref.rowId)) {
+          return this.setFocus(preferredId);
+        }
+      }
+      if (this.nodes.has('detail-action-play')) {
+        const play = this.nodes.get('detail-action-play');
+        if (play && !play.disabled) return this.setFocus('detail-action-play');
+      }
+      const firstDetailNode = Array.from(this.nodes.values()).find(
+        (n) => !n.disabled && this.isRowInActiveScope(n.rowId)
+      );
+      if (firstDetailNode) {
+        return this.setFocus(firstDetailNode.id);
+      }
+      return false;
     }
 
     if (preferredId && this.nodes.has(preferredId)) {
       const pref = this.nodes.get(preferredId);
-      if (pref && !pref.disabled) {
+      if (pref && !pref.disabled && this.isRowInActiveScope(pref.rowId)) {
         return this.setFocus(preferredId);
       }
     }
 
     if (this.nodes.has('nav-home')) {
       const node = this.nodes.get('nav-home');
-      if (node && !node.disabled) return this.setFocus('nav-home');
+      if (node && !node.disabled && this.isRowInActiveScope(node.rowId)) return this.setFocus('nav-home');
     }
 
     if (this.nodes.has('hero-play')) {
       const node = this.nodes.get('hero-play');
-      if (node && !node.disabled) return this.setFocus('hero-play');
+      if (node && !node.disabled && this.isRowInActiveScope(node.rowId)) return this.setFocus('hero-play');
     }
 
-    const first = Array.from(this.nodes.values()).find((n) => !n.disabled);
+    const first = Array.from(this.nodes.values()).find((n) => !n.disabled && this.isRowInActiveScope(n.rowId));
     if (first) {
       return this.setFocus(first.id);
     }
@@ -414,8 +446,10 @@ export class TvFocusEngine {
   }
 
   private navigateVertical(current: FocusNode, direction: 'up' | 'down'): boolean {
-    // Collect rows sorted by order
-    const sortedRows = Array.from(this.rows.values()).sort((a, b) => a.order - b.order);
+    // Collect rows strictly filtered to active scope, sorted by order
+    const sortedRows = Array.from(this.rows.values())
+      .filter((r) => this.isRowInActiveScope(r.id))
+      .sort((a, b) => a.order - b.order);
     const currentRowIndex = sortedRows.findIndex((r) => r.id === current.rowId);
 
     if (currentRowIndex < 0) return false;
@@ -470,6 +504,31 @@ export class TvFocusEngine {
   private repositionViewportForRow(rowId: string): void {
     if (typeof document === 'undefined') return;
 
+    // When inside detail-scope, scrolling is strictly constrained to the modal container
+    if (this.activeScope === 'detail-scope' || rowId.startsWith('detail-')) {
+      const scrollContainer = document.querySelector('.tv-v2-detail__scrollable');
+      if (!scrollContainer) return;
+
+      if (rowId === 'detail-actions-row') {
+        try {
+          scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch {}
+        return;
+      }
+
+      const rowEl = document.querySelector(`[data-row-id="${rowId}"]`) || document.getElementById(rowId);
+      if (rowEl) {
+        try {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const rowRect = rowEl.getBoundingClientRect();
+          const relativeTop = rowRect.top - containerRect.top + scrollContainer.scrollTop;
+          const targetY = Math.max(0, relativeTop - 80);
+          scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
+        } catch {}
+      }
+      return;
+    }
+
     if (rowId === 'nav-row' || rowId === 'hero-row') {
       if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
         try {
@@ -495,21 +554,6 @@ export class TvFocusEngine {
 
     const rowEl = document.querySelector(`[data-row-id="${rowId}"]`) || document.getElementById(rowId);
     if (!rowEl) return;
-
-    // Check if inside a custom scrollable container (e.g. detail modal)
-    const scrollContainer = rowEl.closest('.tv-v2-detail__scrollable');
-    if (scrollContainer) {
-      try {
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const rowRect = rowEl.getBoundingClientRect();
-        const relativeTop = rowRect.top - containerRect.top + scrollContainer.scrollTop;
-        const targetY = Math.max(0, relativeTop - 120);
-        scrollContainer.scrollTo({ top: targetY, behavior: 'smooth' });
-      } catch {
-        // fallback
-      }
-      return;
-    }
 
     if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
       try {

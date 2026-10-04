@@ -108,11 +108,16 @@ export function TvMediaCard({
   const posterUrl = item.poster?.fallback || item.posterUrl || item.backdropUrl || '';
   const backdropUrl = item.backdrop?.fallback || item.backdropUrl || posterUrl;
 
+  const isDoubleDigit = rank === 10;
+  const isRankOne = rank === 1;
+
   return (
     <div
       className={`tv-v2-card ${isRanked ? 'tv-v2-card--ranked' : ''} ${
+        isRankOne ? 'tv-v2-card--rank-1' : ''
+      } ${isDoubleDigit ? 'tv-v2-card--double-digit' : ''} ${
         isFocused ? 'tv-v2-card--focused' : ''
-      }`}
+      }`.trim()}
       data-card-id={item.id}
       data-testid={nodeId}
       data-tv-focusable="true"
@@ -123,7 +128,7 @@ export function TvMediaCard({
     >
       {/* Top 10 Rank Digit */}
       {isRanked && rank !== undefined && (
-        <span aria-hidden="true" className="tv-v2-card__rank">
+        <span aria-hidden="true" className={`tv-v2-card__rank ${isDoubleDigit ? 'tv-v2-card__rank--double' : ''}`}>
           {rank}
         </span>
       )}

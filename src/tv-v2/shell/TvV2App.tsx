@@ -166,13 +166,19 @@ function TvV2Shell() {
   return (
     <div className="tv-v2-root">
       {/* Home Screen Base */}
-      <TvHomeScreen
-        isInList={isInList}
-        myListItems={savedListItems}
-        onOpenDetails={handleOpenDetails}
-        onPlay={(item) => handlePlay(item)}
-        onToggleList={toggleList}
-      />
+      <div
+        aria-hidden={activeDetailItem ? true : undefined}
+        className={`tv-v2-background-layer ${activeDetailItem ? 'tv-v2-background--inert' : ''}`.trim()}
+        inert={activeDetailItem ? true : undefined}
+      >
+        <TvHomeScreen
+          isInList={isInList}
+          myListItems={savedListItems}
+          onOpenDetails={handleOpenDetails}
+          onPlay={(item) => handlePlay(item)}
+          onToggleList={toggleList}
+        />
+      </div>
 
       {/* Detail Overlay */}
       {activeDetailItem && !activePlayback && (

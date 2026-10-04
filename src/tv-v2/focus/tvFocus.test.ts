@@ -659,4 +659,115 @@ test('TV V2 Focus Engine: pushScope preserves pendingFocusId and applies focus a
   assert.equal(engine.getActiveNodeId(), 'card-1');
 });
 
+test('TV V2 Focus Engine: UP from detail-actions-row does not escape to background nav', () => {
+  const engine = new TvFocusEngine();
+
+  // Background rows
+  engine.registerRow({ id: 'nav-row', order: 0 });
+  engine.registerNode({ id: 'nav-home', rowId: 'nav-row', colIndex: 0 });
+  engine.registerRow({ id: 'hero-row', order: 1 });
+  engine.registerNode({ id: 'hero-play', rowId: 'hero-row', colIndex: 0 });
+
+  // Open detail modal
+  engine.pushScope('detail-scope', 'detail-action-play');
+  engine.registerRow({ id: 'detail-actions-row', order: 1 });
+  engine.registerNode({ id: 'detail-action-play', rowId: 'detail-actions-row', colIndex: 0 });
+
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+
+  // Attempting UP from detail-actions-row must NOT escape to background nav-row
+  const upRes = engine.navigate('up');
+  assert.equal(upRes, false);
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+});
+
+test('TV V2 Focus Engine: DOWN from detail-similar-row does not escape modal', () => {
+  const engine = new TvFocusEngine();
+
+  // Background rows
+  engine.registerRow({ id: 'home-row-1', order: 10 });
+  engine.registerNode({ id: 'card-1', rowId: 'home-row-1', colIndex: 0 });
+
+  // Open detail modal
+  engine.pushScope('detail-scope', 'detail-similar-1');
+  engine.registerRow({ id: 'detail-similar-row', order: 4 });
+  engine.registerNode({ id: 'detail-similar-1', rowId: 'detail-similar-row', colIndex: 0 });
+
+  assert.equal(engine.getActiveNodeId(), 'detail-similar-1');
+
+  // Attempting DOWN from bottom row must NOT escape to background home-row-1
+  const downRes = engine.navigate('down');
+  assert.equal(downRes, false);
+  assert.equal(engine.getActiveNodeId(), 'detail-similar-1');
+});
+
+test('TV V2 Focus Engine: setFocus rejects background rows while in detail-scope', () => {
+  const engine = new TvFocusEngine();
+
+  // Background rows
+  engine.registerRow({ id: 'nav-row', order: 0 });
+  engine.registerNode({ id: 'nav-home', rowId: 'nav-row', colIndex: 0 });
+
+  // Detail modal
+  engine.pushScope('detail-scope', 'detail-action-play');
+  engine.registerRow({ id: 'detail-actions-row', order: 1 });
+  engine.registerNode({ id: 'detail-action-play', rowId: 'detail-actions-row', colIndex: 0 });
+
+  // Programmatic setFocus to background node must be rejected
+  const focusSuccess = engine.setFocus('nav-home');
+  assert.equal(focusSuccess, false);
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+});
+
+test('TV V2 Focus Engine: vertical graph traverses actions -> seasons -> episodes -> similar and back', () => {
+  const engine = new TvFocusEngine();
+
+  // Detail modal rows
+  engine.pushScope('detail-scope', 'detail-action-play');
+  engine.registerRow({ id: 'detail-actions-row', order: 1 });
+  engine.registerRow({ id: 'detail-seasons-row', order: 2 });
+  engine.registerRow({ id: 'detail-episodes-row', order: 3 });
+  engine.registerRow({ id: 'detail-similar-row', order: 4 });
+
+  engine.registerNode({ id: 'detail-action-play', rowId: 'detail-actions-row', colIndex: 0 });
+  engine.registerNode({ id: 'detail-season-1', rowId: 'detail-seasons-row', colIndex: 0 });
+  engine.registerNode({ id: 'detail-episode-1', rowId: 'detail-episodes-row', colIndex: 0 });
+  engine.registerNode({ id: 'detail-similar-1', rowId: 'detail-similar-row', colIndex: 0 });
+
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+
+  // Down -> seasons
+  assert.equal(engine.navigate('down'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-season-1');
+
+  // Down -> episodes
+  assert.equal(engine.navigate('down'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-episode-1');
+
+  // Down -> similar
+  assert.equal(engine.navigate('down'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-similar-1');
+
+  // Bottom edge trapped
+  assert.equal(engine.navigate('down'), false);
+  assert.equal(engine.getActiveNodeId(), 'detail-similar-1');
+
+  // Up -> episodes
+  assert.equal(engine.navigate('up'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-episode-1');
+
+  // Up -> seasons
+  assert.equal(engine.navigate('up'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-season-1');
+
+  // Up -> actions
+  assert.equal(engine.navigate('up'), true);
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+
+  // Top edge trapped
+  assert.equal(engine.navigate('up'), false);
+  assert.equal(engine.getActiveNodeId(), 'detail-action-play');
+});
+
+
 
