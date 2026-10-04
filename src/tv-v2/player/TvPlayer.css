@@ -1,0 +1,58 @@
+/* True Fullscreen Viewport Container: 100vw x 100vh Edge-to-Edge */
+.tv-v2-fullscreen-player {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background-color: #000;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+.tv-v2-fullscreen-player__iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background-color: #000;
+}
+
+/* Non-blocking subtle loading indicator */
+.tv-v2-fullscreen-player__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 300ms ease;
+}
+
+.tv-v2-fullscreen-player__error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.2rem;
+  background-color: #141414;
+}
+
+/* Lock body scroll when player is active */
+html.daitign-tv-v2.tv-v2-player-active,
+html.daitign-tv-v2.tv-v2-player-active body {
+  overflow: hidden !important;
+}

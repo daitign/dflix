@@ -10,5 +10,6 @@ class WebAppInterface(private val activity: MainActivity) {
     @JavascriptInterface fun startTvPlayer(url: String, stateJson: String) = activity.startTvPlayer(url, stateJson)
     @JavascriptInterface fun closeTvPlayer() = activity.closeTvPlayer()
     @JavascriptInterface fun setPlayerState(state: String) = activity.setPlayerState(state)
+    @JavascriptInterface fun showKeyboard() = activity.showKeyboard()
     @JavascriptInterface fun exitApp() = activity.runOnUiThread { activity.finish() }
 }

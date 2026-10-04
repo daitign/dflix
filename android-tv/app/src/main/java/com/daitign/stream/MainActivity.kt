@@ -57,7 +57,8 @@ enum class TvPlatform {
 class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "DAITIGN-TV"
-        private const val APP_URL = "https://daiflix.vercel.app/?tv=1"
+        private const val APP_URL_V1 = "https://daiflix.vercel.app/?tv=1"
+        private const val APP_URL = "https://daiflix.vercel.app/?tv=2"
         private const val TV_USER_AGENT = " DAITIGN-TV/3.1"
         private const val FIRE_TV_FEATURE = "amazon.hardware.fire_tv"
         private const val STARTUP_TIMEOUT_MS = 10_000L
@@ -317,6 +318,40 @@ class MainActivity : ComponentActivity() {
                 if (uri.host.equals(Uri.parse(APP_URL).host, ignoreCase = true)) return false
                 return openExternal(uri)
             }
+
+            override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                val uri = request?.url ?: return null
+                val targetHost = Uri.parse(APP_URL).host
+                if (!uri.host.equals(targetHost, ignoreCase = true)) return null
+                val path = uri.path.orEmpty()
+                if (path.startsWith("/api/")) return null
+
+                if (path.isEmpty() || path == "/" || path == "/index.html" || path.startsWith("/tv-v2")) {
+                    return runCatching {
+                        val stream = assets.open("dist/index.html")
+                        WebResourceResponse("text/html", "UTF-8", stream)
+                    }.getOrNull()
+                }
+
+                val relativePath = path.removePrefix("/")
+                val assetPath = "dist/$relativePath"
+                return runCatching {
+                    val stream = assets.open(assetPath)
+                    val mimeType = when {
+                        assetPath.endsWith(".js") -> "application/javascript"
+                        assetPath.endsWith(".css") -> "text/css"
+                        assetPath.endsWith(".json") -> "application/json"
+                        assetPath.endsWith(".png") -> "image/png"
+                        assetPath.endsWith(".jpg") || assetPath.endsWith(".jpeg") -> "image/jpeg"
+                        assetPath.endsWith(".svg") -> "image/svg+xml"
+                        assetPath.endsWith(".woff2") -> "font/woff2"
+                        assetPath.endsWith(".woff") -> "font/woff"
+                        assetPath.endsWith(".ttf") -> "font/ttf"
+                        else -> "application/octet-stream"
+                    }
+                    WebResourceResponse(mimeType, "UTF-8", stream)
+                }.getOrNull()
+            }
         }
     }
 
@@ -348,7 +383,9 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, R.string.invalid_player_url, Toast.LENGTH_SHORT).show()
                 return@runOnUiThread
             }
-            Log.i(TAG, "startTvPlayer requested: ${uri.path}")
+            val safePath = uri.path.orEmpty()
+            Log.i(TAG, "TV_PLAYER_OPEN path=$safePath")
+            Log.i(TAG, "startTvPlayer requested: $safePath")
             browseWebView?.evaluateJavascript("window.DAITIGN_TV&&window.DAITIGN_TV.saveBrowseState&&window.DAITIGN_TV.saveBrowseState()", null)
             browseWebView?.clearFocus()
             pendingPlayerUrl = uri.toString()
@@ -381,6 +418,7 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                Log.i(TAG, "TV_PLAYER_PAGE_FINISHED")
                 Log.i(TAG, "player onPageFinished: $url")
                 injectPlayerAdapter(view) {
                     view?.requestFocus()
@@ -418,10 +456,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun injectPlayerAdapter(webView: WebView?, onInjected: (() -> Unit)? = null) {
-        val script = assets.open("tv-player-controller.js").bufferedReader().use { it.readText() }
         if (webView == null) return
+        Log.i(TAG, "TV_CONTROLLER_INJECT_START")
+        val script = try {
+            assets.open("tv-player-controller.js").bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            Log.e(TAG, "TV_CONTROLLER_INJECT_FAILURE: ${e.message}")
+            return
+        }
         webView.evaluateJavascript(script) {
+            Log.i(TAG, "TV_CONTROLLER_INJECT_SUCCESS")
             Log.i(TAG, "player controller injected")
+            webView.evaluateJavascript(
+                "window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.inventory();",
+                null,
+            )
             onInjected?.invoke()
         }
     }
@@ -429,6 +478,14 @@ class MainActivity : ComponentActivity() {
     fun setPlayerState(value: String) {
         playerState = runCatching { PlayerState.valueOf(value) }.getOrDefault(PlayerState.PLAYER_CONTROLS)
         Log.i(TAG, "player state -> $playerState")
+    }
+
+    fun showKeyboard() {
+        runOnUiThread {
+            val browse = browseWebView ?: return@runOnUiThread
+            val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+            imm?.showSoftInput(browse, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
     }
 
     fun logPreviewEvent(message: String) {
@@ -482,6 +539,14 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun notifyPlayerActivity() {
+        val player = playerWebView ?: return
+        player.evaluateJavascript(
+            "window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.activity&&window.DAITIGN_TV_PLAYER.activity()",
+            null,
+        )
+    }
+
     private fun wakePlayerControls() {
         val player = playerWebView ?: return
         if (player.width <= 0 || player.height <= 0) return
@@ -505,11 +570,18 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "native VIDSTUCK control wake dispatched; focus=${player.hasFocus()}")
     }
 
+    private fun ensurePlayerControlsVisible() {
+        val player = playerWebView ?: return
+        player.evaluateJavascript(
+            "Boolean(window.DAITIGN_TV_PLAYER&&window.DAITIGN_TV_PLAYER.ensureVisible&&window.DAITIGN_TV_PLAYER.ensureVisible())",
+            null,
+        )
+    }
+
     private fun routePlayerKey(key: String) {
-        // Native hover synthesis is expensive on lower-powered Sharp/Fire TV
-        // hardware. It is only needed to wake VIDSTUCK from its hidden state;
-        // the injected controller handles subsequent navigation directly.
-        if (playerState == PlayerState.PLAYER_HIDDEN) wakePlayerControls()
+        if (playerState == PlayerState.PLAYER_HIDDEN) {
+            playerState = PlayerState.PLAYER_CONTROLS
+        }
         sendPlayerKey(key)
     }
 
@@ -527,7 +599,11 @@ class MainActivity : ComponentActivity() {
     private fun chromeClientFor(owner: WebView) = object : WebChromeClient() {
         override fun onConsoleMessage(message: ConsoleMessage?): Boolean {
             message ?: return false
-            val formatted = "WebView console ${message.messageLevel()}: ${message.message()} (${message.sourceId()}:${message.lineNumber()})"
+            val text = message.message()
+            if (text.startsWith("TV_CONTROL_DISCOVERED")) {
+                Log.i(TAG, text)
+            }
+            val formatted = "WebView console ${message.messageLevel()}: $text (${message.sourceId()}:${message.lineNumber()})"
             when (message.messageLevel()) {
                 ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, formatted)
                 ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, formatted)
@@ -586,6 +662,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            Log.i(TAG, "TV_REMOTE_KEY key=${KeyEvent.keyCodeToString(event.keyCode)} repeat=${event.repeatCount}")
+        }
         if (playerWebView == null) {
             cancelPlayerNavRepeat()
             if (isMediaPlaybackKey(event.keyCode)) {

@@ -1,0 +1,85 @@
+.tv-v2-preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #141414;
+}
+
+.tv-v2-preview-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 400ms ease;
+  opacity: 1;
+}
+
+.tv-v2-preview-backdrop--hidden {
+  opacity: 0;
+}
+
+.tv-v2-preview-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0;
+  transition: opacity 450ms ease;
+  pointer-events: none;
+}
+
+.tv-v2-preview-video--playing {
+  opacity: 1;
+}
+
+.tv-v2-preview-iframe {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  display: block;
+  transform: none;
+  pointer-events: none;
+}
+
+/* Full-bleed variant for Hero banner (seamless edge-to-edge coverage preserving 16:9) */
+.tv-v2-preview-frame--hero {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.tv-v2-preview-video--full-bleed {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 56.25vw;
+  min-width: 177.78vh;
+  min-height: 100%;
+  aspect-ratio: auto;
+  transform: translate(-50%, -50%) scale(1.15);
+  transform-origin: center center;
+}
+
+.tv-v2-preview-video--full-bleed .tv-v2-preview-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto;
+  border: 0;
+  display: block;
+  transform: none;
+  pointer-events: none;
+}
+

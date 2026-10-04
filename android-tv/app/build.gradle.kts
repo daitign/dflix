@@ -46,6 +46,17 @@ android {
     }
 }
 
+val syncWebAssets = tasks.register<Copy>("syncWebAssets") {
+    val distDir = file("${project.rootDir}/../dist")
+    if (distDir.exists()) {
+        from(distDir)
+        into(file("${project.projectDir}/src/main/assets/dist"))
+    }
+}
+tasks.named("preBuild") {
+    dependsOn(syncWebAssets)
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")

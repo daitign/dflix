@@ -1,0 +1,33 @@
+/* TV V2 Shell & Global Environment */
+html.daitign-tv-v2,
+html.daitign-tv-v2 body {
+  margin: 0;
+  padding: 0;
+  background-color: #141414;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: none;
+}
+
+html.daitign-tv-v2 *::-webkit-scrollbar {
+  display: none !important;
+}
+
+.tv-v2-root {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  background-color: #141414;
+  overflow-x: hidden;
+}
+
+/* Eliminate native focus outlines fighting custom focus */
+.tv-v2-root *:focus,
+.tv-v2-root *:focus-visible {
+  outline: none !important;
+}

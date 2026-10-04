@@ -16,6 +16,7 @@ import { useCurrentRoute } from '../lib/navigation/routes';
 import { parseWatchPath, type WatchNavigationState } from '../lib/navigation/watchRoutes';
 import { searchMulti } from '../lib/tmdb';
 import { initSpatialNavigation, initTVMode, isTVMode, registerTVBackHandler } from '../lib/tv';
+import { TvV2App } from '../tv-v2';
 import './App.css';
 import '../styles/tv.css';
 
@@ -336,7 +337,15 @@ function DeferredMediaRow({ eager = false, row }: { eager?: boolean; row: HomeCa
   );
 }
 
-function App() {
+function isTvV2Route(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.pathname.startsWith('/tv-v2') ||
+    new URLSearchParams(window.location.search).get('tv') === '2'
+  );
+}
+
+function LegacyApp() {
   const [, setRouteRevision] = useState(0);
   const lastBrowseScrollYRef = useRef(0);
   const lastBrowseFocusedIdRef = useRef<string | null>(null);
@@ -404,5 +413,20 @@ function App() {
   );
 }
 
+function App() {
+  const [, setRouteRevision] = useState(0);
+
+  useEffect(() => {
+    const syncRoute = () => setRouteRevision((value) => value + 1);
+    window.addEventListener('popstate', syncRoute);
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
+
+  if (isTvV2Route()) {
+    return <TvV2App />;
+  }
+
+  return <LegacyApp />;
+}
 
 export { App };

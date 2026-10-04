@@ -13,6 +13,7 @@ declare global {
       getPlatform?: () => string;
       isTV?: () => boolean;
       logPreviewEvent?: (message: string) => void;
+      showKeyboard?: () => void;
       showToast?: (message: string) => void;
       startTvPlayer?: (vidstuckUrl: string, stateJson: string) => void;
     };
