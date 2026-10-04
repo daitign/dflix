@@ -23,7 +23,33 @@ export class TvPreviewManager {
   private pendingTimer: number | null = null;
   private pendingId: string | null = null;
   private isMuted = false; // TV V2 default: sound ON
+  private hasUserInteracted = false;
   private listeners = new Set<PreviewListener>();
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const onInteraction = () => {
+        this.hasUserInteracted = true;
+        window.removeEventListener('keydown', onInteraction, true);
+        window.removeEventListener('pointerdown', onInteraction, true);
+      };
+      window.addEventListener('keydown', onInteraction, true);
+      window.addEventListener('pointerdown', onInteraction, true);
+    }
+  }
+
+  public getHasUserInteracted(): boolean {
+    if (this.hasUserInteracted) return true;
+    if (typeof navigator !== 'undefined' && (navigator as any).userActivation?.hasBeenActive) {
+      this.hasUserInteracted = true;
+      return true;
+    }
+    return false;
+  }
+
+  public setHasUserInteracted(val: boolean): void {
+    this.hasUserInteracted = val;
+  }
 
   public static getInstance(): TvPreviewManager {
     if (!TvPreviewManager.instance) {
@@ -77,7 +103,8 @@ export class TvPreviewManager {
   public registerHero(id: string, options: PreviewRequestOptions = {}): void {
     this.baselineHeroId = id;
     if (!this.activePreviewId || this.activePreviewId === id) {
-      this.requestPreview(id, options);
+      const heroOptions = { delayMs: options.delayMs ?? 0, ...options };
+      this.requestPreview(id, heroOptions);
     }
   }
 

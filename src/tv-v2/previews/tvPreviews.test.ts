@@ -121,3 +121,48 @@ test('TV V2 Preview Manager: registers baseline hero, pauses during card/detail 
   assert.equal(manager.getActivePreviewId(), null);
 });
 
+test('TV V2 Preview Manager: hero starts immediately on registration when idle', () => {
+  const manager = new TvPreviewManager();
+  // Register hero without delayMs option
+  manager.registerHero('hero-home');
+  // Must become active immediately (0ms delay) so TV screen is not left blank
+  assert.equal(manager.getActivePreviewId(), 'hero-home');
+  assert.equal(manager.isPreviewActive('hero-home'), true);
+  manager.unregisterHero('hero-home');
+});
+
+test('TV V2 Preview Manager: tracks user interaction state correctly for audio unlock', () => {
+  const manager = new TvPreviewManager();
+  assert.equal(manager.getHasUserInteracted(), false);
+
+  manager.setHasUserInteracted(true);
+  assert.equal(manager.getHasUserInteracted(), true);
+});
+
+test('TV V2 Preview Manager: card focus takes preview ownership from baseline hero and returns it on blur', async () => {
+  const manager = new TvPreviewManager();
+
+  // Baseline hero active
+  manager.registerHero('hero-featured');
+  assert.equal(manager.getActivePreviewId(), 'hero-featured');
+
+  // Focused card requests preview
+  manager.requestPreview('card-focus-1', { delayMs: 10 });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(manager.getActivePreviewId(), 'card-focus-1');
+  assert.equal(manager.isPreviewActive('hero-featured'), false);
+
+  // Card loses focus
+  manager.stop('card-focus-1');
+  assert.equal(manager.getActivePreviewId(), null);
+
+  // Hero resumes
+  manager.resumeHero(10);
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(manager.getActivePreviewId(), 'hero-featured');
+  assert.equal(manager.isPreviewActive('hero-featured'), true);
+
+  manager.unregisterHero('hero-featured');
+});
+
+

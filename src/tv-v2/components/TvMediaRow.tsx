@@ -27,21 +27,43 @@ export function TvMediaRow({
 
   const [activeColIndex, setActiveColIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [cardStride, setCardStride] = useState(isRanked ? 260 : 200);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
-  // Compute dynamic stride from rendered cards so smooth horizontal track scrolling perfectly matches CSS clamp sizing
+  // Compute smooth horizontal track offset keeping expanded card visible inside safe area
   useEffect(() => {
-    if (trackRef.current && trackRef.current.children.length > 1) {
-      const first = trackRef.current.children[0] as HTMLElement;
-      const second = trackRef.current.children[1] as HTMLElement;
-      if (first && second) {
-        const stride = second.offsetLeft - first.offsetLeft;
-        if (stride > 0) setCardStride(stride);
-      }
-    }
-  }, [items.length, isRanked]);
+    const updateOffset = () => {
+      if (!trackRef.current) return;
+      const track = trackRef.current;
+      const activeEl = track.children[activeColIndex] as HTMLElement;
+      if (!activeEl) return;
 
-  const offset = Math.max(0, (activeColIndex - 1) * cardStride);
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+      const safePadding = Math.min(64, Math.max(32, viewportWidth * 0.04));
+      const maxVisibleRight = viewportWidth - (safePadding * 2);
+
+      const activeLeft = activeEl.offsetLeft;
+      const activeWidth = activeEl.offsetWidth;
+      const activeRight = activeLeft + activeWidth;
+
+      setScrollOffset((current) => {
+        // Shift left if expanded card extends past right boundary
+        if (activeRight - current > maxVisibleRight) {
+          return Math.max(0, activeRight - maxVisibleRight);
+        }
+        // Shift right if active card is clipped on the left
+        if (activeLeft < current) {
+          return Math.max(0, activeLeft);
+        }
+        return current;
+      });
+    };
+
+    updateOffset();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updateOffset);
+      return () => window.removeEventListener('resize', updateOffset);
+    }
+  }, [activeColIndex, items.length]);
 
   return (
     <section className="tv-v2-row" data-row-id={id}>
@@ -51,7 +73,7 @@ export function TvMediaRow({
         <div
           className="tv-v2-row__track"
           ref={trackRef}
-          style={{ transform: `translateX(-${offset}px)` }}
+          style={{ transform: `translateX(-${scrollOffset}px)` }}
         >
           {items.map((item, index) => (
             <TvMediaCard

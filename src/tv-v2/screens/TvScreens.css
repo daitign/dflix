@@ -2,7 +2,10 @@
 .tv-v2-home-screen {
   position: relative;
   width: 100vw;
+  max-width: none;
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
   background-color: #141414;
   overflow-x: hidden;
   user-select: none;
@@ -12,7 +15,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8vh;
+  padding-bottom: 6vh;
+  width: 100vw;
+  max-width: none;
+  margin: 0;
 }
 
 /* TV V2 Detail Screen - Centered TV Modal with Hidden Scrollbars */

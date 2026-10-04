@@ -64,7 +64,7 @@ export function TvHero({
   // Register Hero as baseline preview once trailer key resolves
   useEffect(() => {
     if (trailerKey) {
-      tvPreviewManager.registerHero(previewId, { delayMs: 400 });
+      tvPreviewManager.registerHero(previewId, { delayMs: 0 });
     }
 
     return () => {

@@ -110,6 +110,7 @@ export function TvMediaCard({
 
   const isDoubleDigit = rank === 10;
   const isRankOne = rank === 1;
+  const isExpanded = isFocused;
 
   return (
     <div
@@ -117,9 +118,10 @@ export function TvMediaCard({
         isRankOne ? 'tv-v2-card--rank-1' : ''
       } ${isDoubleDigit ? 'tv-v2-card--double-digit' : ''} ${
         isFocused ? 'tv-v2-card--focused' : ''
-      }`.trim()}
+      } ${isExpanded ? 'tv-v2-card--expanded' : ''}`.trim()}
       data-card-id={item.id}
       data-testid={nodeId}
+      data-tv-expanded={isExpanded ? 'true' : 'false'}
       data-tv-focusable="true"
       id={nodeId}
       onClick={() => onSelect(item)}
@@ -133,47 +135,56 @@ export function TvMediaCard({
         </span>
       )}
 
-      {/* Poster Image Layer */}
+      {/* In-Row Card Surface */}
       <div className="tv-v2-card__surface">
+        {/* Background Artwork: fills surface immediately with seamless transition */}
         <img
           alt={item.title}
           className="tv-v2-card__image"
           loading="lazy"
-          src={posterUrl}
+          src={isExpanded ? (backdropUrl || posterUrl) : posterUrl}
         />
-        {item.badge && (
-          <span className="tv-v2-card__badge">
-            {item.badge === 'top-10' ? 'TOP 10' : item.badge.toUpperCase()}
-          </span>
-        )}
-      </div>
 
-      {/* Elevated 16:9 Cinematic Preview Tile (Active after 500ms focus settle) */}
-      {isFocused && isPreviewActive && (
-        <div aria-hidden="true" className="tv-v2-card-preview-tile">
-          <TvPreviewPlayer
-            aspectRatio="16/9"
-            backdropUrl={backdropUrl}
-            id={previewId}
-            title={item.title}
-            variant="card"
-            videoKey={trailerKey}
-          />
-          <div className="tv-v2-card-preview-tile__scrim" />
-          <div className="tv-v2-card-preview-tile__info">
-            <span className="tv-v2-card-preview-tile__title">{item.title}</span>
-            <div className="tv-v2-card-preview-tile__meta">
-              {item.rating && <span className="tv-v2-card-preview-tile__rating">{item.rating}</span>}
+        {/* Video Layer: mounted inside card surface, fades in when playing */}
+        {isExpanded && isPreviewActive && trailerKey && (
+          <div aria-hidden="true" className="tv-v2-card__video-layer">
+            <TvPreviewPlayer
+              aspectRatio="16/9"
+              backdropUrl={backdropUrl}
+              id={previewId}
+              title={item.title}
+              variant="card"
+              videoKey={trailerKey}
+            />
+          </div>
+        )}
+
+        {/* Cinematic Vignette Scrim when expanded */}
+        {isExpanded && <div className="tv-v2-card__scrim" />}
+
+        {/* In-Row Title and Metadata */}
+        {isExpanded && (
+          <div className="tv-v2-card__info">
+            <span className="tv-v2-card__info-title">{item.title}</span>
+            <div className="tv-v2-card__info-meta">
+              {item.rating && <span className="tv-v2-card__info-rating">{item.rating}</span>}
               {item.year && <span>{item.year}</span>}
               {item.badge && (
-                <span className="tv-v2-card-preview-tile__badge">
+                <span className="tv-v2-card__info-badge">
                   {item.badge === 'top-10' ? 'TOP 10' : item.badge.toUpperCase()}
                 </span>
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Normal portrait card badge */}
+        {!isExpanded && item.badge && (
+          <span className="tv-v2-card__badge">
+            {item.badge === 'top-10' ? 'TOP 10' : item.badge.toUpperCase()}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
