@@ -164,12 +164,7 @@ function TvGenreSubmenuItem({
       return false;
     },
     onSelect: () => {
-      if (isSelected) {
-        // Toggle/close when selecting the active genre
-        onClose();
-      } else {
-        onSelectGenre(genre);
-      }
+      onSelectGenre(genre);
     },
     rowId,
   });
@@ -184,18 +179,12 @@ function TvGenreSubmenuItem({
       data-testid={nodeId}
       data-tv-focusable="true"
       id={nodeId}
-      onClick={() => {
-        if (isSelected) {
-          onClose();
-        } else {
-          onSelectGenre(genre);
-        }
-      }}
+      onClick={() => onSelectGenre(genre)}
       role="menuitemradio"
       tabIndex={0}
     >
       <span className="tv-v2-genre-item__label">{genre.name}</span>
-      {isSelected && <span className="tv-v2-genre-item__check">✓</span>}
+      {isSelected && <span aria-hidden="true" className="tv-v2-genre-item__check">✓</span>}
     </div>
   );
 }

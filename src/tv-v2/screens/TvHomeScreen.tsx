@@ -193,6 +193,24 @@ export function TvHomeScreen({
   const movieGenreName = TV_V2_MOVIE_GENRES.find((g) => g.id === selectedMovieGenre)?.name;
   const tvGenreName = TV_V2_TV_GENRES.find((g) => g.id === selectedTvGenre)?.name;
 
+  const getMovieGenreHeading = (genreName?: string) => {
+    if (!genreName || genreName === 'All Movies') return '';
+    if (genreName.toLowerCase().includes('movie')) return genreName;
+    return `${genreName} Movies`;
+  };
+
+  const getTvGenreHeading = (genreName?: string) => {
+    if (!genreName || genreName === 'All TV Shows') return '';
+    const lower = genreName.toLowerCase();
+    if (lower.includes('series') || lower.includes('tv') || lower.includes('shows')) {
+      return genreName;
+    }
+    return `${genreName} TV Shows`;
+  };
+
+  const movieGenreHeading = selectedMovieGenre !== 'all' ? getMovieGenreHeading(movieGenreName) : '';
+  const tvGenreHeading = selectedTvGenre !== 'all' ? getTvGenreHeading(tvGenreName) : '';
+
   return (
     <div className="tv-v2-home-screen">
       <TvNavRail
@@ -235,6 +253,12 @@ export function TvHomeScreen({
             onToggleList={onToggleList}
           />
 
+          {tvGenreHeading && (
+            <div className="tv-v2-genre-context" data-testid="tv-genre-context-heading">
+              <h2 className="tv-v2-genre-context__title">{tvGenreHeading}</h2>
+            </div>
+          )}
+
           {effectiveShows.topTen.length > 0 && (
             <TvMediaRow
               id="row-shows-top-10"
@@ -274,6 +298,12 @@ export function TvHomeScreen({
             onPlay={onPlay}
             onToggleList={onToggleList}
           />
+
+          {movieGenreHeading && (
+            <div className="tv-v2-genre-context" data-testid="tv-genre-context-heading">
+              <h2 className="tv-v2-genre-context__title">{movieGenreHeading}</h2>
+            </div>
+          )}
 
           {effectiveMovies.topTen.length > 0 && (
             <TvMediaRow

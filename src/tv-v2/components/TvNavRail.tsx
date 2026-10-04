@@ -27,11 +27,14 @@ interface TvNavRailProps {
   selectedTvGenre?: string;
 }
 
-const NAV_ITEMS: TvNavItem[] = [
+const PRIMARY_NAV_ITEMS: TvNavItem[] = [
   { id: 'home', label: 'Home' },
   { id: 'shows', label: 'TV Shows' },
   { id: 'movies', label: 'Movies' },
   { id: 'my-list', label: 'My List' },
+];
+
+const ACTION_NAV_ITEMS: TvNavItem[] = [
   { id: 'search', label: 'Search' },
 ];
 
@@ -46,6 +49,16 @@ export function TvNavRail({
   useTvFocusRow({ id: 'nav-row', order: 0 });
   const { popScope, pushScope, setFocus } = useTvFocus();
   const [openSubmenuTab, setOpenSubmenuTab] = useState<'movies' | 'shows' | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close submenu if activeTab switches away from movies or shows
   useEffect(() => {
@@ -88,28 +101,19 @@ export function TvNavRail({
     } else {
       onSelectTvGenre?.(genre.id);
     }
+    closeSubmenu();
   };
 
-  // Derive dynamic labels
-  const movieGenreObj = TV_V2_MOVIE_GENRES.find((g) => g.id === selectedMovieGenre);
-  const movieLabel =
-    movieGenreObj && movieGenreObj.id !== 'all' ? `Movies · ${movieGenreObj.name}` : 'Movies';
-
-  const tvGenreObj = TV_V2_TV_GENRES.find((g) => g.id === selectedTvGenre);
-  const tvLabel =
-    tvGenreObj && tvGenreObj.id !== 'all' ? `TV Shows · ${tvGenreObj.name}` : 'TV Shows';
-
   return (
-    <header className="tv-v2-nav-rail">
+    <header className={`tv-v2-nav-rail ${isScrolled ? 'tv-v2-nav-rail--scrolled' : ''}`}>
       <div className="tv-v2-nav-rail__brand">
         <BrandMark compact />
       </div>
+
       <nav aria-label="Main Navigation" className="tv-v2-nav-rail__links">
-        {NAV_ITEMS.map((item, idx) => {
+        {PRIMARY_NAV_ITEMS.map((item, idx) => {
           const hasSubmenu = item.id === 'movies' || item.id === 'shows';
           const isSubmenuOpen = openSubmenuTab === item.id;
-          const displayLabel =
-            item.id === 'movies' ? movieLabel : item.id === 'shows' ? tvLabel : item.label;
 
           return (
             <div
@@ -123,7 +127,7 @@ export function TvNavRail({
                 hasSubmenu={hasSubmenu}
                 isActive={activeTab === item.id}
                 isSubmenuOpen={isSubmenuOpen}
-                item={{ ...item, label: displayLabel }}
+                item={item}
                 onDirection={(direction) => {
                   if (direction === 'down' && hasSubmenu) {
                     openSubmenu(item.id as 'movies' | 'shows');
@@ -172,6 +176,26 @@ export function TvNavRail({
           );
         })}
       </nav>
+
+      <div className="tv-v2-nav-rail__actions">
+        {ACTION_NAV_ITEMS.map((item, idx) => (
+          <div
+            className="tv-v2-nav-btn-wrapper"
+            key={item.id}
+            style={{ position: 'relative' }}
+          >
+            <TvNavButton
+              activeTab={activeTab}
+              colIndex={PRIMARY_NAV_ITEMS.length + idx}
+              hasSubmenu={false}
+              isActive={activeTab === item.id}
+              item={item}
+              onSelect={() => onSelectTab(item.id)}
+              onSelectTab={onSelectTab}
+            />
+          </div>
+        ))}
+      </div>
     </header>
   );
 }
@@ -228,19 +252,16 @@ function TvNavButton({
       role="button"
       tabIndex={0}
     >
-      {item.id === 'search' && <Icon name="search" size={16} />}
-      <span>{item.label}</span>
+      {item.id === 'search' && (
+        <span aria-hidden="true" className="tv-v2-nav-btn__icon">
+          <Icon name="search" size={18} />
+        </span>
+      )}
+      <span className="tv-v2-nav-btn__label">{item.label}</span>
       {hasSubmenu && (
         <span
-          className="tv-v2-nav-btn__caret"
-          style={{
-            display: 'inline-block',
-            fontSize: '0.75em',
-            marginLeft: '0.35em',
-            opacity: 0.85,
-            transform: isSubmenuOpen ? 'translateY(-1px)' : 'translateY(1px)',
-            transition: 'transform 120ms ease',
-          }}
+          aria-hidden="true"
+          className="tv-v2-nav-btn__chevron"
         >
           {isSubmenuOpen ? '▴' : '▾'}
         </span>

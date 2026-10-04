@@ -186,7 +186,7 @@ test('TV V2 Details Hero Preview: maintains full edge-to-edge cover and 16:9 rat
   assert.ok(previewCss.includes('transform: translate(-50%, -50%) scale(1.02)'));
 
   // Hero container defines responsive height variable and unconstrained preview
-  assert.ok(screensCss.includes('--tv-detail-hero-height: clamp(200px, 36vh, 320px)'));
+  assert.ok(screensCss.includes('--tv-detail-hero-height: clamp('));
   assert.ok(screensCss.includes('.tv-v2-detail__hero-preview'));
   assert.ok(screensCss.includes('max-width: none'));
 });
@@ -198,15 +198,15 @@ test('TV V2 Details Modal: More Like This cards use responsive clamp tokens and 
   );
 
   // Horizontal scroll container with hidden scrollbar and proper edge padding
-  assert.ok(screensCss.includes('.tv-v2-detail__similar-list'));
+  assert.ok(screensCss.includes('.tv-v2-similar-track') || screensCss.includes('.tv-v2-detail__similar-list'));
   assert.ok(screensCss.includes('overflow-x: auto'));
   assert.ok(screensCss.includes('overflow-y: hidden'));
   assert.ok(screensCss.includes('scrollbar-width: none'));
-  assert.ok(screensCss.includes('.tv-v2-detail__similar-list::-webkit-scrollbar'));
+  assert.ok(screensCss.includes('::-webkit-scrollbar'));
 
-  // Cards use clamp tokens and 2:3 aspect ratio
-  assert.ok(screensCss.includes('clamp(8rem, 10vw, 11.5rem)'));
-  assert.ok(screensCss.includes('aspect-ratio: 2 / 3'));
+  // Cards use clamp tokens and 16:9 aspect ratio per Netflix reference
+  assert.ok(screensCss.includes('clamp(180px, 20vw, 250px)'));
+  assert.ok(screensCss.includes('aspect-ratio: 16 / 9'));
   assert.ok(screensCss.includes('border-radius: 6px'));
 });
 

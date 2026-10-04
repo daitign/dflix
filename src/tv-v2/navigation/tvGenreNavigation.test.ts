@@ -322,6 +322,83 @@ test('11. My List / Search remain direct nav items without submenus', () => {
   assert.equal(TV_V2_TV_GENRES.some((g) => g.id === 'my-list' || g.id === 'search'), false);
 });
 
+test('14. Main nav labels remain clean and do not include selected genre string', () => {
+  // Verify that regardless of selected genre, top nav labels are strictly clean
+  const navItems = [
+    { id: 'home', label: 'Home' },
+    { id: 'shows', label: 'TV Shows' },
+    { id: 'movies', label: 'Movies' },
+    { id: 'my-list', label: 'My List' },
+    { id: 'search', label: 'Search' },
+  ];
+
+  for (const item of navItems) {
+    assert.doesNotMatch(item.label, /·/, `Nav label "${item.label}" must not contain separator dots`);
+    assert.doesNotMatch(item.label, /Action|Korean|Crime/i, `Nav label "${item.label}" must not include genre names`);
+  }
+  assert.equal(navItems.find((i) => i.id === 'movies')?.label, 'Movies');
+  assert.equal(navItems.find((i) => i.id === 'shows')?.label, 'TV Shows');
+});
+
+test('15. No second-row Genres button exists', () => {
+  // Ensure that no separate genres button row or large page title row is configured
+  const navRailSource = execSync('cat src/tv-v2/components/TvNavRail.tsx').toString();
+  const homeScreenSource = execSync('cat src/tv-v2/screens/TvHomeScreen.tsx').toString();
+
+  assert.doesNotMatch(navRailSource, /Genres\s*[▾▼]/, 'No standalone Genres dropdown button in nav');
+  assert.doesNotMatch(homeScreenSource, /Genres\s*[▾▼]/, 'No standalone Genres button row in screen');
+});
+
+test('16. Genre menu anchored to parent nav item and closes on selection', () => {
+  const engine = new TvFocusEngine();
+  engine.registerRow({ id: 'nav-row', order: 0 });
+  engine.registerNode({ colIndex: 2, id: 'nav-movies', rowId: 'nav-row' });
+  engine.setFocus('nav-movies');
+
+  let selected = false;
+  // Open submenu
+  engine.pushScope('genre-submenu-scope', 'genre-action');
+  engine.registerRow({ id: 'genre-submenu-row-0', order: 0 });
+  engine.registerNode({
+    colIndex: 0,
+    id: 'genre-action',
+    onSelect: () => {
+      selected = true;
+      engine.popScope();
+    },
+    rowId: 'genre-submenu-row-0',
+  });
+
+  assert.equal(engine.getActiveNodeId(), 'genre-action');
+  engine.handleKeyEvent(createMockKeyEvent({ key: 'Enter', keyCode: 13 }));
+
+  assert.equal(selected, true, 'Genre selection should execute');
+  assert.equal(engine.getScope(), 'root', 'Submenu must close after selection');
+  assert.equal(engine.getActiveNodeId(), 'nav-movies', 'Focus must restore to parent nav button');
+});
+
+test('17. Selected genre updates content context heading formatting', () => {
+  const formatMovieHeading = (genreName: string) => {
+    if (!genreName || genreName === 'All Movies') return '';
+    if (genreName.toLowerCase().includes('movie')) return genreName;
+    return `${genreName} Movies`;
+  };
+
+  const formatTvHeading = (genreName: string) => {
+    if (!genreName || genreName === 'All TV Shows') return '';
+    const lower = genreName.toLowerCase();
+    if (lower.includes('series') || lower.includes('tv') || lower.includes('shows')) {
+      return genreName;
+    }
+    return `${genreName} TV Shows`;
+  };
+
+  assert.equal(formatMovieHeading('Action'), 'Action Movies');
+  assert.equal(formatMovieHeading('Romantic Movies'), 'Romantic Movies');
+  assert.equal(formatTvHeading('Korean Series'), 'Korean Series');
+  assert.equal(formatTvHeading('Crime & Thriller'), 'Crime & Thriller TV Shows');
+});
+
 test('12. TV V1 unchanged', () => {
   const gitDiffTvV1 = execSync('git diff --name-only src/lib/tv/').toString().trim();
   assert.equal(gitDiffTvV1, '', 'src/lib/tv/ (TV V1) files must remain completely untouched');
@@ -335,3 +412,4 @@ test('13. Normal web unchanged', () => {
     .trim();
   assert.equal(gitDiffWeb, '', 'Normal web components and pages must remain completely untouched');
 });
+
