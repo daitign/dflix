@@ -81,6 +81,7 @@ export interface FocusNode {
   metadata?: unknown;
   onBack?: () => boolean | void;
   onBlur?: () => void;
+  onDirection?: (direction: Direction) => boolean | void;
   onFocus?: () => void;
   onSelect?: () => void;
   rowId: string;
@@ -410,6 +411,11 @@ export class TvFocusEngine {
 
     const currentNode = this.nodes.get(this.activeNodeId);
     if (!currentNode) return false;
+
+    if (currentNode.onDirection) {
+      const handled = currentNode.onDirection(direction);
+      if (handled) return true;
+    }
 
     if (direction === 'left' || direction === 'right') {
       return this.navigateHorizontal(currentNode, direction);

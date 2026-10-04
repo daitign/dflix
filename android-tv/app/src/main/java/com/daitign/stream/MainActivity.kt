@@ -763,6 +763,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (event.action == KeyEvent.ACTION_DOWN) {
+            notifyPlayerActivity()
             if (event.repeatCount == 0) {
                 cancelPlayerNavRepeat()
                 if (INPUT_DIAGNOSTICS) {

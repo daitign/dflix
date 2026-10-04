@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/icons/Icon';
 import type { MediaItem } from '../../features/catalog';
 import type { MediaDetails } from '../../features/details-modal/types';
@@ -78,10 +78,11 @@ export function TvDetailScreen({
   // Fetch trailer video candidate
   useEffect(() => {
     let active = true;
-    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id), 10) || null);
+    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id).replace(/^[a-z]+-/, ''), 10) || null);
     if (!tmdbId) return;
 
-    getMediaVideos(item.type === 'tv' ? 'tv' : 'movie', tmdbId)
+    const playbackType = item.playbackType || (item.type === 'tv' || item.type === 'anime' ? 'tv' : 'movie');
+    getMediaVideos(playbackType, tmdbId)
       .then((videos) => {
         if (!active) return;
         const candidates = selectPreviewVideoCandidates(videos);
@@ -361,6 +362,7 @@ function EpisodeCard({
   onSelect: () => void;
   rowId: string;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const { isFocused } = useTvFocusNode({
     colIndex,
     id: `ep-${episode.episodeNumber}`,
@@ -369,10 +371,34 @@ function EpisodeCard({
     rowId,
   });
 
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      const el = cardRef.current;
+      const container = el.parentElement;
+      if (container) {
+        const cRect = container.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        const padding = 24;
+        if (eRect.left < cRect.left + padding) {
+          container.scrollBy({
+            left: eRect.left - (cRect.left + padding),
+            behavior: 'smooth',
+          });
+        } else if (eRect.right > cRect.right - padding) {
+          container.scrollBy({
+            left: eRect.right - (cRect.right - padding),
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [isFocused]);
+
   return (
     <div
       className={`tv-v2-episode-card ${isFocused ? 'tv-v2-episode-card--focused' : ''}`}
       onClick={onSelect}
+      ref={cardRef}
       role="button"
       tabIndex={-1}
     >
@@ -401,6 +427,7 @@ function SimilarCard({
   onSelect: () => void;
   rowId: string;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const { isFocused } = useTvFocusNode({
     colIndex,
     id: `similar-${item.id}`,
@@ -409,12 +436,36 @@ function SimilarCard({
     rowId,
   });
 
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      const el = cardRef.current;
+      const container = el.parentElement;
+      if (container) {
+        const cRect = container.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        const padding = 24;
+        if (eRect.left < cRect.left + padding) {
+          container.scrollBy({
+            left: eRect.left - (cRect.left + padding),
+            behavior: 'smooth',
+          });
+        } else if (eRect.right > cRect.right - padding) {
+          container.scrollBy({
+            left: eRect.right - (cRect.right - padding),
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [isFocused]);
+
   const poster = item.poster?.fallback || item.posterUrl || item.backdropUrl || '';
 
   return (
     <div
       className={`tv-v2-similar-card ${isFocused ? 'tv-v2-similar-card--focused' : ''}`}
       onClick={onSelect}
+      ref={cardRef}
       role="button"
       tabIndex={-1}
     >

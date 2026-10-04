@@ -29,10 +29,11 @@ export function TvHero({
   // Fetch TMDB trailer video
   useEffect(() => {
     let active = true;
-    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : null);
+    const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id).replace(/^[a-z]+-/, ''), 10) || null);
     if (!tmdbId) return;
 
-    getMediaVideos(item.type === 'tv' ? 'tv' : 'movie', tmdbId)
+    const playbackType = item.playbackType || (item.type === 'tv' || item.type === 'anime' ? 'tv' : 'movie');
+    getMediaVideos(playbackType, tmdbId)
       .then((videos) => {
         if (!active) return;
         const candidates = selectPreviewVideoCandidates(videos);

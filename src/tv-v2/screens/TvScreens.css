@@ -59,9 +59,10 @@
 
 /* Upper Hero Region (32-40% height of modal) */
 .tv-v2-detail__hero-region {
+  --tv-detail-hero-height: clamp(200px, 36vh, 320px);
   position: relative;
   width: 100%;
-  height: clamp(200px, 36vh, 320px);
+  height: var(--tv-detail-hero-height);
   flex-shrink: 0;
   overflow: hidden;
   background-color: #111;
@@ -81,6 +82,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  max-width: none;
 }
 
 .tv-v2-detail__hero-vignette {
@@ -282,7 +284,16 @@
   display: flex;
   gap: 20px;
   overflow-x: auto;
-  padding-bottom: 1.5vh;
+  overflow-y: hidden;
+  padding: 0.8vh clamp(0.5rem, 1.2vw, 1.2rem) 1.5vh clamp(0.5rem, 1.2vw, 1.2rem);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tv-v2-detail__episodes-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .tv-v2-episode-card {
@@ -348,16 +359,26 @@
 
 .tv-v2-detail__similar-list {
   display: flex;
-  gap: 20px;
+  gap: clamp(12px, 1.2vw, 18px);
   overflow-x: auto;
-  padding-bottom: 2vh;
+  overflow-y: hidden;
+  padding: 0.8vh clamp(0.5rem, 1.2vw, 1.5rem) clamp(1rem, 2vh, 1.5rem) clamp(0.5rem, 1.2vw, 1.5rem);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tv-v2-detail__similar-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .tv-v2-similar-card {
-  flex: 0 0 160px;
-  width: 160px;
-  height: 240px;
-  border-radius: 8px;
+  flex: 0 0 clamp(8rem, 10vw, 11.5rem);
+  width: clamp(8rem, 10vw, 11.5rem);
+  height: calc(clamp(8rem, 10vw, 11.5rem) * 1.5);
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
   overflow: hidden;
   border: 2px solid transparent;
   transition: transform 120ms ease, border-color 120ms ease;

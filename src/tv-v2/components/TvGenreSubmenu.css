@@ -1,0 +1,99 @@
+/* TV V2 Netflix-Style Genre Submenu */
+.tv-v2-genre-submenu-container {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 1000;
+  user-select: none;
+}
+
+.tv-v2-genre-submenu {
+  min-width: 480px;
+  max-width: 580px;
+  background: rgba(16, 16, 16, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: tvV2SubmenuFadeIn 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tvV2SubmenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tv-v2-genre-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 8px 12px;
+}
+
+.tv-v2-genre-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.85rem, 0.95vw, 1.05rem);
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease,
+    transform 100ms ease,
+    box-shadow 100ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-v2-genre-item__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-v2-genre-item__check {
+  font-size: 0.85em;
+  margin-left: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.tv-v2-genre-item--selected {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tv-v2-genre-item--focused {
+  background-color: #ffffff;
+  color: #0c0c0c;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+  transform: scale(1.04);
+  z-index: 2;
+}
+
+.tv-v2-genre-item--focused .tv-v2-genre-item__check {
+  color: #0c0c0c;
+  font-weight: 900;
+}

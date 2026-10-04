@@ -21,6 +21,7 @@ export function useTvFocusNode(options: UseTvFocusNodeOptions) {
       metadata: options.metadata,
       onBack: () => optionsRef.current.onBack?.(),
       onBlur: () => optionsRef.current.onBlur?.(),
+      onDirection: (direction) => optionsRef.current.onDirection?.(direction),
       onFocus: () => optionsRef.current.onFocus?.(),
       onSelect: () => optionsRef.current.onSelect?.(),
       rowId: options.rowId,

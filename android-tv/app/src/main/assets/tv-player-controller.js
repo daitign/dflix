@@ -17,6 +17,9 @@
   var menuCandidatesDirty = true;
   var menuSyncTimer = 0;
   var controlsIdleTimer = 0;
+  var idleGeneration = 0;
+  var lastFocusedControlKind = null;
+  var lastFocusedControlLabel = null;
   var watchdogTimer = 0;
   var keepAliveHeartbeatTimer = 0;
   var WATCHDOG_INTERVAL_MS = 180;
@@ -24,6 +27,7 @@
   var observedAncestor = null;
   var lastControlRevealAt = 0;
   var wasPlayingBeforeSuspend = false;
+  var PLAYER_CONTROLS_IDLE_MS = 5000;
   var CONTROLS_IDLE_MS = 6000;
   var DEBUG = new URLSearchParams(window.location.search).get('tvDebug') === '1';
 
@@ -77,6 +81,7 @@
   }
 
   function label(element) {
+    if (!element) return '';
     return [
       element.getAttribute('aria-label'), element.getAttribute('title'), element.getAttribute('name'),
       element.getAttribute('data-testid'), element.getAttribute('role'), element.textContent,
@@ -100,6 +105,7 @@
   }
 
   function controlKind(element) {
+    if (!element) return 'control';
     var semantic = label(element);
     if (isTimeline(element)) return 'timeline';
     if (/play|pause/.test(semantic)) return 'play-pause';
@@ -242,6 +248,10 @@
     else selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     preferredX = center(selected).x;
+    if (resolvedState !== MENU) {
+      lastFocusedControlKind = controlKind(selected);
+      lastFocusedControlLabel = label(selected);
+    }
     debugLog('[DAITIGN TV Player] selected', resolvedState === MENU ? 'menu-option' : controlKind(selected), label(selected));
     notify(resolvedState);
   }
@@ -320,6 +330,7 @@
 
   function ensureControlsVisible() {
     auditPlayerSelectorsOnce();
+    hookVideoEvents();
     var live = getLiveElements();
     live.targets.forEach(function (el) {
       el.classList.add('daitign-tv-controls-locked');
@@ -429,6 +440,14 @@
     if (artPlayer) {
       artPlayer.classList.remove('art-hover');
     }
+    var controlElements = document.querySelectorAll(
+      '.art-controls, .art-control, .art-bottom, .art-top, .art-progress, .art-layers, .z-30, .z-30 > div, [class*="controls"], [class*="player-bottom"]'
+    );
+    controlElements.forEach(function (el) {
+      el.style.removeProperty('opacity');
+      el.style.removeProperty('visibility');
+      el.style.removeProperty('pointer-events');
+    });
   }
 
   function installReplacementObserver() {
@@ -484,8 +503,8 @@
   }
 
   function relinkSelection() {
-    var previousKind = selected ? controlKind(selected) : null;
-    var previousLabel = selected ? label(selected) : null;
+    var previousKind = selected ? controlKind(selected) : lastFocusedControlKind;
+    var previousLabel = selected ? label(selected) : lastFocusedControlLabel;
     candidatesDirty = true;
     var currentCandidates = candidates(true);
     var matched = null;
@@ -562,11 +581,68 @@
     ensureControlsVisible();
   }
 
+  function isVideoPaused() {
+    var video = primaryVideo();
+    return !!(video && video.paused && !video.ended);
+  }
+
+  function hookVideoEvents() {
+    var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+    videos.forEach(function (v) {
+      if (v._tvHooked) return;
+      v._tvHooked = true;
+      v.addEventListener('play', function () {
+        if (state === CONTROLS) {
+          resetControlsIdleTimer();
+        }
+      });
+      v.addEventListener('pause', function () {
+        clearIdleTimer();
+      });
+    });
+  }
+
+  function resetControlsIdleTimer() {
+    clearIdleTimer();
+    idleGeneration++;
+    var currentGen = idleGeneration;
+
+    // Never auto-hide during menu selection (Section 3)
+    if (state === MENU || isMenuOpen() || detectPopup()) {
+      return;
+    }
+    // Never auto-hide during timeline interaction (Section 4, 11)
+    if (state === TIMELINE) {
+      return;
+    }
+    // Never auto-hide if already hidden
+    if (state === HIDDEN) {
+      return;
+    }
+    // Video paused: keep controls visible (Section 14)
+    if (isVideoPaused()) {
+      return;
+    }
+
+    controlsIdleTimer = window.setTimeout(function () {
+      controlsIdleTimer = 0;
+      // Stale timer verification (Section 11)
+      if (currentGen !== idleGeneration) return;
+      // Must still be in CONTROLS state
+      if (state !== CONTROLS) return;
+      // Re-verify no menu or popup is open (Section 3, 11, 12)
+      if (isMenuOpen() || detectPopup()) return;
+      // Re-verify not paused (Section 14)
+      if (isVideoPaused()) return;
+
+      hideControls();
+    }, PLAYER_CONTROLS_IDLE_MS);
+  }
+
   function registerUserActivity() {
     ensureControlsVisible();
     installReplacementObserver();
-    // Zero hide timers in TV mode.
-    // Controls stay visible continuously until the user explicitly presses Back.
+    resetControlsIdleTimer();
   }
 
   function scheduleControlsIdle() {
@@ -579,7 +655,15 @@
 
   function hideControls() {
     // Never hide if a menu or submenu popup is open
-    if (isMenuOpen()) return;
+    if (isMenuOpen() || detectPopup()) return;
+    if (state === TIMELINE) return;
+    if (isVideoPaused()) return;
+
+    if (selected && state !== MENU) {
+      lastFocusedControlKind = controlKind(selected);
+      lastFocusedControlLabel = label(selected);
+    }
+    clearIdleTimer();
     stopKeepAliveHeartbeat();
     stopVisibilityWatchdog();
     var focused = document.activeElement;
@@ -678,6 +762,20 @@
     return result;
   }
 
+  function findRememberedOrFallbackControl(all) {
+    var target = null;
+    if (lastFocusedControlLabel) {
+      target = all.find(function (el) { return label(el) === lastFocusedControlLabel && controlVisible(el); });
+    }
+    if (!target && lastFocusedControlKind) {
+      target = all.find(function (el) { return controlKind(el) === lastFocusedControlKind && controlVisible(el); });
+    }
+    if (!target) {
+      target = all.find(function (el) { return controlKind(el) === 'play-pause' && controlVisible(el); }) || defaultControl(all);
+    }
+    return target;
+  }
+
   function wakeAndFocusControls() {
     dispatchWakeEvents();
     notify(CONTROLS);
@@ -685,12 +783,12 @@
 
     candidatesDirty = true;
     var all = candidates(true);
-    var playPause = all.find(function (el) { return controlKind(el) === 'play-pause'; });
-    var target = playPause || defaultControl(all);
+    var target = findRememberedOrFallbackControl(all);
 
     if (target && controlVisible(target)) {
       setSelected(target, CONTROLS);
       ensureControlsVisible();
+      resetControlsIdleTimer();
       return true;
     }
 
@@ -699,22 +797,28 @@
         ensureControlsVisible();
         candidatesDirty = true;
         var rAll = candidates(true);
-        var rPlay = rAll.find(function (el) { return controlKind(el) === 'play-pause'; }) || defaultControl(rAll);
-        if (rPlay) {
-          setSelected(rPlay, CONTROLS);
+        var rTarget = findRememberedOrFallbackControl(rAll);
+        if (rTarget) {
+          setSelected(rTarget, CONTROLS);
           ensureControlsVisible();
+          resetControlsIdleTimer();
         } else {
           window.setTimeout(function () {
             ensureControlsVisible();
             candidatesDirty = true;
             var tAll = candidates(true);
-            var tPlay = tAll.find(function (el) { return controlKind(el) === 'play-pause'; }) || defaultControl(tAll);
-            if (tPlay) setSelected(tPlay, CONTROLS);
+            var tTarget = findRememberedOrFallbackControl(tAll);
+            if (tTarget) {
+              setSelected(tTarget, CONTROLS);
+              ensureControlsVisible();
+              resetControlsIdleTimer();
+            }
           }, 30);
         }
       });
     }
 
+    resetControlsIdleTimer();
     return true;
   }
 
@@ -815,23 +919,23 @@
     if (closeBtn) {
       try { closeBtn.click(); pointerFallback(closeBtn); } catch (_) {}
     }
-    if (visible(menuOpener)) {
-      try { menuOpener.click(); pointerFallback(menuOpener); } catch (_) {}
-    }
+    dispatchKey(popup, 'Escape');
+    dispatchKey(document.body, 'Escape');
     var mask = document.querySelector('.art-mask, .art-layers, .art-video-player, #artplayer, video') || document.body;
     if (mask) {
       try { pointerFallback(mask); } catch (_) {}
     }
-    dispatchKey(popup, 'Escape');
-    dispatchKey(document.body, 'Escape');
     window.setTimeout(function () {
       if (visible(popup)) {
+        if (visible(menuOpener)) {
+          try { menuOpener.click(); pointerFallback(menuOpener); } catch (_) {}
+        }
         try {
           popup.style.setProperty('display', 'none', 'important');
           popup.style.setProperty('visibility', 'hidden', 'important');
         } catch (_) {}
       }
-    }, 50);
+    }, 40);
   }
 
   function activateMenuItem() {
@@ -840,9 +944,15 @@
     var item = selected;
     var popupBefore = activePopup;
     var itemText = label(item);
-    var isSubmenuNavigation = /style|delay|speed|audio|font|color/.test(itemText);
-    var singleChoiceMenu = !isSubmenuNavigation && /subtitle|caption|quality|server|source|fit|aspect/.test(
-      controlKind(menuOpener) + ' ' + controlKind(popupBefore) + ' ' + label(popupBefore)
+    var openerText = controlKind(menuOpener) + ' ' + label(menuOpener);
+    var popupText = controlKind(popupBefore) + ' ' + label(popupBefore);
+    var isSubmenuNavigation = /style|delay|speed|audio|font|color|custom|subtitle style|subtitle delay|settings/i.test(itemText) ||
+                              /style|delay|speed|advanced/i.test(popupText);
+    var singleChoiceMenu = !isSubmenuNavigation && (
+      /subtitle|caption|quality|server|source|fit|aspect/i.test(openerText + ' ' + popupText) ||
+      /english|filipino|tagalog|español|spanish|french|german|japanese|korean|chinese|italian|portuguese|russian|arabic|thai|vietnamese|indonesian|malay|hindi|off|none|auto|1080p?|720p?|480p?|360p?|16:9|4:3|cover|contain/i.test(
+        itemText
+      )
     );
     var before = selectionSignature(item);
     try { item.focus({ preventScroll: true }); } catch (_) {}
@@ -858,7 +968,7 @@
           dismissPopup(popupBefore);
           window.setTimeout(function () {
             finishMenuClose();
-          }, 60);
+          }, 50);
           return;
         }
         if (visible(popupBefore)) {
@@ -918,7 +1028,9 @@
     }
 
     var close = discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
-    if (close) close.click();
+    if (close) {
+      try { close.click(); pointerFallback(close); } catch (_) {}
+    }
     if (selected) dispatchKey(selected, 'Escape');
     dispatchKey(popupBefore, 'Escape');
     dispatchKey(document.body, 'Escape');
@@ -927,31 +1039,23 @@
         finishMenuClose();
         return;
       }
-      // Some VIDSTUCK builds ignore Escape and use the opener as a toggle.
-      if (visible(menuOpener)) menuOpener.click();
+      dismissPopup(popupBefore);
       window.setTimeout(function () {
         if (!visible(popupBefore)) {
           finishMenuClose();
           return;
         }
-        dismissPopup(popupBefore);
-        window.setTimeout(function () {
-          if (!visible(popupBefore)) {
-            finishMenuClose();
-            return;
-          }
-          // Keep PLAYER_MENU active when closing genuinely failed so Back can
-          // retry instead of accidentally hiding controls or exiting playback.
-          activePopup = popupBefore;
-          clearIdleTimer();
-          startMenuKeepAlive();
-          menuCandidatesDirty = true;
-          var items = discoverMenuItems(popupBefore, true);
-          if (items[0]) setSelected(items[0], MENU);
-          console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
-        }, 60);
-      }, 90);
-    }, 90);
+        // Keep PLAYER_MENU active when closing genuinely failed so Back can
+        // retry instead of accidentally hiding controls or exiting playback.
+        activePopup = popupBefore;
+        clearIdleTimer();
+        startMenuKeepAlive();
+        menuCandidatesDirty = true;
+        var items = discoverMenuItems(popupBefore, true);
+        if (items[0]) setSelected(items[0], MENU);
+        console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
+      }, 60);
+    }, 60);
     return true;
   }
 
@@ -998,14 +1102,15 @@
           var control = defaultControl(candidates(true));
           if (control) setSelected(control, CONTROLS);
           else notify(CONTROLS);
+          registerUserActivity();
           return true;
         }
         if (state !== HIDDEN) { hideControls(); return true; }
         return false;
       }
-      if (state === HIDDEN || !selected || !controlVisible(selected)) {
+      var wasHidden = (state === HIDDEN || !selected || !controlVisible(selected));
+      if (wasHidden) {
         wakeAndFocusControls();
-        return true;
       }
       ensureControlsVisible();
       registerUserActivity();
@@ -1023,12 +1128,18 @@
         if (key === 'OK') { activateMenuItem(); return true; }
         return true;
       }
-      if (state === HIDDEN || !selected || !controlVisible(selected)) { focusDefault(0); return true; }
+      if (!selected || !controlVisible(selected)) { focusDefault(0); return true; }
       if ((key === 'LEFT' || key === 'RIGHT') && state === TIMELINE) {
         return seekPlayback(key === 'RIGHT' ? 'SEEK_FORWARD' : 'SEEK_BACKWARD', false);
       }
+      if (key === 'OK' && state === TIMELINE) {
+        var defaultCtrl = defaultControl(candidates(true));
+        if (defaultCtrl) setSelected(defaultCtrl, CONTROLS);
+        else notify(CONTROLS);
+        registerUserActivity();
+        return true;
+      }
       if (key === 'LEFT' || key === 'RIGHT' || key === 'UP' || key === 'DOWN') { moveControl(key); return true; }
-      if (key === 'OK' && state === TIMELINE) return true;
       if (key === 'OK') { activateControl(); return true; }
       return false;
     },
@@ -1038,7 +1149,9 @@
         state: state,
         selected: selected ? { kind: state === MENU ? 'menu-option' : controlKind(selected), label: label(selected) } : null,
         controls: inventory(false),
-        menu: activePopup && visible(activePopup) ? discoverMenuItems(activePopup, false).map(label) : []
+        menu: activePopup && visible(activePopup) ? discoverMenuItems(activePopup, false).map(label) : [],
+        lastFocused: lastFocusedControlLabel ? { kind: lastFocusedControlKind, label: lastFocusedControlLabel } : null,
+        idleTimerActive: !!controlsIdleTimer
       };
     }
   };

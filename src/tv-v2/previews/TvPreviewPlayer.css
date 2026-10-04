@@ -97,12 +97,15 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100%;
-  height: 100%;
-  min-width: 177.78%;
+  right: auto;
+  bottom: auto;
+  width: max(100%, calc(var(--tv-detail-hero-height, clamp(200px, 36vh, 320px)) * 16 / 9));
+  height: auto;
+  aspect-ratio: 16 / 9;
+  min-width: 100%;
   min-height: 100%;
-  transform: translate(-50%, -50%);
-  aspect-ratio: auto;
+  transform: translate(-50%, -50%) scale(1.02);
+  transform-origin: center center;
 }
 
 .tv-v2-preview-video--detail .tv-v2-preview-iframe {
@@ -110,8 +113,58 @@
   inset: 0;
   width: 100% !important;
   height: 100% !important;
+  aspect-ratio: 16 / 9;
   border: 0;
   display: block;
   transform: none;
   pointer-events: none;
 }
+
+/* In-Row Card Preview Variant (Full-Bleed Cover + Provider Letterbox Overscan) */
+.tv-v2-preview-frame--card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background-color: #141414;
+}
+
+.tv-v2-preview-video--card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%) scale(1.28);
+  transform-origin: center center;
+}
+
+.tv-v2-preview-video--card .tv-v2-preview-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  display: block;
+  transform: none;
+  pointer-events: none;
+}
+
+/* Native video element cover behavior */
+.tv-v2-preview-video video,
+.tv-v2-preview-frame video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+

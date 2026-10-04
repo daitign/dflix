@@ -5,6 +5,12 @@ import { TvFooter } from '../components/TvFooter.tsx';
 import { TvHero } from '../components/TvHero.tsx';
 import { TvMediaRow } from '../components/TvMediaRow.tsx';
 import { TvNavRail } from '../components/TvNavRail.tsx';
+import {
+  fetchTvGenreCatalog,
+  TV_V2_MOVIE_GENRES,
+  TV_V2_TV_GENRES,
+  type TvGenreCatalogData,
+} from '../catalog/tvGenreCatalog.ts';
 import { TvSearchScreen } from './TvSearchScreen.tsx';
 import { TvMyListScreen } from './TvMyListScreen.tsx';
 import './TvScreens.css';
@@ -29,6 +35,12 @@ export function TvHomeScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('home');
+
+  // Genre states for Movies and TV Shows
+  const [selectedMovieGenre, setSelectedMovieGenre] = useState('all');
+  const [selectedTvGenre, setSelectedTvGenre] = useState('all');
+  const [movieGenreCatalog, setMovieGenreCatalog] = useState<TvGenreCatalogData | null>(null);
+  const [tvGenreCatalog, setTvGenreCatalog] = useState<TvGenreCatalogData | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -63,13 +75,18 @@ export function TvHomeScreen({
 
   const handleSelectTab = (tabId: string) => {
     setActiveTab(tabId);
+    if (tabId === 'home') {
+      // Returning home resets genre state
+      setSelectedMovieGenre('all');
+      setSelectedTvGenre('all');
+    }
     if (tabId !== 'search') {
       setFocus(`nav-${tabId}`);
     }
   };
 
-  // Derived content for TV Shows and Movies tabs
-  const showsContent = useMemo(() => {
+  // Baseline content for TV Shows and Movies tabs
+  const showsBaseline = useMemo(() => {
     if (!catalog) return null;
     const hero =
       catalog.rows.find((r) => r.id === 'series')?.items[0] ||
@@ -86,7 +103,7 @@ export function TvHomeScreen({
     return { hero, rows, topTen };
   }, [catalog]);
 
-  const moviesContent = useMemo(() => {
+  const moviesBaseline = useMemo(() => {
     if (!catalog) return null;
     const hero =
       catalog.rows.find((r) => r.id === 'movies')?.items[0] ||
@@ -100,6 +117,53 @@ export function TvHomeScreen({
     );
     return { hero, rows, topTen };
   }, [catalog]);
+
+  // Fetch genre-filtered catalogs on genre change
+  useEffect(() => {
+    if (selectedMovieGenre === 'all') {
+      setMovieGenreCatalog(null);
+      return;
+    }
+
+    let active = true;
+    fetchTvGenreCatalog('movie', selectedMovieGenre, moviesBaseline)
+      .then((data) => {
+        if (active && data) {
+          setMovieGenreCatalog(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [selectedMovieGenre, moviesBaseline]);
+
+  useEffect(() => {
+    if (selectedTvGenre === 'all') {
+      setTvGenreCatalog(null);
+      return;
+    }
+
+    let active = true;
+    fetchTvGenreCatalog('tv', selectedTvGenre, showsBaseline)
+      .then((data) => {
+        if (active && data) {
+          setTvGenreCatalog(data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [selectedTvGenre, showsBaseline]);
+
+  // Effective content
+  const effectiveMovies =
+    selectedMovieGenre !== 'all' && movieGenreCatalog ? movieGenreCatalog : moviesBaseline;
+  const effectiveShows =
+    selectedTvGenre !== 'all' && tvGenreCatalog ? tvGenreCatalog : showsBaseline;
 
   if (loading) {
     return (
@@ -126,9 +190,19 @@ export function TvHomeScreen({
     );
   }
 
+  const movieGenreName = TV_V2_MOVIE_GENRES.find((g) => g.id === selectedMovieGenre)?.name;
+  const tvGenreName = TV_V2_TV_GENRES.find((g) => g.id === selectedTvGenre)?.name;
+
   return (
     <div className="tv-v2-home-screen">
-      <TvNavRail activeTab={activeTab} onSelectTab={handleSelectTab} />
+      <TvNavRail
+        activeTab={activeTab}
+        onSelectMovieGenre={(genreId) => setSelectedMovieGenre(genreId)}
+        onSelectTab={handleSelectTab}
+        onSelectTvGenre={(genreId) => setSelectedTvGenre(genreId)}
+        selectedMovieGenre={selectedMovieGenre}
+        selectedTvGenre={selectedTvGenre}
+      />
 
       {activeTab === 'search' && (
         <TvSearchScreen
@@ -151,28 +225,32 @@ export function TvHomeScreen({
         />
       )}
 
-      {activeTab === 'shows' && showsContent && (
+      {activeTab === 'shows' && effectiveShows && (
         <main className="tv-v2-home-content">
           <TvHero
-            isInList={isInList(showsContent.hero.id)}
-            item={showsContent.hero}
+            isInList={isInList(effectiveShows.hero.id)}
+            item={effectiveShows.hero}
             onOpenDetails={onOpenDetails}
             onPlay={onPlay}
             onToggleList={onToggleList}
           />
 
-          {showsContent.topTen.length > 0 && (
+          {effectiveShows.topTen.length > 0 && (
             <TvMediaRow
               id="row-shows-top-10"
               isRanked
-              items={showsContent.topTen}
+              items={effectiveShows.topTen}
               onSelectItem={onOpenDetails}
               order={2}
-              title="Top 10 TV Shows Today"
+              title={
+                selectedTvGenre !== 'all' && tvGenreName
+                  ? `Top 10 in ${tvGenreName}`
+                  : 'Top 10 TV Shows Today'
+              }
             />
           )}
 
-          {showsContent.rows.map((row, idx) => (
+          {effectiveShows.rows.map((row, idx) => (
             <TvMediaRow
               id={`row-${row.id}`}
               items={row.items}
@@ -187,28 +265,32 @@ export function TvHomeScreen({
         </main>
       )}
 
-      {activeTab === 'movies' && moviesContent && (
+      {activeTab === 'movies' && effectiveMovies && (
         <main className="tv-v2-home-content">
           <TvHero
-            isInList={isInList(moviesContent.hero.id)}
-            item={moviesContent.hero}
+            isInList={isInList(effectiveMovies.hero.id)}
+            item={effectiveMovies.hero}
             onOpenDetails={onOpenDetails}
             onPlay={onPlay}
             onToggleList={onToggleList}
           />
 
-          {moviesContent.topTen.length > 0 && (
+          {effectiveMovies.topTen.length > 0 && (
             <TvMediaRow
               id="row-movies-top-10"
               isRanked
-              items={moviesContent.topTen}
+              items={effectiveMovies.topTen}
               onSelectItem={onOpenDetails}
               order={2}
-              title="Top 10 Movies Today"
+              title={
+                selectedMovieGenre !== 'all' && movieGenreName
+                  ? `Top 10 in ${movieGenreName}`
+                  : 'Top 10 Movies Today'
+              }
             />
           )}
 
-          {moviesContent.rows.map((row, idx) => (
+          {effectiveMovies.rows.map((row, idx) => (
             <TvMediaRow
               id={`row-${row.id}`}
               items={row.items}

@@ -75,13 +75,14 @@ export function TvMediaCard({
 
       // Only fetch video if active settled preview is triggered AND not yet cached
       if (active) {
-        if (trailerCache.has(item.id)) {
-          setTrailerKey(trailerCache.get(item.id) ?? null);
+        const cachedKey = trailerCache.get(item.id);
+        if (cachedKey) {
+          setTrailerKey(cachedKey);
           return;
         }
 
-        const playbackType = item.type === 'tv' ? 'tv' : 'movie';
-        const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : null);
+        const playbackType = item.playbackType || (item.type === 'tv' || item.type === 'anime' ? 'tv' : 'movie');
+        const tmdbId = item.tmdbId ?? (typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id).replace(/^[a-z]+-/, ''), 10) || null);
         if (!tmdbId) {
           trailerCache.set(item.id, null);
           return;

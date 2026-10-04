@@ -28,8 +28,9 @@ export function TvPreviewPlayer({
   const [hasError, setHasError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const isHero = variant === 'hero' || (aspectRatio === 'full-bleed' && variant !== 'detail');
+  const isHero = variant === 'hero' || (aspectRatio === 'full-bleed' && variant !== 'detail' && variant !== 'card');
   const isDetail = variant === 'detail';
+  const isCard = variant === 'card';
 
   // For Hero on initial cold TV launch before any remote keypress, start muted to guarantee
   // Android WebView Chromium autoplay policy is never violated.
@@ -160,7 +161,7 @@ export function TvPreviewPlayer({
     <div
       className={`tv-v2-preview-frame ${isHero ? 'tv-v2-preview-frame--hero' : ''} ${
         isDetail ? 'tv-v2-preview-frame--detail' : ''
-      } ${className}`.trim()}
+      } ${isCard ? 'tv-v2-preview-frame--card' : ''} ${className}`.trim()}
     >
       {/* Fallback Artwork Layer */}
       {backdropUrl && (
@@ -173,12 +174,12 @@ export function TvPreviewPlayer({
         />
       )}
 
-      {/* Video Layer: uncropped 16:9 */}
+      {/* Video Layer */}
       {embedUrl && (
         <div
           className={`tv-v2-preview-video ${isHero ? 'tv-v2-preview-video--full-bleed' : ''} ${
             isDetail ? 'tv-v2-preview-video--detail' : ''
-          } ${hasStarted ? 'tv-v2-preview-video--playing' : ''}`.trim()}
+          } ${isCard ? 'tv-v2-preview-video--card' : ''} ${hasStarted ? 'tv-v2-preview-video--playing' : ''}`.trim()}
         >
           <iframe
             allow="autoplay; encrypted-media"
