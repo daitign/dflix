@@ -386,3 +386,123 @@ test('15. Normal web remains unchanged', () => {
     .trim();
   assert.equal(gitDiffWeb, '', 'Normal web components and pages must remain completely untouched');
 });
+
+test('16. modal width < 100vw and uses responsive clamp min(88vw, 1500px)', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('width: min(88vw, 1500px);'),
+    'Modal dialog must use width: min(88vw, 1500px) to guarantee width < 100vw'
+  );
+  assert.ok(
+    !css.includes('.tv-v2-detail-dialog {\n  width: 100vw;') &&
+      !css.includes('.tv-v2-detail-modal {\n  width: 100vw;'),
+    'Modal dialog must never be 100vw'
+  );
+});
+
+test('17. modal height < 100vh and uses max-height: 88vh', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('max-height: 88vh;'),
+    'Modal dialog must use max-height: 88vh'
+  );
+  assert.ok(
+    !css.includes('.tv-v2-detail-dialog {\n  height: 100vh;') &&
+      !css.includes('.tv-v2-detail-modal {\n  height: 100vh;'),
+    'Modal dialog must never be 100vh'
+  );
+});
+
+test('18. backdrop fills full viewport with darkened translucent background and subtle blur', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('.tv-v2-detail-backdrop {') &&
+      css.includes('position: fixed;') &&
+      css.includes('inset: 0;') &&
+      css.includes('width: 100vw;') &&
+      css.includes('height: 100vh;'),
+    'Backdrop must own full viewport (position: fixed; inset: 0; 100vw x 100vh)'
+  );
+  assert.ok(
+    css.includes('background-color: rgba(0, 0, 0, 0.58);'),
+    'Backdrop must use dimmed translucent background rgba(0, 0, 0, 0.58)'
+  );
+  assert.ok(
+    css.includes('backdrop-filter: blur(4px);'),
+    'Backdrop must use subtle blur'
+  );
+});
+
+test('19. modal centered horizontally and vertically', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('display: grid;') && css.includes('place-items: center;'),
+    'Backdrop must use display: grid; place-items: center; to center modal'
+  );
+});
+
+test('20. rounded corners and overflow hidden applied', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('border-radius: clamp(14px, 1.4vw, 18px);'),
+    'Modal must have rounded corners clamp(14px, 1.4vw, 18px)'
+  );
+  assert.ok(
+    css.includes('.tv-v2-detail-dialog,') && css.includes('overflow: hidden;'),
+    'Modal shell must have overflow: hidden to clip hero inside top corners'
+  );
+});
+
+test('21. internal scrolling used and background scrolling locked', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('.tv-v2-detail__scrollable {') &&
+      css.includes('overflow-y: auto;') &&
+      css.includes('overscroll-behavior: contain;'),
+    'Modal body must scroll internally with overscroll-behavior: contain'
+  );
+
+  const screenTsx = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvDetailScreen.tsx'),
+    'utf-8'
+  );
+  assert.ok(
+    screenTsx.includes("document.body.style.overflow = 'hidden'"),
+    'TvDetailScreen must lock document.body.style.overflow to prevent background scroll'
+  );
+});
+
+test('22. hero height is bounded clamp(280px, 42vh, 480px) and close button inside modal', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/screens/TvScreens.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('--tv-detail-hero-height: clamp(280px, 42vh, 480px);'),
+    'Hero height must be clamp(280px, 42vh, 480px)'
+  );
+  assert.ok(
+    css.includes('top: clamp(16px, 1.8vh, 24px);') &&
+      css.includes('right: clamp(16px, 1.5vw, 24px);'),
+    'Close button must be positioned inside modal top-right'
+  );
+});
+

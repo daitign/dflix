@@ -250,7 +250,15 @@ test('TV V2 Play delegates to AndroidTVBridge.startTvPlayer without iframe fallb
 // SECTION 20: TV V2 PLAYER — SAFE 5-SECOND INACTIVITY AUTO-HIDE TESTS
 // ---------------------------------------------------------------------------
 
-function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: boolean } = {}) {
+function createTestPlayerHarness(options: {
+  videoPaused?: boolean;
+  nestedMenu?: boolean;
+  menuType?: string;
+  hasSkipIntro?: boolean;
+  skipIntroVisible?: boolean;
+  skipIntroLabel?: string;
+  skipIntroRect?: { left: number; top: number; width: number; height: number; right: number; bottom: number };
+} = {}) {
   const timers = new Map<number, { fn: () => void; triggerAt: number }>();
   let nextTimerId = 1;
   let currentTime = 0;
@@ -333,7 +341,49 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     matches: (s: string) => s.includes('button'),
     focus: () => {},
     blur: () => {},
-    click: () => { openMenu(options.nestedMenu); },
+    click: () => { openMenu(options.nestedMenu, options.menuType || (options.nestedMenu ? 'style' : 'subtitles')); },
+    dispatchEvent: () => true
+  };
+  const qualityBtn: any = {
+    tagName: 'BUTTON',
+    isConnected: true,
+    getAttribute: (k: string) => (k === 'aria-label' ? 'Quality' : null),
+    className: 'art-control-quality',
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    style: { setProperty: (k: string, v: string) => { qualityBtn.style[k] = v; }, removeProperty: (k: string) => { delete qualityBtn.style[k]; } },
+    getBoundingClientRect: () => ({ left: 260, top: 900, width: 40, height: 40, right: 300, bottom: 940 }),
+    matches: (s: string) => s.includes('button'),
+    focus: () => {},
+    blur: () => {},
+    click: () => { openMenu(false, 'quality'); },
+    dispatchEvent: () => true
+  };
+  const serverBtn: any = {
+    tagName: 'BUTTON',
+    isConnected: true,
+    getAttribute: (k: string) => (k === 'aria-label' ? 'Server' : null),
+    className: 'art-control-server',
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    style: { setProperty: (k: string, v: string) => { serverBtn.style[k] = v; }, removeProperty: (k: string) => { delete serverBtn.style[k]; } },
+    getBoundingClientRect: () => ({ left: 320, top: 900, width: 40, height: 40, right: 360, bottom: 940 }),
+    matches: (s: string) => s.includes('button'),
+    focus: () => {},
+    blur: () => {},
+    click: () => { openMenu(false, 'server'); },
+    dispatchEvent: () => true
+  };
+  const settingsBtn: any = {
+    tagName: 'BUTTON',
+    isConnected: true,
+    getAttribute: (k: string) => (k === 'aria-label' ? 'Settings' : null),
+    className: 'art-control-setting',
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    style: { setProperty: (k: string, v: string) => { settingsBtn.style[k] = v; }, removeProperty: (k: string) => { delete settingsBtn.style[k]; } },
+    getBoundingClientRect: () => ({ left: 380, top: 900, width: 40, height: 40, right: 420, bottom: 940 }),
+    matches: (s: string) => s.includes('button'),
+    focus: () => {},
+    blur: () => {},
+    click: () => { openMenu(false, options.menuType || 'settings'); },
     dispatchEvent: () => true
   };
   const timelineEl: any = {
@@ -351,6 +401,37 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     dispatchEvent: () => true
   };
 
+  let skipIntroVisible = options.skipIntroVisible !== false;
+  let skipIntroClicked = false;
+  const skipIntroBtn: any = {
+    tagName: 'BUTTON',
+    isConnected: true,
+    getAttribute: (k: string) => (k === 'aria-label' ? (options.skipIntroLabel || 'Skip Intro') : null),
+    className: 'art-control-skip skip-intro',
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    textContent: options.skipIntroLabel || 'Skip Intro',
+    style: {
+      setProperty: (k: string, v: string) => { skipIntroBtn.style[k] = v; },
+      removeProperty: (k: string) => { delete skipIntroBtn.style[k]; },
+      display: skipIntroVisible ? 'block' : 'none',
+      visibility: skipIntroVisible ? 'visible' : 'hidden',
+      opacity: skipIntroVisible ? '1' : '0'
+    },
+    getBoundingClientRect: () => {
+      if (!skipIntroVisible) return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
+      return options.skipIntroRect || { left: 1600, top: 800, width: 140, height: 48, right: 1740, bottom: 848 };
+    },
+    matches: (s: string) => s.includes('button') || s.includes('skip') || s.includes('intro'),
+    closest: (s: string) => (s.includes('button') || s.includes('skip') ? skipIntroBtn : null),
+    contains: () => false,
+    focus: () => {},
+    blur: () => {},
+    click: () => {
+      skipIntroClicked = true;
+    },
+    dispatchEvent: () => true
+  };
+
   let menuOpen = false;
   let menuItems: any[] = [];
   const popupDialog: any = {
@@ -359,6 +440,7 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     getAttribute: (k: string) => (k === 'role' ? 'dialog' : null),
     className: 'art-settings',
     classList: { add: () => {}, remove: () => {}, contains: () => false },
+    textContent: 'SUBTITLES',
     style: {
       setProperty: (k: string, v: string) => { popupDialog.style[k] = v; },
       removeProperty: (k: string) => { delete popupDialog.style[k]; },
@@ -370,20 +452,30 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     matches: (s: string) => s.includes('dialog'),
     contains: (child: any) => menuItems.includes(child),
     querySelectorAll: () => menuItems,
+    querySelector: () => null,
     focus: () => {},
     blur: () => {},
     click: () => {},
-    dispatchEvent: () => true
+    dispatchEvent: (ev: any) => {
+      if (ev && (ev.key === 'Escape' || ev.type === 'Escape')) {
+        closeMenu();
+      }
+      return true;
+    }
   };
 
-  function createMenuItem(label: string, isNestedNav: boolean = false) {
+  function createMenuItem(label: string, isNestedNav: boolean = false, isBackButton: boolean = false) {
     const item: any = {
-      tagName: 'DIV',
+      tagName: 'BUTTON',
       isConnected: true,
-      getAttribute: (k: string) => (k === 'role' ? 'menuitem' : (k === 'aria-label' ? label : null)),
+      getAttribute: (k: string) => (k === 'aria-label' ? label : (k === 'role' ? 'menuitem' : null)),
       textContent: label,
-      className: 'art-setting-item',
-      classList: { add: () => {}, remove: () => {}, contains: () => false },
+      className: isBackButton ? 'art-setting-item art-icon-back' : 'art-setting-item',
+      classList: {
+        add: () => {},
+        remove: () => {},
+        contains: (c: string) => isBackButton && (c === 'art-icon-back' || c === 'art-setting-item-back')
+      },
       style: {
         setProperty: (k: string, v: string) => { item.style[k] = v; },
         removeProperty: (k: string) => { delete item.style[k]; },
@@ -392,12 +484,14 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
         opacity: '1'
       },
       getBoundingClientRect: () => ({ left: 220, top: 520, width: 260, height: 40, right: 480, bottom: 560 }),
-      matches: (s: string) => s.includes('menuitem') || s.includes('div'),
+      matches: (s: string) => s.includes('menuitem') || s.includes('div') || s.includes('button'),
       contains: () => false,
       focus: () => {},
       blur: () => {},
       click: () => {
-        if (!isNestedNav) {
+        if (isBackButton) {
+          openMenu(false, 'settings');
+        } else if (!isNestedNav) {
           closeMenu();
         }
       },
@@ -406,13 +500,37 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     return item;
   }
 
-  function openMenu(isNested: boolean = false) {
+  function openMenu(isNested: boolean = false, type?: string) {
     menuOpen = true;
     popupDialog.style.display = 'block';
     popupDialog.style.visibility = 'visible';
-    menuItems = isNested
-      ? [createMenuItem('Subtitle Style', true), createMenuItem('Font Size', true)]
-      : [createMenuItem('English', false), createMenuItem('Spanish', false), createMenuItem('Off', false)];
+    const resolvedType = type || options.menuType || (isNested || options.nestedMenu ? 'style' : 'subtitles');
+    if (resolvedType === 'quality') {
+      popupDialog.textContent = 'QUALITY';
+      menuItems = [createMenuItem('Auto', false), createMenuItem('1080p', false), createMenuItem('720p', false)];
+    } else if (resolvedType === 'server') {
+      popupDialog.textContent = 'SERVER';
+      menuItems = [createMenuItem('Server 1', false), createMenuItem('Server 2', false), createMenuItem('Vidcloud', false)];
+    } else if (resolvedType === 'settings') {
+      popupDialog.textContent = 'PLAYER SETTINGS Customize your playback experience';
+      menuItems = [createMenuItem('Quality Auto >', true), createMenuItem('Aspect Ratio Fit >', true), createMenuItem('Brightness 100%', true)];
+    } else if (resolvedType === 'nested_settings') {
+      popupDialog.textContent = 'ASPECT RATIO';
+      menuItems = [createMenuItem('Back', true, true), createMenuItem('16:9', false), createMenuItem('4:3', false), createMenuItem('Fit', false)];
+    } else if (resolvedType === 'style' || isNested) {
+      popupDialog.textContent = 'SUBTITLE STYLE';
+      menuItems = [createMenuItem('Subtitle Style', true), createMenuItem('Font Size', true), createMenuItem('Opacity', true)];
+    } else {
+      popupDialog.textContent = 'SUBTITLES Upload subtitle Off English English 1 English 2 Bulgarian 1 Style Delay';
+      menuItems = [
+        createMenuItem('English', false),
+        createMenuItem('English 1', false),
+        createMenuItem('Bulgarian 1', false),
+        createMenuItem('Off', false),
+        createMenuItem('Style', true),
+        createMenuItem('Delay', true)
+      ];
+    }
   }
 
   function closeMenu() {
@@ -427,29 +545,45 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     body: {
       classList: { add: () => {}, remove: () => {}, contains: () => false },
       style: { setProperty: () => {}, removeProperty: () => {} },
-      dispatchEvent: () => true
+      dispatchEvent: (ev: any) => {
+        if (ev && (ev.key === 'Escape' || ev.type === 'Escape')) {
+          closeMenu();
+        }
+        return true;
+      }
     },
     documentElement: {
       classList: { add: () => {}, remove: () => {}, contains: () => false },
       style: { setProperty: () => {}, removeProperty: () => {} },
-      dispatchEvent: () => true
+      dispatchEvent: (ev: any) => {
+        if (ev && (ev.key === 'Escape' || ev.type === 'Escape')) {
+          closeMenu();
+        }
+        return true;
+      }
     },
     activeElement: null,
     createElement: () => ({ appendChild: () => {}, textContent: '', setAttribute: () => {} }),
     querySelector: (sel: string) => {
       if (sel === 'video') return videoEl;
       if (sel.includes('.art-video-player')) return root;
-      if (sel.includes('[role="dialog"]')) return menuOpen ? popupDialog : null;
+      if (sel.includes('[role="dialog"]')) return (menuOpen && popupDialog.style.display !== 'none') ? popupDialog : null;
       return null;
     },
     querySelectorAll: (sel: string) => {
       if (sel === 'video') return [videoEl];
       if (sel === 'svg') return [];
       if (sel.includes('[role="dialog"]') || sel.includes('[role="menu"]')) {
-        return menuOpen ? [popupDialog] : [];
+        return (menuOpen && popupDialog.style.display !== 'none') ? [popupDialog] : [];
       }
-      if (sel.includes('button') || sel.includes('input') || sel.includes('slider')) {
-        return [playBtn, subBtn, timelineEl];
+      if (sel.includes('button') || sel.includes('input') || sel.includes('slider') || sel.includes('skip') || sel.includes('intro')) {
+        const base = [playBtn, subBtn, qualityBtn, serverBtn, settingsBtn, timelineEl];
+        if (options.hasSkipIntro) base.push(skipIntroBtn);
+        return base;
+      }
+      if (sel.includes('div') || sel.includes('span') || sel.includes('p')) {
+        if (options.hasSkipIntro) return [skipIntroBtn];
+        return [];
       }
       return [];
     }
@@ -505,7 +639,22 @@ function createTestPlayerHarness(options: { videoPaused?: boolean; nestedMenu?: 
     videoEl,
     playBtn,
     subBtn,
+    qualityBtn,
+    serverBtn,
+    settingsBtn,
+    popupDialog,
     timelineEl,
+    skipIntroBtn,
+    setSkipIntroVisible: (v: boolean) => {
+      skipIntroVisible = v;
+      skipIntroBtn.style.display = v ? 'block' : 'none';
+      skipIntroBtn.style.visibility = v ? 'visible' : 'hidden';
+      skipIntroBtn.style.opacity = v ? '1' : '0';
+      if (!v) {
+        skipIntroBtn.isConnected = false;
+      }
+    },
+    isSkipIntroClicked: () => skipIntroClicked,
     advanceTime,
     openMenu,
     closeMenu
@@ -667,4 +816,428 @@ test('14. web player unchanged', () => {
   assert.ok(!webPlayerContent.includes('DAITIGN_TV_PLAYER'), 'Web player does not import TV controller');
   assert.ok(!webPlayerContent.includes('tv-v2'), 'Web player does not import tv-v2');
 });
+
+// ---------------------------------------------------------------------------
+// SECTION 18 REQUIREMENTS: Submenu Close Behavior & Compact Settings Panel
+// ---------------------------------------------------------------------------
+
+test('SECTION 18 - 1. subtitle single-choice closes after selection', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT'); // Focus subtitles button
+  h.player.handle('OK'); // Open subtitles menu
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+  
+  // Select 'English' (single-choice subtitle option)
+  h.player.handle('OK');
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'State returns to CONTROLS after selection');
+  assert.ok(h.player.snapshot().selected?.label.includes('subtitles'), 'Focus restores to subtitles opener');
+  assert.equal(h.popupDialog.style.display, 'none', 'Subtitles popup is dismissed');
+});
+
+test('SECTION 18 - 2. quality single-choice closes', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT'); // subBtn
+  h.player.handle('RIGHT'); // qualityBtn
+  h.player.handle('OK'); // Open quality menu
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // Navigate to 1080p and select
+  h.player.handle('DOWN');
+  h.player.handle('OK'); // Select 1080p
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'State returns to CONTROLS after quality selection');
+  assert.ok(h.player.snapshot().selected?.label.includes('quality'), 'Focus restores to quality opener');
+});
+
+test('SECTION 18 - 3. server single-choice closes', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT'); // subBtn
+  h.player.handle('RIGHT'); // qualityBtn
+  h.player.handle('RIGHT'); // serverBtn
+  h.player.handle('OK'); // Open server menu
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // Select Server 1
+  h.player.handle('OK');
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'State returns to CONTROLS after server selection');
+  assert.ok(h.player.snapshot().selected?.label.includes('server'), 'Focus restores to server opener');
+});
+
+test('SECTION 18 - 4. nested settings do not incorrectly auto-close', () => {
+  const h = createTestPlayerHarness({ menuType: 'style' });
+  h.player.wake();
+  h.player.handle('RIGHT'); // subBtn
+  h.player.handle('OK');
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // Enter Subtitle Style
+  h.player.handle('OK'); // Subtitle Style option
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_MENU', 'Nested multi-step settings remain in PLAYER_MENU');
+  
+  // Navigate and interact inside nested menu
+  h.player.handle('DOWN'); // Font Size
+  h.player.handle('OK');
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_MENU', 'Multi-step configuration does not auto-close');
+});
+
+test('SECTION 18 - 5. Back closes deepest popup first', () => {
+  const h = createTestPlayerHarness({ menuType: 'nested_settings' });
+  h.player.wake();
+  h.player.handle('RIGHT'); // subBtn
+  h.player.handle('RIGHT'); // qualityBtn
+  h.player.handle('RIGHT'); // serverBtn
+  h.player.handle('RIGHT'); // settingsBtn
+  h.player.handle('OK');
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // First BACK hits Back button in nested submenu
+  const handledDeepest = h.player.handle('BACK');
+  assert.equal(handledDeepest, true);
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU', 'Back from nested submenu returns to parent menu');
+
+  // Second BACK closes parent Settings menu
+  const handledParent = h.player.handle('BACK');
+  assert.equal(handledParent, true);
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'Second Back closes settings panel to PLAYER_CONTROLS');
+});
+
+test('SECTION 18 - 6. Back never exits player while popup exists', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT');
+  h.player.handle('OK'); // Open menu
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // Back while popup exists MUST be consumed (return true), never exit playback
+  const handledMenuBack = h.player.handle('BACK');
+  assert.equal(handledMenuBack, true, 'Back with popup open consumes event');
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS');
+
+  // Back on controls hides controls
+  const handledControlsBack = h.player.handle('BACK');
+  assert.equal(handledControlsBack, true, 'Back on controls consumes and hides');
+  assert.equal(h.player.getState(), 'PLAYER_HIDDEN');
+
+  // Only when hidden does Back return false (native Android handles exit)
+  const handledHiddenBack = h.player.handle('BACK');
+  assert.equal(handledHiddenBack, false, 'Only when completely hidden does Back permit exit');
+});
+
+test('SECTION 18 - 7. opener focus restores', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  
+  // Test Subtitles opener restoration
+  h.player.handle('RIGHT'); // Subtitles
+  assert.ok(h.player.snapshot().selected?.label.includes('subtitles'));
+  h.player.handle('OK');
+  h.advanceTime(100);
+  h.player.handle('OK'); // select
+  h.advanceTime(200);
+  assert.ok(h.player.snapshot().selected?.label.includes('subtitles'), 'Subtitles opener restored');
+
+  // Test Quality opener restoration
+  h.player.handle('RIGHT'); // Quality
+  h.player.handle('OK');
+  h.advanceTime(100);
+  h.player.handle('OK'); // select
+  h.advanceTime(200);
+  assert.ok(h.player.snapshot().selected?.label.includes('quality'), 'Quality opener restored');
+});
+
+test('SECTION 18 - 8. controller state matches visible popup state', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS');
+  h.player.handle('RIGHT');
+  h.player.handle('OK');
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU', 'State is PLAYER_MENU when popup is visible');
+  
+  h.closeMenu();
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'State matches CONTROLS after popup is gone');
+});
+
+test('SECTION 18 - 9. settings panel is not fullscreen', () => {
+  const controller = fs.readFileSync(controllerPath, 'utf8');
+  assert.ok(controller.includes('width:min(620px,42vw)!important'), 'Settings width is capped to min(620px, 42vw)');
+  assert.ok(controller.includes('max-height:min(680px,72vh)!important'), 'Settings max-height is capped to min(680px, 72vh)');
+  assert.ok(controller.includes('position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important'), 'Settings panel is centered with visible margins on all four sides');
+  assert.ok(!controller.includes('.max-w-5xl{max-width:min(94vw,1200px)!important;max-height:92vh!important;bottom:auto!important}'), 'Settings is no longer oversized 94vw x 92vh');
+});
+
+test('SECTION 18 - 10. settings uses internal scrolling', () => {
+  const controller = fs.readFileSync(controllerPath, 'utf8');
+  assert.ok(controller.includes('overflow-y:auto!important;overflow-x:hidden!important'), 'Internal scrolling applied to settings and popups');
+  assert.ok(controller.includes('.daitign-tv-settings-popup::-webkit-scrollbar'), 'Custom scrollbar defined for settings popup');
+  assert.ok(controller.includes('.daitign-tv-subtitles-popup::-webkit-scrollbar'), 'Custom scrollbar defined for subtitles popup');
+});
+
+test('SECTION 18 - 11. menu blocks player auto-hide', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT');
+  h.player.handle('OK');
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+  
+  // Advance 25 seconds while menu is open
+  h.advanceTime(25000);
+  assert.equal(h.player.getState(), 'PLAYER_MENU', 'Player never auto-hides while menu is open');
+});
+
+test('SECTION 18 - 12. closing final popup restarts 5s idle timer', () => {
+  const h = createTestPlayerHarness();
+  h.player.wake();
+  h.player.handle('RIGHT');
+  h.player.handle('OK');
+  h.advanceTime(100);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+  
+  // Idle for 10s in menu
+  h.advanceTime(10000);
+  assert.equal(h.player.getState(), 'PLAYER_MENU');
+
+  // Select option -> closes menu
+  h.player.handle('OK');
+  h.advanceTime(200);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS');
+
+  // Still visible after 4.5s
+  h.advanceTime(4500);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'Controls visible at 4.5s');
+
+  // Hides after 5.1s total
+  h.advanceTime(600);
+  assert.equal(h.player.getState(), 'PLAYER_HIDDEN', 'Controls hide at 5s idle');
+});
+
+test('SECTION 18 - 13. TV V1 unchanged', () => {
+  assert.ok(fs.existsSync(tvV1Path), 'TV V1 spatialNavigation must remain intact');
+  const tvV1Content = fs.readFileSync(tvV1Path, 'utf8');
+  assert.ok(tvV1Content.length > 0, 'TV V1 has content');
+});
+
+test('SECTION 18 - 14. web unchanged', () => {
+  const webPlayerContent = fs.readFileSync(webPlayerPath, 'utf8');
+  assert.ok(!webPlayerContent.includes('DAITIGN_TV_PLAYER'), 'Web player does not import TV controller');
+  assert.ok(!webPlayerContent.includes('tv-v2'), 'Web player does not import tv-v2');
+});
+
+// ---------------------------------------------------------------------------
+// SECTION 21: TV V2 PLAYER — D-PAD SUPPORT FOR "SKIP INTRO" TESTS
+// ---------------------------------------------------------------------------
+
+test('SECTION 21 - 1. visible Skip Intro is discovered', () => {
+  const h = createTestPlayerHarness({ hasSkipIntro: true, skipIntroVisible: true });
+  h.player.wake();
+  const inv = h.player.inventory();
+  const skipIntro = inv.find((item: any) => item.kind === 'skip-intro');
+  assert.ok(skipIntro, 'Visible Skip Intro must be discovered in inventory');
+  assert.ok(skipIntro.label.includes('skip intro'));
+});
+
+test('SECTION 21 - 2. hidden Skip Intro is ignored', () => {
+  const h = createTestPlayerHarness({ hasSkipIntro: true, skipIntroVisible: false });
+  h.player.wake();
+  const inv = h.player.inventory();
+  const skipIntro = inv.find((item: any) => item.kind === 'skip-intro');
+  assert.equal(skipIntro, undefined, 'Hidden Skip Intro must be excluded from candidates');
+});
+
+test('SECTION 21 - 3. semantic kind is skip-intro for various provider labels', () => {
+  const labels = ['Skip Intro', 'Skip intro', 'Skip opening', 'Skip Opening', 'Intro', 'Skip', 'Skip Recap'];
+  for (const lbl of labels) {
+    const h = createTestPlayerHarness({ hasSkipIntro: true, skipIntroVisible: true, skipIntroLabel: lbl });
+    h.player.wake();
+    const inv = h.player.inventory();
+    const skipItem = inv.find((item: any) => item.label.includes(lbl.toLowerCase()) || item.kind === 'skip-intro');
+    assert.ok(skipItem, `Button with label "${lbl}" must be found`);
+    assert.equal(skipItem.kind, 'skip-intro', `Button with label "${lbl}" must have semantic kind 'skip-intro'`);
+  }
+});
+
+test('SECTION 21 - 4. spatial navigation can reach it and navigate away', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS');
+  
+  // Navigate through bottom controls towards right
+  h.player.handle('RIGHT'); // subBtn
+  h.player.handle('RIGHT'); // qualityBtn
+  h.player.handle('RIGHT'); // serverBtn
+  h.player.handle('RIGHT'); // settingsBtn (x=380, top=900)
+
+  // Skip Intro is at (x=450-590, top=800)
+  // ArrowUp or ArrowRight reaches Skip Intro via geometry
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro', 'Spatial navigation reaches Skip Intro');
+
+  // Navigate away back to control bar via DOWN
+  h.player.handle('DOWN');
+  assert.notEqual(h.player.snapshot().selected?.kind, 'skip-intro', 'Spatial navigation moves away from Skip Intro on Down');
+  assert.equal(h.player.getState(), 'PLAYER_TIMELINE', 'Down moves to timeline below Skip Intro');
+  h.player.handle('DOWN');
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'Next Down reaches control bar');
+});
+
+test('SECTION 21 - 5. Enter activates provider control', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  // Move to Skip Intro
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro');
+
+  assert.equal(h.isSkipIntroClicked(), false, 'Not clicked yet');
+  h.player.handle('OK');
+  assert.equal(h.isSkipIntroClicked(), true, 'Enter/OK triggers click on provider Skip Intro button');
+});
+
+test('SECTION 21 - 6. no hardcoded seek timestamp used', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  h.videoEl.currentTime = 42;
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro');
+
+  h.player.handle('OK');
+  // Controller must NOT alter currentTime; provider handles skip logic
+  assert.equal(h.videoEl.currentTime, 42, 'Controller does not modify video currentTime with hardcoded timestamp');
+});
+
+test('SECTION 21 - 7. disappearing button does not leave stale focus', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro');
+
+  // Skip Intro disappears after click
+  h.player.handle('OK');
+  h.setSkipIntroVisible(false);
+  h.advanceTime(150);
+
+  const snap = h.player.snapshot();
+  assert.ok(snap.selected, 'Focus must exist on another player control');
+  assert.notEqual(snap.selected.kind, 'skip-intro', 'Focus must not point to disappeared Skip Intro');
+});
+
+test('SECTION 21 - 8. fallback focus works', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  h.player.handle('RIGHT'); // Subtitles
+  assert.ok(h.player.snapshot().selected?.label.includes('subtitles'));
+
+  // Move to Skip Intro
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro');
+
+  // Trigger Skip Intro, and button disappears
+  h.player.handle('OK');
+  h.setSkipIntroVisible(false);
+  h.advanceTime(150);
+
+  // Focus safely returns to last stable control or play-pause
+  const snap = h.player.snapshot();
+  assert.ok(snap.selected, 'Fallback focus selected');
+  assert.ok(
+    snap.selected.kind === 'settings' || snap.selected.kind === 'subtitle' || snap.selected.kind === 'play-pause',
+    'Fallback focus moves to a stable player control'
+  );
+});
+
+test('SECTION 21 - 9. activity resets idle timer', () => {
+  const h = createTestPlayerHarness({
+    hasSkipIntro: true,
+    skipIntroVisible: true,
+    skipIntroRect: { left: 450, top: 800, width: 140, height: 40, right: 590, bottom: 840 }
+  });
+  h.player.wake();
+  h.advanceTime(4000); // 4 seconds idle
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS');
+
+  // Navigate to Skip Intro -> resets idle timer
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  h.player.handle('RIGHT');
+  assert.equal(h.player.snapshot().selected?.kind, 'skip-intro');
+
+  // Advance 3s (7s since wake, but 3s since activity)
+  h.advanceTime(3000);
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'Controls remain visible 3s after Skip Intro navigation');
+
+  // Activate Skip Intro -> fresh 5s timer starts
+  h.player.handle('OK');
+  h.advanceTime(4500); // 4.5s since activation
+  assert.equal(h.player.getState(), 'PLAYER_CONTROLS', 'Controls visible 4.5s after Skip Intro activation');
+
+  h.advanceTime(600); // Reaches 5.1s since activation
+  assert.equal(h.player.getState(), 'PLAYER_HIDDEN', 'Controls auto-hide after 5s inactivity following Skip Intro');
+});
+
+test('SECTION 21 - 10. TV V1 unchanged', () => {
+  assert.ok(fs.existsSync(tvV1Path), 'TV V1 spatialNavigation must remain intact');
+  const tvV1Content = fs.readFileSync(tvV1Path, 'utf8');
+  assert.ok(tvV1Content.length > 0, 'TV V1 has content');
+});
+
+test('SECTION 21 - 11. web player unchanged', () => {
+  const webPlayerContent = fs.readFileSync(webPlayerPath, 'utf8');
+  assert.ok(!webPlayerContent.includes('DAITIGN_TV_PLAYER'), 'Web player does not import TV controller');
+  assert.ok(!webPlayerContent.includes('tv-v2'), 'Web player does not import tv-v2');
+});
+
 

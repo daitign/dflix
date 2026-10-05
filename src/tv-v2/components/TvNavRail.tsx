@@ -176,6 +176,10 @@ export function TvNavRail({
                     openSubmenu(item.id as 'movies' | 'shows');
                     return true;
                   }
+                  if (direction === 'right' && item.id === 'my-list') {
+                    setFocus('nav-search');
+                    return true;
+                  }
                   return false;
                 }}
                 onSelect={() => {
@@ -396,7 +400,8 @@ function TvNavSearch({
               return true;
             }
           }
-          return false;
+          setFocus('nav-my-list');
+          return true;
         }
         if (direction === 'right') {
           const input = inputRef.current;
@@ -414,7 +419,11 @@ function TvNavSearch({
           return true;
         }
         if (direction === 'left') {
-          setFocus('nav-languages');
+          setFocus('nav-my-list');
+          return true;
+        }
+        if (direction === 'down') {
+          setFocus('hero-play');
           return true;
         }
       }
@@ -445,63 +454,63 @@ function TvNavSearch({
   }, [isExpanded]);
 
   return (
-    <div
-      aria-expanded={isExpanded}
-      className={`tv-v2-nav-search ${
-        isExpanded ? 'tv-v2-nav-search--expanded' : 'tv-v2-nav-search--collapsed'
-      } ${isFocused ? 'tv-v2-nav-search--focused' : ''} ${
-        activeTab === 'search' ? 'tv-v2-nav-search--active' : ''
-      }`}
-      data-testid="nav-search"
-      data-tv-focusable="true"
-      id="nav-search"
-      onClick={() => {
-        if (!isExpanded) {
-          onExpand();
-        } else {
-          inputRef.current?.focus();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-    >
-      <span aria-hidden="true" className="tv-v2-nav-search__icon">
-        <Icon name="search" size={18} />
-      </span>
-
-      {!isExpanded && <span className="tv-v2-nav-search__label">Search</span>}
-
-      {isExpanded && (
-        <input
-          autoComplete="off"
-          className="tv-v2-nav-search__input"
-          data-testid="search-input"
-          id="search-input"
-          inputMode="search"
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Titles, people, genres"
-          ref={inputRef}
-          type="search"
-          value={query}
-        />
-      )}
-
-      {isExpanded && query.length > 0 && (
-        <button
-          aria-label="Clear search"
-          className="tv-v2-nav-search__clear"
-          data-testid="search-clear-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClear();
+    <div className="tv-v2-nav-search-container">
+      <div
+        aria-expanded={isExpanded}
+        className={`tv-v2-nav-search ${
+          isExpanded ? 'tv-v2-nav-search--expanded' : 'tv-v2-nav-search--collapsed'
+        } ${isFocused ? 'tv-v2-nav-search--focused' : ''} ${
+          activeTab === 'search' ? 'tv-v2-nav-search--active' : ''
+        }`}
+        data-testid="nav-search"
+        data-tv-focusable="true"
+        id="nav-search"
+        onClick={() => {
+          if (!isExpanded) {
+            onExpand();
+          } else {
             inputRef.current?.focus();
-          }}
-          tabIndex={-1}
-          type="button"
-        >
-          <Icon name="close" size={16} />
-        </button>
-      )}
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
+        <span aria-hidden="true" className="tv-v2-nav-search__icon">
+          <Icon name="search" size={isExpanded ? 20 : 24} />
+        </span>
+
+        {isExpanded && (
+          <input
+            autoComplete="off"
+            className="tv-v2-nav-search__input"
+            data-testid="search-input"
+            id="search-input"
+            inputMode="search"
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Titles, people, genres"
+            ref={inputRef}
+            type="search"
+            value={query}
+          />
+        )}
+
+        {isExpanded && query.length > 0 && (
+          <button
+            aria-label="Clear search"
+            className="tv-v2-nav-search__clear"
+            data-testid="search-clear-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+              inputRef.current?.focus();
+            }}
+            tabIndex={-1}
+            type="button"
+          >
+            <Icon name="close" size={16} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -543,6 +552,10 @@ function TvNavNotifications({
         setFocus('nav-profile');
         return true;
       }
+      if (direction === 'down' && !isOpen) {
+        setFocus('hero-play');
+        return true;
+      }
       return false;
     },
     onSelect: () => {
@@ -565,7 +578,7 @@ function TvNavNotifications({
         onClick={() => (isOpen ? onClose() : onOpen())}
         type="button"
       >
-        <Icon name="bell" size={20} />
+        <Icon name="bell" size={24} />
         {unreadCount > 0 && (
           <span aria-hidden="true" className="tv-v2-notif-badge" data-testid="notification-badge">
             {unreadCount}
@@ -617,6 +630,10 @@ function TvNavProfile({
       if (direction === 'right') {
         return true;
       }
+      if (direction === 'down' && !isOpen) {
+        setFocus('hero-play');
+        return true;
+      }
       return false;
     },
     onSelect: () => {
@@ -639,8 +656,8 @@ function TvNavProfile({
         onClick={() => (isOpen ? onClose() : onOpen())}
         type="button"
       >
-        <div className="tv-v2-profile-avatar-pill">
-          <img alt="Daitign Profile" src="/profile-avatar.png" />
+        <div className="tv-v2-profile-avatar-pill" data-testid="profile-avatar">
+          <img alt="DV Profile" src="/profile-avatar.png" />
         </div>
         <span aria-hidden="true" className="tv-v2-profile-chevron">
           {isOpen ? '▴' : '▾'}

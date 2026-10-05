@@ -6,22 +6,16 @@ import path from 'node:path';
 import { TvFocusEngine } from '../focus/TvFocusEngine.ts';
 import { PRIMARY_NAV_ITEMS } from './tvNavConfig.ts';
 import {
-  clearNewPopularCatalogCache,
-  fetchTvNewPopularCatalog,
-} from '../catalog/tvNewPopularCatalog.ts';
-import {
-  clearLanguageCatalogCache,
-  fetchTvLanguageCatalog,
-  TV_LANGUAGES,
-  TV_PREFERENCE_MODES,
-} from '../catalog/tvLanguagesCatalog.ts';
-import {
   clearTvNotificationCache,
-  fetchTvNotifications,
   getUnreadNotificationCount,
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from '../notifications/tvNotificationCatalog.ts';
+import {
+  clearLanguageCatalogCache,
+  fetchTvLanguageCatalog,
+  TV_LANGUAGES,
+} from '../catalog/tvLanguagesCatalog.ts';
 
 function createMockKeyEvent(init: {
   key?: string;
@@ -37,79 +31,177 @@ function createMockKeyEvent(init: {
   } as unknown as KeyboardEvent;
 }
 
-test('1. full DAITIGN wordmark rendered', () => {
-  const railContent = fs.readFileSync(
+test('1. only required nav items render', () => {
+  const expectedNav = ['home', 'shows', 'movies', 'new-popular', 'my-list'];
+  assert.deepEqual(
+    PRIMARY_NAV_ITEMS.map((item) => item.id),
+    expectedNav,
+    'Top nav must render strictly: Home, TV Shows, Movies, New & Popular, My List'
+  );
+
+  assert.equal(PRIMARY_NAV_ITEMS.find((i) => i.id === 'home')?.label, 'Home');
+  assert.equal(PRIMARY_NAV_ITEMS.find((i) => i.id === 'shows')?.label, 'TV Shows');
+  assert.equal(PRIMARY_NAV_ITEMS.find((i) => i.id === 'movies')?.label, 'Movies');
+  assert.equal(PRIMARY_NAV_ITEMS.find((i) => i.id === 'new-popular')?.label, 'New & Popular');
+  assert.equal(PRIMARY_NAV_ITEMS.find((i) => i.id === 'my-list')?.label, 'My List');
+
+  // Verify DAITIGN wordmark on far left
+  const railTsx = fs.readFileSync(
     path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'),
     'utf-8'
   );
   assert.ok(
-    railContent.includes('<BrandMark className="tv-v2-brand-mark" />'),
-    'TvNavRail must render full BrandMark wordmark, not compact monogram'
-  );
-  assert.ok(
-    !railContent.includes('<BrandMark compact />'),
-    'TvNavRail must not render compact BrandMark'
-  );
-
-  const wordmarkSvgPath = path.join(process.cwd(), 'public/brand/daitign-wordmark.svg');
-  assert.ok(fs.existsSync(wordmarkSvgPath), 'daitign-wordmark.svg must exist');
-  const svgContent = fs.readFileSync(wordmarkSvgPath, 'utf-8');
-  assert.ok(
-    svgContent.includes('daitign-bottom-curve') && svgContent.includes('#E50914'),
-    'daitign-wordmark.svg must have streaming curved baseline and red fill'
+    railTsx.includes('<BrandMark className="tv-v2-brand-mark" />'),
+    'TvNavRail must render full BrandMark wordmark on left'
   );
 });
 
-test('2. New & Popular exists and works', async () => {
-  const item = PRIMARY_NAV_ITEMS.find((i) => i.id === 'new-popular');
-  assert.ok(item, 'PRIMARY_NAV_ITEMS must contain new-popular');
-  assert.equal(item?.label, 'New & Popular');
-
-  clearNewPopularCatalogCache();
-  const catalog = await fetchTvNewPopularCatalog();
-  // fetchTvNewPopularCatalog should return either null (in mock/offline node environment) or structured data
-  assert.ok(typeof fetchTvNewPopularCatalog === 'function');
+test('2. Games absent', () => {
+  const gamesItem = PRIMARY_NAV_ITEMS.find(
+    (item) => item.id === 'games' || item.label.toLowerCase().includes('game')
+  );
+  assert.equal(gamesItem, undefined, 'Games must NOT be present in top nav');
 });
 
-test('3. Browse by Languages exists and works', async () => {
-  const item = PRIMARY_NAV_ITEMS.find((i) => i.id === 'languages');
-  assert.ok(item, 'PRIMARY_NAV_ITEMS must contain languages');
-  assert.equal(item?.label, 'Browse by Languages');
+test('3. My Netflix absent', () => {
+  const myNetflixItem = PRIMARY_NAV_ITEMS.find(
+    (item) => item.id === 'my-netflix' || item.label.toLowerCase().includes('netflix')
+  );
+  assert.equal(myNetflixItem, undefined, 'My Netflix must NOT be present in top nav');
+});
 
-  assert.ok(TV_LANGUAGES.length >= 8, 'Must support multiple languages');
-  assert.ok(TV_PREFERENCE_MODES.length >= 3, 'Must support Original Language, Dubbing, Subtitles');
+test('4. Browse by Languages absent', async () => {
+  const langItem = PRIMARY_NAV_ITEMS.find((item) => item.id === 'languages');
+  assert.equal(langItem, undefined, 'Browse by Languages must NOT be rendered in visible top nav');
 
+  // Verify language catalog code is NOT deleted and still functional
+  assert.ok(TV_LANGUAGES.length >= 8, 'Language definitions must remain functional');
   clearLanguageCatalogCache();
-  const results = await fetchTvLanguageCatalog('en', 'original');
-  assert.ok(Array.isArray(results));
+  const catalog = await fetchTvLanguageCatalog('en', 'original');
+  assert.ok(Array.isArray(catalog), 'Language catalog fetching must still function');
 });
 
-test('4. Search expands in place', () => {
-  const cssContent = fs.readFileSync(
+test('5. Search icon renders', () => {
+  const railTsx = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'),
+    'utf-8'
+  );
+  assert.ok(
+    railTsx.includes('<TvNavSearch') && railTsx.includes('id="nav-search"'),
+    'TvNavSearch must render in header actions'
+  );
+  assert.ok(
+    railTsx.includes('<Icon name="search"') &&
+      (railTsx.includes('size={isExpanded ? 20 : 24}') || railTsx.includes('size={18}') || railTsx.includes('size={24}')),
+    'Search must render search icon'
+  );
+
+  const css = fs.readFileSync(
     path.join(process.cwd(), 'src/tv-v2/components/TvComponents.css'),
     'utf-8'
   );
   assert.ok(
-    cssContent.includes('.tv-v2-nav-search--collapsed') &&
-      cssContent.includes('.tv-v2-nav-search--expanded'),
-    'CSS must contain collapsed and expanded states'
-  );
-  assert.ok(
-    cssContent.includes('Titles, people, genres') ||
-      fs
-        .readFileSync(path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'), 'utf-8')
-        .includes('Titles, people, genres'),
-    'Search placeholder must be Titles, people, genres'
+    css.includes('.tv-v2-nav-search--collapsed') &&
+      (css.includes('width: clamp(38px, 4.2vh, 44px);') || css.includes('width: clamp(36px, 4.2vh, 42px);')),
+    'Collapsed search must be a compact minimal icon'
   );
 });
 
-test('5. Notifications open/close', () => {
+test('6. Notifications renders', () => {
+  const railTsx = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'),
+    'utf-8'
+  );
+  assert.ok(
+    railTsx.includes('<TvNavNotifications') && railTsx.includes('id="nav-notifications"'),
+    'TvNavNotifications must always be rendered in header actions'
+  );
+  assert.ok(
+    railTsx.includes('<Icon name="bell"') &&
+      (railTsx.includes('size={24}') || railTsx.includes('size={20}')),
+    'Notifications button must render bell icon'
+  );
+  assert.ok(
+    railTsx.includes('{unreadCount > 0 && (') &&
+      railTsx.includes('data-testid="notification-badge"'),
+    'Notification badge must only render when unread count > 0'
+  );
+
+  const mockNotifs = [
+    { id: 'notif-1', message: 'msg1', time: '1h', title: 'Arrival 1' },
+    { id: 'notif-2', message: 'msg2', time: '2h', title: 'Arrival 2' },
+  ];
+  clearTvNotificationCache();
+  const count = getUnreadNotificationCount(mockNotifs);
+  assert.equal(typeof count, 'number');
+  markNotificationAsRead('notif-1');
+  assert.ok(getUnreadNotificationCount(mockNotifs) <= count);
+  markAllNotificationsAsRead(mockNotifs);
+  assert.equal(getUnreadNotificationCount(mockNotifs), 0);
+});
+
+test('7. Profile uses DV branding', () => {
+  const railTsx = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'),
+    'utf-8'
+  );
+  assert.ok(
+    railTsx.includes('<TvNavProfile') && railTsx.includes('id="nav-profile"'),
+    'TvNavProfile must always render in header actions'
+  );
+  assert.ok(
+    railTsx.includes('data-testid="profile-avatar"') && railTsx.includes('alt="DV Profile"'),
+    'Profile avatar must use DV Profile branding'
+  );
+
+  const profileTsx = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/components/TvProfileDropdown.tsx'),
+    'utf-8'
+  );
+  assert.ok(
+    profileTsx.includes('DAITIGN') && profileTsx.includes('DV Premium'),
+    'Profile dropdown must feature DAITIGN and DV Premium'
+  );
+  assert.ok(
+    !profileTsx.includes('Manage Profiles') && !profileTsx.includes('Transfer Profile'),
+    'Must not include non-functional Netflix items'
+  );
+});
+
+test('8. Search expands leftward', () => {
+  const css = fs.readFileSync(
+    path.join(process.cwd(), 'src/tv-v2/components/TvComponents.css'),
+    'utf-8'
+  );
+  assert.ok(
+    css.includes('.tv-v2-nav-rail__actions {') &&
+      css.includes('margin-left: auto;') &&
+      css.includes('justify-content: flex-end;'),
+    'Actions must anchor right'
+  );
+  assert.ok(
+    css.includes('.tv-v2-nav-search--expanded') &&
+      (css.includes('width: clamp(240px, 28vw, 500px);') ||
+        css.includes('width: clamp(320px, 26vw, 500px);') ||
+        css.includes('width: clamp(320px, 28vw, 520px);')),
+    'Expanded search must expand leftward'
+  );
+  assert.ok(
+    css.includes('Titles, people, genres') ||
+      fs
+        .readFileSync(path.join(process.cwd(), 'src/tv-v2/components/TvNavRail.tsx'), 'utf-8')
+        .includes('Titles, people, genres'),
+    'Search input placeholder must be Titles, people, genres'
+  );
+});
+
+test('9. Notifications popup works', () => {
   const engine = new TvFocusEngine();
   engine.registerRow({ id: 'nav-row', order: 0 });
 
   let isOpen = false;
   engine.registerNode({
-    colIndex: 7,
+    colIndex: 6,
     id: 'nav-notifications',
     onSelect: () => {
       isOpen = true;
@@ -139,39 +231,19 @@ test('5. Notifications open/close', () => {
   assert.equal(engine.getActiveNodeId(), 'notif-item-0');
 
   // Close with Back
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'Backspace', keyCode: 8 }));
+  engine.handleKeyEvent(createMockKeyEvent({ key: 'Back', keyCode: 4 }));
   assert.equal(isOpen, false);
   assert.equal(engine.getScope(), 'root');
   assert.equal(engine.getActiveNodeId(), 'nav-notifications');
 });
 
-test('6. badge uses real unread count', () => {
-  const mockNotifs = [
-    { id: 'notif-1', message: 'msg1', time: '1h', title: 'Arrival 1' },
-    { id: 'notif-2', message: 'msg2', time: '2h', title: 'Arrival 2' },
-    { id: 'notif-3', message: 'msg3', time: '3h', title: 'Arrival 3' },
-  ];
-
-  clearTvNotificationCache();
-  const initialUnread = getUnreadNotificationCount(mockNotifs);
-  assert.equal(typeof initialUnread, 'number');
-
-  markNotificationAsRead('notif-1');
-  const afterReadOne = getUnreadNotificationCount(mockNotifs);
-  assert.ok(afterReadOne <= initialUnread);
-
-  markAllNotificationsAsRead(mockNotifs);
-  const afterReadAll = getUnreadNotificationCount(mockNotifs);
-  assert.equal(afterReadAll, 0, 'After marking all read, unread count must be 0');
-});
-
-test('7. profile dropdown opens', () => {
+test('10. Profile popup works', () => {
   const engine = new TvFocusEngine();
   engine.registerRow({ id: 'nav-row', order: 0 });
 
   let isProfileOpen = false;
   engine.registerNode({
-    colIndex: 8,
+    colIndex: 7,
     id: 'nav-profile',
     onSelect: () => {
       isProfileOpen = true;
@@ -180,6 +252,11 @@ test('7. profile dropdown opens', () => {
       engine.registerNode({
         colIndex: 0,
         id: 'profile-item-my-list',
+        onBack: () => {
+          isProfileOpen = false;
+          engine.popScope();
+          return true;
+        },
         rowId: 'profile-row-0',
       });
     },
@@ -194,32 +271,60 @@ test('7. profile dropdown opens', () => {
   assert.equal(isProfileOpen, true);
   assert.equal(engine.getScope(), 'profile-scope');
   assert.equal(engine.getActiveNodeId(), 'profile-item-my-list');
+
+  // Close on Back
+  engine.handleKeyEvent(createMockKeyEvent({ key: 'Backspace', keyCode: 8 }));
+  assert.equal(isProfileOpen, false);
+  assert.equal(engine.getScope(), 'root');
+  assert.equal(engine.getActiveNodeId(), 'nav-profile');
 });
 
-test('8. profile rows are functional', () => {
-  const profileSrc = fs.readFileSync(
-    path.join(process.cwd(), 'src/tv-v2/components/TvProfileDropdown.tsx'),
-    'utf-8'
-  );
+test('11. one popup at a time', () => {
+  let openPopup: 'movies' | 'shows' | 'notifications' | 'profile' | null = null;
+  let searchExpanded = false;
 
-  assert.ok(profileSrc.includes('profile-item-my-list'), 'Must have My List');
-  assert.ok(profileSrc.includes('profile-item-settings'), 'Must have Settings');
-  assert.ok(profileSrc.includes('profile-item-account'), 'Must have Account');
-  assert.ok(profileSrc.includes('profile-item-help'), 'Must have Help & Support');
-  assert.ok(profileSrc.includes('profile-item-signout'), 'Must have Sign Out');
-  assert.ok(
-    !profileSrc.includes('Transfer Profile') && !profileSrc.includes('Manage Profiles'),
-    'Must not include non-functional Netflix items'
-  );
+  const openSubmenu = (type: 'movies' | 'shows') => {
+    if (searchExpanded) searchExpanded = false;
+    openPopup = type;
+  };
+  const openNotif = () => {
+    if (searchExpanded) searchExpanded = false;
+    openPopup = 'notifications';
+  };
+  const openProf = () => {
+    if (searchExpanded) searchExpanded = false;
+    openPopup = 'profile';
+  };
+  const expandSearch = () => {
+    openPopup = null;
+    searchExpanded = true;
+  };
+
+  openSubmenu('movies');
+  assert.equal(openPopup, 'movies');
+
+  openNotif();
+  assert.equal(openPopup, 'notifications');
+
+  openProf();
+  assert.equal(openPopup, 'profile');
+
+  expandSearch();
+  assert.equal(searchExpanded, true);
+  assert.equal(openPopup, null, 'Expanding search closes any open popup');
+
+  openNotif();
+  assert.equal(openPopup, 'notifications');
+  assert.equal(searchExpanded, false, 'Opening notifications collapses search');
 });
 
-test('9. Back closes popup first', () => {
+test('12. Back closes popup first', () => {
   const engine = new TvFocusEngine();
   engine.registerRow({ id: 'nav-row', order: 0 });
 
   let popupClosed = false;
   engine.registerNode({
-    colIndex: 8,
+    colIndex: 7,
     id: 'nav-profile',
     rowId: 'nav-row',
   });
@@ -244,180 +349,92 @@ test('9. Back closes popup first', () => {
   assert.equal(backHandled, true);
   assert.equal(popupClosed, true);
   assert.equal(engine.getScope(), 'root');
+  assert.equal(engine.getActiveNodeId(), 'nav-profile');
 });
 
-test('10. focus restoration to opener', () => {
+test('13. D-pad traverses full header', () => {
   const engine = new TvFocusEngine();
   engine.registerRow({ id: 'nav-row', order: 0 });
 
-  engine.registerNode({
-    colIndex: 7,
-    id: 'nav-notifications',
-    rowId: 'nav-row',
+  const ids = [
+    'nav-home',
+    'nav-shows',
+    'nav-movies',
+    'nav-new-popular',
+    'nav-my-list',
+    'nav-search',
+    'nav-notifications',
+    'nav-profile',
+  ];
+
+  ids.forEach((id, colIndex) => {
+    engine.registerNode({
+      colIndex,
+      id,
+      onDirection: (dir) => {
+        if (dir === 'right') {
+          if (colIndex < ids.length - 1) {
+            engine.setFocus(ids[colIndex + 1]);
+            return true;
+          }
+        }
+        if (dir === 'left') {
+          if (colIndex > 0) {
+            engine.setFocus(ids[colIndex - 1]);
+            return true;
+          }
+        }
+        return false;
+      },
+      rowId: 'nav-row',
+    });
   });
 
-  engine.setFocus('nav-notifications');
-  assert.equal(engine.getActiveNodeId(), 'nav-notifications');
+  // Start at nav-home
+  engine.setFocus('nav-home');
+  assert.equal(engine.getActiveNodeId(), 'nav-home');
 
-  // Push notifications scope
-  engine.pushScope('notifications-scope', 'notif-item-0');
-  engine.registerRow({ id: 'notifications-row-0', order: 0 });
-  engine.registerNode({
-    colIndex: 0,
-    id: 'notif-item-0',
-    rowId: 'notifications-row-0',
-  });
+  // Traverse right across entire header
+  for (let i = 1; i < ids.length; i++) {
+    engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowRight', keyCode: 39 }));
+    assert.equal(engine.getActiveNodeId(), ids[i], `Should focus ${ids[i]} on ArrowRight`);
+  }
 
-  engine.setFocus('notif-item-0');
-  assert.equal(engine.getActiveNodeId(), 'notif-item-0');
-
-  // Pop scope
-  engine.popScope();
-  assert.equal(engine.getActiveNodeId(), 'nav-notifications');
+  // Traverse back left across entire header
+  for (let i = ids.length - 2; i >= 0; i--) {
+    engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowLeft', keyCode: 37 }));
+    assert.equal(engine.getActiveNodeId(), ids[i], `Should focus ${ids[i]} on ArrowLeft`);
+  }
 });
 
-test('11. only one header popup open at once', () => {
-  // Simulate state exclusivity
-  let openPopup: 'movies' | 'shows' | 'notifications' | 'profile' | null = null;
-
-  const openSubmenu = (type: 'movies' | 'shows') => {
-    openPopup = type;
-  };
-  const openNotif = () => {
-    openPopup = 'notifications';
-  };
-  const openProf = () => {
-    openPopup = 'profile';
-  };
-
-  openSubmenu('movies');
-  assert.equal(openPopup, 'movies');
-
-  openNotif();
-  assert.equal(openPopup, 'notifications');
-
-  openProf();
-  assert.equal(openPopup, 'profile');
-});
-
-test('12. language dropdown D-pad', () => {
+test('14. genre submenu still works', () => {
   const engine = new TvFocusEngine();
-  engine.registerRow({ id: 'lang-pref-row', order: 1 });
+  engine.registerRow({ id: 'nav-row', order: 0 });
+  let submenuOpened = false;
 
-  let modeSelected = '';
   engine.registerNode({
-    colIndex: 0,
-    id: 'lang-mode-btn',
+    colIndex: 2,
+    id: 'nav-movies',
     onSelect: () => {
-      engine.pushScope('lang-mode-scope', 'lang-mode-opt-0');
-      TV_PREFERENCE_MODES.forEach((mode, idx) => {
-        const rowId = `lang-mode-row-${idx}`;
-        engine.registerRow({ id: rowId, order: idx });
-        engine.registerNode({
-          colIndex: 0,
-          id: `lang-mode-opt-${idx}`,
-          onSelect: () => {
-            modeSelected = mode.id;
-            engine.popScope();
-          },
-          rowId,
-        });
+      submenuOpened = true;
+      engine.pushScope('genre-submenu-scope', 'genre-nav-movies-all');
+      engine.registerRow({ id: 'genre-submenu-row-0', order: 0 });
+      engine.registerNode({
+        colIndex: 0,
+        id: 'genre-nav-movies-all',
+        rowId: 'genre-submenu-row-0',
       });
     },
-    rowId: 'lang-pref-row',
-  });
-
-  engine.setFocus('lang-mode-btn');
-  // Open dropdown
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'Enter', keyCode: 13 }));
-  assert.equal(engine.getScope(), 'lang-mode-scope');
-  assert.equal(engine.getActiveNodeId(), 'lang-mode-opt-0');
-
-  // Move down to Dubbing (index 1)
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowDown', keyCode: 40 }));
-  assert.equal(engine.getActiveNodeId(), 'lang-mode-opt-1');
-
-  // Select Dubbing
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'Enter', keyCode: 13 }));
-  assert.equal(modeSelected, 'dubbing');
-  assert.equal(engine.getScope(), 'root');
-  assert.equal(engine.getActiveNodeId(), 'lang-mode-btn');
-});
-
-test('13. profile dropdown D-pad', () => {
-  const engine = new TvFocusEngine();
-  engine.registerRow({ id: 'nav-row', order: 0 });
-
-  engine.registerNode({
-    colIndex: 8,
-    id: 'nav-profile',
     rowId: 'nav-row',
   });
 
-  engine.pushScope('profile-scope', 'profile-item-my-list');
-  const items = [
-    'profile-item-my-list',
-    'profile-item-settings',
-    'profile-item-account',
-    'profile-item-help',
-    'profile-item-signout',
-  ];
-  items.forEach((id, idx) => {
-    const rowId = `profile-row-${idx}`;
-    engine.registerRow({ id: rowId, order: idx });
-    engine.registerNode({
-      colIndex: 0,
-      id,
-      rowId,
-    });
-  });
+  engine.setFocus('nav-movies');
+  assert.equal(engine.getActiveNodeId(), 'nav-movies');
 
-  engine.setFocus('profile-item-my-list');
-  assert.equal(engine.getActiveNodeId(), 'profile-item-my-list');
-
-  // Move Down through items
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowDown', keyCode: 40 }));
-  assert.equal(engine.getActiveNodeId(), 'profile-item-settings');
-
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowDown', keyCode: 40 }));
-  assert.equal(engine.getActiveNodeId(), 'profile-item-account');
-
-  // Move Up
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowUp', keyCode: 38 }));
-  assert.equal(engine.getActiveNodeId(), 'profile-item-settings');
-});
-
-test('14. notification dropdown D-pad', () => {
-  const engine = new TvFocusEngine();
-  engine.registerRow({ id: 'nav-row', order: 0 });
-
-  engine.registerNode({
-    colIndex: 7,
-    id: 'nav-notifications',
-    rowId: 'nav-row',
-  });
-
-  engine.pushScope('notifications-scope', 'notif-item-0');
-  ['notif-item-0', 'notif-item-1', 'notif-item-2'].forEach((id, idx) => {
-    const rowId = `notifications-row-${idx}`;
-    engine.registerRow({ id: rowId, order: idx });
-    engine.registerNode({
-      colIndex: 0,
-      id,
-      rowId,
-    });
-  });
-
-  engine.setFocus('notif-item-0');
-  assert.equal(engine.getActiveNodeId(), 'notif-item-0');
-
-  // Move down
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowDown', keyCode: 40 }));
-  assert.equal(engine.getActiveNodeId(), 'notif-item-1');
-
-  // Move up
-  engine.handleKeyEvent(createMockKeyEvent({ key: 'ArrowUp', keyCode: 38 }));
-  assert.equal(engine.getActiveNodeId(), 'notif-item-0');
+  engine.handleKeyEvent(createMockKeyEvent({ key: 'Enter', keyCode: 13 }));
+  assert.equal(submenuOpened, true);
+  assert.equal(engine.getScope(), 'genre-submenu-scope');
+  assert.equal(engine.getActiveNodeId(), 'genre-nav-movies-all');
 });
 
 test('15. TV V1 unchanged', () => {

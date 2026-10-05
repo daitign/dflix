@@ -55,15 +55,15 @@ export function TvProfileDropdown({
       <div className="tv-v2-profile-dropdown__header">
         <div className="tv-v2-profile-avatar-wrap">
           <img
-            alt=""
+            alt="DV Profile"
             aria-hidden="true"
             className="tv-v2-profile-avatar-img"
             src="/profile-avatar.png"
           />
         </div>
         <div className="tv-v2-profile-user-info">
-          <span className="tv-v2-profile-name">Daitign</span>
-          <span className="tv-v2-profile-badge">TV Premium</span>
+          <span className="tv-v2-profile-name">DAITIGN</span>
+          <span className="tv-v2-profile-badge">DV Premium</span>
         </div>
       </div>
 

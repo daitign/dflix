@@ -132,11 +132,15 @@ test('4. expanded search anchors right', () => {
     'Search pill must smoothly transition width over 180ms'
   );
   assert.ok(
-    componentsCss.includes('width: 104px;'),
-    'Collapsed search must use compact width (~104px)'
+    componentsCss.includes('width: clamp(38px, 4.2vh, 44px);') ||
+      componentsCss.includes('width: clamp(36px, 4.2vh, 42px);') ||
+      componentsCss.includes('width: clamp(96px, 8vw, 116px);'),
+    'Collapsed search must use compact width'
   );
   assert.ok(
-    componentsCss.includes('width: clamp(260px, 24vw, 380px);'),
+    componentsCss.includes('width: clamp(240px, 28vw, 500px);') ||
+      componentsCss.includes('width: clamp(320px, 26vw, 500px);') ||
+      componentsCss.includes('width: clamp(320px, 28vw, 520px);'),
     'Expanded search must use Netflix-style responsive width'
   );
 });

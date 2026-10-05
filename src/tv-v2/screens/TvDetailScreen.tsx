@@ -70,6 +70,15 @@ export function TvDetailScreen({
     }
   }, [setFocus, item.id]);
 
+  // Lock background body scroll while detail modal is open
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
   // Subscribe to preview manager active and mute changes
   useEffect(() => {
     const unsubscribe = tvPreviewManager.subscribe((activeId, muted) => {
@@ -252,7 +261,8 @@ export function TvDetailScreen({
       role="dialog"
     >
       <div
-        className="tv-v2-detail-dialog"
+        className="tv-v2-detail-dialog tv-v2-detail-modal"
+        data-testid="tv-detail-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Upper Hero Region */}

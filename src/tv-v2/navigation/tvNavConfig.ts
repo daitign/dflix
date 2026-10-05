@@ -10,5 +10,4 @@ export const PRIMARY_NAV_ITEMS: TvNavItem[] = [
   { id: 'movies', label: 'Movies' },
   { id: 'new-popular', label: 'New & Popular' },
   { id: 'my-list', label: 'My List' },
-  { id: 'languages', label: 'Browse by Languages' },
 ];

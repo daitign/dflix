@@ -43,7 +43,8 @@ export function TvFocusProvider({ children }: { children: ReactNode }) {
           if (key === 'OK') return engine.activateCurrentFocus();
           return false;
         },
-      };
+        setFocus: (nodeId: string) => engine.setFocus(nodeId),
+      } as unknown as typeof window.DAITIGN_TV;
     }
 
     return () => {
@@ -53,6 +54,7 @@ export function TvFocusProvider({ children }: { children: ReactNode }) {
         delete window.DAITIGN_TV.handleRepeatKey;
         delete window.DAITIGN_TV.handleBack;
         delete window.DAITIGN_TV.handleRemoteKey;
+        delete (window.DAITIGN_TV as Record<string, unknown>).setFocus;
       }
     };
   }, [engine]);

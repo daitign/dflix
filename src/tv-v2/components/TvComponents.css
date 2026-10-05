@@ -7,10 +7,15 @@
   z-index: 50;
   display: flex;
   align-items: center;
-  height: clamp(58px, 7vh, 74px);
-  padding: 0 clamp(28px, 4vw, 56px);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 10%, rgba(0, 0, 0, 0) 100%);
+  width: 100%;
+  height: clamp(60px, 6.2vh, 76px);
+  padding: 0 clamp(20px, 3vw, 58px);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0) 100%);
   user-select: none;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
+  overflow-x: clip;
+  overflow-y: visible;
   transition:
     background 0.35s ease,
     box-shadow 0.35s ease;
@@ -22,35 +27,44 @@
 }
 
 .tv-v2-nav-rail__brand {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  margin-right: clamp(20px, 2.2vw, 36px);
+  margin-right: clamp(14px, 1.4vw, 28px);
   flex-shrink: 0;
 }
 
 .tv-v2-nav-rail__brand .brand-mark__wordmark {
-  width: clamp(96px, 8.5vw, 132px);
+  width: clamp(76px, 5.5vw, 116px);
   height: auto;
   display: block;
 }
 
 .tv-v2-nav-rail__brand .brand-mark__monogram {
   width: auto;
-  height: clamp(34px, 3.8vh, 44px);
+  height: clamp(28px, 3.4vh, 40px);
 }
 
 .tv-v2-nav-rail__links {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: clamp(14px, 1.4vw, 24px);
+  gap: var(--tv-header-gap, clamp(10px, 1.2vw, 28px));
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .tv-v2-nav-rail__actions {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   margin-left: auto;
-  gap: clamp(10px, 1.1vw, 18px);
   justify-content: flex-end;
+  gap: clamp(18px, 1.3vw, 24px);
+  flex-shrink: 0;
+  white-space: nowrap;
+  position: relative;
 }
 
 /* Right-Side Action Controls: Search, Notifications, Profile */
@@ -59,29 +73,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: clamp(34px, 4.2vh, 42px);
-  padding: 0 clamp(8px, 0.8vw, 12px);
+  gap: 5px;
+  height: clamp(38px, 4.2vh, 44px);
+  padding: 0 clamp(8px, 0.7vw, 12px);
   border-radius: 9999px;
   background-color: transparent;
   border: 1px solid transparent;
   color: #e5e5e5;
   cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
-    transform 150ms ease,
-    box-shadow 150ms ease;
+    color 150ms ease;
   outline: none;
 }
 
 .tv-v2-nav-action-btn--focused {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
+  transform: none;
+  box-shadow: none;
 }
 
 .tv-v2-nav-action-btn--active {
@@ -110,26 +124,48 @@
 
 /* Profile Button */
 .tv-v2-profile-avatar-pill {
-  width: clamp(26px, 3vh, 32px);
-  height: clamp(26px, 3vh, 32px);
+  width: clamp(28px, 3vh, 34px);
+  height: clamp(28px, 3vh, 34px);
   border-radius: 4px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: #222;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
 
 .tv-v2-profile-avatar-pill img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .tv-v2-profile-chevron {
-  font-size: 0.75rem;
-  opacity: 0.8;
-  margin-left: 2px;
+  font-size: 0.7em;
+  opacity: 0.75;
+  margin-left: 3px;
+  line-height: 1;
+}
+
+.tv-v2-dropdown-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* In-flow fixed container for search to preserve layout geometry */
+.tv-v2-nav-search-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(38px, 4.2vh, 44px);
+  height: clamp(38px, 4.2vh, 44px);
+  flex-shrink: 0;
 }
 
 /* TV V2 Nav Search - Netflix-Style Expand In Place */
@@ -137,7 +173,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  height: clamp(34px, 4.2vh, 42px);
+  height: clamp(38px, 4.2vh, 44px);
   border-radius: 9999px;
   box-sizing: border-box;
   outline: none;
@@ -146,30 +182,34 @@
   background-color: transparent;
   border: 1px solid transparent;
   color: #e5e5e5;
+  flex-shrink: 0;
   transition:
     width 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease,
     background-color 180ms ease,
     border-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 150ms ease;
+    box-shadow 180ms ease;
   overflow: hidden;
   will-change: width;
 }
 
-/* Collapsed State: [search icon] Search */
+/* Collapsed State: Simple search icon */
 .tv-v2-nav-search--collapsed {
-  width: 104px;
-  padding: 0 clamp(12px, 1vw, 16px);
-  gap: 6px;
+  width: clamp(38px, 4.2vh, 44px);
+  height: clamp(38px, 4.2vh, 44px);
+  border-radius: 9999px;
+  padding: 0;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .tv-v2-nav-search--collapsed.tv-v2-nav-search--focused {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
-  transform: scale(1.03);
+  transform: none;
+  box-shadow: none;
 }
 
 .tv-v2-nav-search--collapsed.tv-v2-nav-search--active {
@@ -177,19 +217,28 @@
   font-weight: 700;
 }
 
-/* Expanded State: Netflix-Style Pill Input */
+/* Expanded State: Netflix-Style Pill Input expanding strictly leftward as an overlay */
 .tv-v2-nav-search--expanded {
-  width: clamp(260px, 24vw, 380px);
-  background-color: rgba(0, 0, 0, 0.85);
-  border-color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
-  padding: 0 12px 0 14px;
-  gap: 8px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(240px, 28vw, 500px);
+  max-width: min(500px, calc(100vw - clamp(40px, 6vw, 116px) - 140px));
+  height: clamp(42px, 4.6vh, 48px);
+  border-radius: 9999px;
+  background-color: rgba(16, 16, 16, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 60;
 }
 
 .tv-v2-nav-search--expanded.tv-v2-nav-search--focused {
   border-color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25), 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25), 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
 .tv-v2-nav-search__icon {
@@ -202,7 +251,7 @@
 }
 
 .tv-v2-nav-search__label {
-  font-size: clamp(0.95rem, 1.05vw, 1.15rem);
+  font-size: clamp(0.92rem, 1vw, 1.05rem);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -220,6 +269,16 @@
   font-family: inherit;
   padding: 0;
   margin: 0;
+  animation: tvNavSearchFadeIn 180ms ease forwards;
+}
+
+@keyframes tvNavSearchFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .tv-v2-nav-search__input::placeholder {
@@ -257,20 +316,17 @@
 .tv-v2-nav-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: clamp(6px, 0.7vh, 8px) clamp(12px, 1vw, 18px);
+  gap: 5px;
+  padding: clamp(6px, 0.6vw, 10px) clamp(8px, 0.9vw, 16px);
   color: #e5e5e5;
-  font-size: clamp(0.95rem, 1.05vw, 1.15rem);
+  font-size: clamp(13px, 1.05vw, 18px);
   font-weight: 500;
   border-radius: 9999px;
   border: 1px solid transparent;
   background: transparent;
   transition:
     color 0.15s ease,
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    background-color 0.15s ease;
   cursor: pointer;
   white-space: nowrap;
   outline: none;
@@ -278,28 +334,26 @@
 
 .tv-v2-nav-btn--active {
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.18);
 }
 
 .tv-v2-nav-btn--focused {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.25);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.2);
-  transform: scale(1.03);
+  transform: none;
+  box-shadow: none;
 }
 
 .tv-v2-nav-btn__chevron {
   display: inline-flex;
   align-items: center;
-  font-size: 0.72em;
-  margin-left: 4px;
+  font-size: 0.7em;
+  margin-left: 3px;
   opacity: 0.75;
   line-height: 1;
   transform: translateY(1px);
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .tv-v2-nav-btn--focused .tv-v2-nav-btn__chevron,
@@ -320,6 +374,7 @@
   right: 0;
   z-index: 200;
   width: clamp(340px, 30vw, 440px);
+  max-width: calc(100vw - 32px);
   background-color: rgba(20, 20, 20, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
@@ -466,6 +521,7 @@
   right: 0;
   z-index: 200;
   width: clamp(230px, 18vw, 290px);
+  max-width: calc(100vw - 32px);
   background-color: rgba(20, 20, 20, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
@@ -563,6 +619,49 @@
 
 .tv-v2-profile-menu-item__label {
   flex: 1;
+}
+
+/* Responsive Header Hardening for Narrow/Small TV Screens (<= 1100px & <= 800px) */
+@media (max-width: 1100px) {
+  .tv-v2-nav-rail {
+    padding: 0 clamp(16px, 2vw, 24px);
+    height: clamp(58px, 6vh, 64px);
+  }
+  .tv-v2-nav-rail__brand {
+    margin-right: 12px;
+  }
+  .tv-v2-nav-rail__brand .brand-mark__wordmark {
+    width: 76px;
+  }
+  .tv-v2-nav-rail__links {
+    gap: 8px;
+  }
+  .tv-v2-nav-btn {
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+  .tv-v2-nav-rail__actions {
+    gap: 12px;
+  }
+  .tv-v2-nav-search--expanded {
+    width: clamp(200px, 25vw, 360px);
+  }
+}
+
+@media (max-width: 800px) {
+  .tv-v2-nav-rail {
+    padding: 0 12px;
+  }
+  .tv-v2-nav-rail__links {
+    gap: 6px;
+  }
+  .tv-v2-nav-btn {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  .tv-v2-nav-rail__actions {
+    gap: 8px;
+  }
 }
 
 /* TV V2 Profile Modals: Settings, Account, Help, Sign Out */

@@ -20,6 +20,8 @@
   var idleGeneration = 0;
   var lastFocusedControlKind = null;
   var lastFocusedControlLabel = null;
+  var lastStableControlKind = 'play-pause';
+  var lastStableControlLabel = null;
   var watchdogTimer = 0;
   var keepAliveHeartbeatTimer = 0;
   var WATCHDOG_INTERVAL_MS = 180;
@@ -37,7 +39,7 @@
 
   var style = document.createElement('style');
   style.id = 'daitign-tv-player-focus';
-  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:0!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-episode-selected{outline:3px solid #ffffff!important;outline-offset:3px!important;border-radius:8px!important;box-shadow:0 0 16px rgba(255,255,255,.45)!important;transform:scale(1.02)!important;transition:transform 120ms ease,box-shadow 120ms ease!important;z-index:10!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}[role="dialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] > div,.art-settings,.art-setting,.art-selector,.art-layer-selector,[class*="popup"],[class*="modal"]{max-height:min(78vh,calc(100vh - 120px))!important;max-width:min(72vw,680px)!important;box-sizing:border-box!important;overflow-y:auto!important;bottom:clamp(70px,12vh,120px)!important;margin-bottom:0!important}[data-slot*="drawer"],[data-vaul-drawer],[data-vaul-drawer-wrapper],[data-slot*="drawer-content"],[data-slot*="drawer-popup"],.max-w-5xl{max-width:min(94vw,1200px)!important;max-height:92vh!important;bottom:auto!important}[role="dialog"]::-webkit-scrollbar,[role="menu"]::-webkit-scrollbar,.art-settings::-webkit-scrollbar,[class*="popup"]::-webkit-scrollbar{width:6px!important}[role="dialog"]::-webkit-scrollbar-thumb,.art-settings::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3)!important;border-radius:4px!important}';
+  style.textContent = '.daitign-tv-player-selected{outline:0!important;filter:brightness(1.13) drop-shadow(0 5px 11px rgba(255,255,255,.28))!important;transform:scale(1.08)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-player-menu-selected{outline:2px solid rgba(255,255,255,.55)!important;outline-offset:1px!important;background:rgba(255,255,255,.19)!important;border-radius:10px!important;color:#fff!important;box-shadow:none!important;filter:none!important;transform:none!important;transition:background-color 90ms ease!important}.daitign-tv-episode-selected{outline:3px solid #ffffff!important;outline-offset:3px!important;border-radius:8px!important;box-shadow:0 0 16px rgba(255,255,255,.45)!important;transform:scale(1.02)!important;transition:transform 120ms ease,box-shadow 120ms ease!important;z-index:10!important}.daitign-tv-player-timeline{outline:0!important;filter:brightness(1.16) drop-shadow(0 3px 7px rgba(255,255,255,.18))!important;transform:scaleY(1.28)!important;transition:filter 120ms ease,transform 120ms ease!important}.daitign-tv-controls-locked .art-controls,.daitign-tv-controls-locked .art-control,.daitign-tv-controls-locked .art-bottom,.daitign-tv-controls-locked .art-top,.daitign-tv-controls-locked .art-progress,.daitign-tv-controls-locked .art-layers,.daitign-tv-controls-locked .z-30,.daitign-tv-controls-locked .z-30 > div,.daitign-tv-controls-locked [class*="controls"],.daitign-tv-controls-locked [class*="player-bottom"],.daitign-tv-controls-locked [role="dialog"],.daitign-tv-controls-locked [role="menu"],.daitign-tv-controls-locked [role="listbox"],.daitign-tv-controls-locked [data-radix-popper-content-wrapper],.daitign-tv-controls-locked .art-settings,.daitign-tv-controls-locked .art-selector{opacity:1!important;visibility:visible!important;pointer-events:auto!important}.daitign-tv-controls-locked.art-hide-cursor,.daitign-tv-controls-locked .art-hide-cursor,.daitign-tv-controls-locked.cursor-none,.daitign-tv-controls-locked .cursor-none{cursor:auto!important}[role="dialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],[data-radix-popper-content-wrapper] > div,.art-settings,.art-setting,.art-selector,.art-layer-selector,[class*="popup"],[class*="modal"]{max-height:min(72vh,680px)!important;max-width:min(42vw,560px)!important;box-sizing:border-box!important;overflow-y:auto!important;overflow-x:hidden!important;bottom:clamp(70px,12vh,120px)!important;margin-bottom:0!important}.daitign-tv-episodes-popup,[data-slot*="drawer"].daitign-tv-episodes-popup,[data-vaul-drawer].daitign-tv-episodes-popup,.daitign-tv-episodes-popup [data-slot*="drawer-content"],.daitign-tv-episodes-popup.max-w-5xl{max-width:min(94vw,1200px)!important;max-height:88vh!important;bottom:auto!important}.daitign-tv-settings-popup,[data-slot*="drawer-content"]:not(.daitign-tv-episodes-popup):not(.daitign-tv-subtitles-popup),[data-vaul-drawer]:not(.daitign-tv-episodes-popup):not(.daitign-tv-subtitles-popup),[data-slot*="drawer"]:not(.daitign-tv-episodes-popup):not(.daitign-tv-subtitles-popup),.max-w-5xl:not(.daitign-tv-episodes-popup){width:min(620px,42vw)!important;max-width:min(620px,42vw)!important;max-height:min(680px,72vh)!important;position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;box-sizing:border-box!important;overflow-y:auto!important;overflow-x:hidden!important;margin:0!important}.daitign-tv-subtitles-popup{width:min(560px,40vw)!important;max-width:min(560px,40vw)!important;max-height:min(680px,72vh)!important;box-sizing:border-box!important;overflow-y:auto!important;overflow-x:hidden!important}[role="dialog"]::-webkit-scrollbar,[role="menu"]::-webkit-scrollbar,.art-settings::-webkit-scrollbar,[class*="popup"]::-webkit-scrollbar,.daitign-tv-settings-popup::-webkit-scrollbar,.daitign-tv-subtitles-popup::-webkit-scrollbar,[data-slot*="drawer-content"]::-webkit-scrollbar{width:6px!important}[role="dialog"]::-webkit-scrollbar-thumb,.art-settings::-webkit-scrollbar-thumb,.daitign-tv-settings-popup::-webkit-scrollbar-thumb,.daitign-tv-subtitles-popup::-webkit-scrollbar-thumb,[data-slot*="drawer-content"]::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3)!important;border-radius:4px!important}';
   document.head.appendChild(style);
 
   function notify(next) {
@@ -104,8 +106,52 @@
     return isTimeline(element) ? 1 : 0;
   }
 
+  function isSkipIntro(element) {
+    if (!element || isTimeline(element)) return false;
+    if (element.matches && element.matches('video, iframe, body, html')) return false;
+    var rect = element.getBoundingClientRect ? element.getBoundingClientRect() : null;
+    if (rect && (rect.width > innerWidth * 0.7 && rect.height > innerHeight * 0.7)) return false;
+
+    var text = (element.textContent || '').trim().toLowerCase();
+    var aria = (element.getAttribute('aria-label') || '').trim().toLowerCase();
+    var title = (element.getAttribute('title') || '').trim().toLowerCase();
+
+    var isDirectMatch = function (val) {
+      return (
+        val === 'skip intro' ||
+        val === 'skip intro.' ||
+        val === 'skip opening' ||
+        val === 'intro' ||
+        val === 'skip' ||
+        val === 'skip recap' ||
+        val === 'skip credits'
+      );
+    };
+
+    if (isDirectMatch(text) || isDirectMatch(aria) || isDirectMatch(title)) {
+      return true;
+    }
+
+    var semantic = label(element);
+    if (/skip\s*(back|forward|\d+\s*s|\d+\s*sec)/i.test(semantic)) return false;
+    if (/next\s*(episode|track)/i.test(semantic)) return false;
+
+    if (/\b(skip\s*intro|skip\s*opening|skip\s*recap|skip\s*credits)\b/i.test(semantic)) {
+      return true;
+    }
+
+    if (element.matches && (
+      element.matches('[class*="skip-intro"], [class*="skip_intro"], [class*="skipIntro"], [class*="art-skip"], [class*="art-control-skip"], [id*="skip-intro"], [id*="skipIntro"], [data-action*="skip"]')
+    )) {
+      return true;
+    }
+
+    return false;
+  }
+
   function controlKind(element) {
     if (!element) return 'control';
+    if (isSkipIntro(element)) return 'skip-intro';
     var semantic = label(element);
     if (isTimeline(element)) return 'timeline';
     if (/play|pause/.test(semantic)) return 'play-pause';
@@ -128,7 +174,7 @@
       candidateCache = candidateCache.filter(function (element) { return controlVisible(element) && enabled(element); });
       return candidateCache.slice();
     }
-    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title],[class*="timeline"],[class*="progress"],[class*="scrub"],[class*="seek"]';
+    var selector = 'button,a[href],input,select,[role="button"],[role="menuitem"],[role="option"],[role="slider"],[aria-valuenow],[tabindex]:not([tabindex="-1"]),[aria-label],[title],[class*="timeline"],[class*="progress"],[class*="scrub"],[class*="seek"],[class*="skip"],[class*="intro"],[id*="skip"]';
     candidateCache = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
       if (!controlVisible(element) || !enabled(element) || element.matches('video,iframe')) return false;
       var rect = element.getBoundingClientRect();
@@ -141,6 +187,26 @@
         return priorityDifference > 0 || (priorityDifference === 0 && otherIndex < index);
       });
     });
+
+    Array.prototype.slice.call(document.querySelectorAll('div, span, p')).forEach(function (el) {
+      if (!isSkipIntro(el) || !controlVisible(el) || !enabled(el)) return;
+      var clickable = (typeof el.closest === 'function' ? el.closest('button, [role="button"], [tabindex]') : null) || el;
+      if (candidateCache.indexOf(clickable) < 0 && controlVisible(clickable) && enabled(clickable)) {
+        var rect = clickable.getBoundingClientRect();
+        if (!(rect.width > innerWidth * .82 && rect.height > innerHeight * .82)) {
+          candidateCache.push(clickable);
+        }
+      }
+    });
+
+    candidateCache = candidateCache.filter(function (element, index, all) {
+      if (!isSkipIntro(element)) return true;
+      var hasInner = all.some(function (other) {
+        return other !== element && isSkipIntro(other) && typeof element.contains === 'function' && element.contains(other);
+      });
+      return !hasInner;
+    });
+
     if (candidateCache.length < 12) {
       Array.prototype.slice.call(document.querySelectorAll('svg')).forEach(function (icon) {
         if (!visible(icon)) return;
@@ -354,25 +420,144 @@
     return menuCandidateCache.slice();
   }
 
+  function classifyPopup(popup) {
+    if (!popup) return 'generic';
+    if (isEpisodesPopup(popup)) {
+      if (popup.classList) popup.classList.add('daitign-tv-episodes-popup');
+      return 'episodes';
+    }
+    var text = (popup.textContent || '').toLowerCase();
+    var openerText = (controlKind(menuOpener) + ' ' + label(menuOpener)).toLowerCase();
+    if (/player\s*settings|customize\s*your\s*playback/i.test(text) || (/settings/i.test(openerText) && !/subtitle/i.test(text))) {
+      if (popup.classList) popup.classList.add('daitign-tv-settings-popup');
+      var drawerContent = (typeof popup.querySelector === 'function' ? popup.querySelector('[data-slot*="drawer-content"], [data-vaul-drawer]') : null) ||
+                          (typeof popup.closest === 'function' ? popup.closest('[data-slot*="drawer-content"], [data-vaul-drawer]') : null);
+      if (drawerContent && drawerContent.classList) drawerContent.classList.add('daitign-tv-settings-popup');
+      return 'settings';
+    }
+    if (/subtitles|upload\s*subtitle|off\s+english/i.test(text) || /subtitle|caption/i.test(openerText)) {
+      if (popup.classList) popup.classList.add('daitign-tv-subtitles-popup');
+      var drawerContentSub = (typeof popup.querySelector === 'function' ? popup.querySelector('[data-slot*="drawer-content"], [data-vaul-drawer]') : null) ||
+                             (typeof popup.closest === 'function' ? popup.closest('[data-slot*="drawer-content"], [data-vaul-drawer]') : null);
+      if (drawerContentSub && drawerContentSub.classList) drawerContentSub.classList.add('daitign-tv-subtitles-popup');
+      return 'subtitles';
+    }
+    return 'generic';
+  }
+
+  function findSubmenuBackButton(popup) {
+    if (!popup || typeof popup.querySelectorAll !== 'function') return null;
+    var candidates = Array.prototype.slice.call(popup.querySelectorAll('button, [role="button"], [class*="back"], [aria-label*="Back"], [aria-label*="back"]')).filter(visible);
+    return candidates.find(function (b) {
+      var l = label(b);
+      return /\b(back|return|previous|go\s*back)\b/i.test(l) || b.getAttribute('aria-label') === 'Back' || (b.classList && (b.classList.contains('art-icon-back') || b.classList.contains('art-setting-item-back')));
+    }) || null;
+  }
+
+  function isSingleChoiceOption(item, popup, opener) {
+    if (!item || !popup) return false;
+    if (isEpisodeCard(item)) return false;
+
+    var itemText = label(item).trim();
+
+    // Explicit close, back, show more/less buttons
+    if (/^(close|back|done|exit|show\s*more|show\s*less)$/i.test(itemText)) return false;
+
+    // Season selector button
+    if (/season\s*\d+/i.test(itemText) && !/episode/i.test(itemText)) {
+      var seasonBtn = findSeasonSelector(popup);
+      if (item === seasonBtn) return false;
+    }
+
+    // Multi-step configuration actions
+    if (/^(upload\s*subtitle|style|subtitle\s*style|delay|subtitle\s*delay)/i.test(itemText)) return false;
+    if ((item.matches && item.matches('input[type="range"], [role="slider"]')) || isTimeline(item)) return false;
+
+    // Check if inside a multi-step configuration panel (Style, Delay, Font, Brightness, Mirror)
+    var headerEl = typeof popup.querySelector === 'function' ? popup.querySelector('h1, h2, h3, [class*="title"], [class*="header"]') : null;
+    var popupHeader = headerEl ? (headerEl.textContent || '').trim() : '';
+    if (/subtitle\s*style|subtitle\s*delay|delay|font|brightness|mirror/i.test(popupHeader)) {
+      return false; // Multi-step configuration: do NOT auto-close
+    }
+
+    // Check if in main Player Settings panel
+    var popupAllText = (popup.textContent || '').trim();
+    var isMainSettings = /player\s*settings|customize\s*your\s*playback/i.test(popupAllText);
+    if (isMainSettings) {
+      // In main settings, category rows open submenus
+      if (item.getAttribute('aria-haspopup') === 'true' ||
+          item.getAttribute('aria-expanded') !== null ||
+          />|›|→/.test(item.textContent || '') ||
+          /^(quality|audio|subtitles?|aspect\s*ratio|brightness|mirror)/i.test(itemText)) {
+        return false;
+      }
+    }
+
+    var openerText = (opener ? (controlKind(opener) + ' ' + label(opener)) : '').toLowerCase();
+
+    // 1) Subtitles single choice:
+    var isSubtitlesContext = /subtitle|caption/i.test(openerText) || /subtitles/i.test(popupHeader) || (popup.classList && popup.classList.contains('daitign-tv-subtitles-popup'));
+    if (isSubtitlesContext) {
+      if (!/upload\s*subtitle|style|delay/i.test(itemText)) {
+        return true;
+      }
+    }
+
+    // 2) Quality single choice:
+    if (/^(auto|original|source|1080p?|720p?|480p?|360p?|4k|2160p|high|medium|low)$/i.test(itemText) ||
+        /quality/i.test(openerText) || /quality/i.test(popupHeader)) {
+      return true;
+    }
+
+    // 3) Server / Source single choice:
+    if (/^(server\s*\d+|vidcloud|upcloud|megacloud|streamtape|doodstream)/i.test(itemText) ||
+        /server|source/i.test(openerText) || /server|source/i.test(popupHeader)) {
+      return true;
+    }
+
+    // 4) Audio single choice:
+    if (/audio/i.test(openerText) || /audio\s*track|audio\s*language/i.test(popupHeader)) {
+      return true;
+    }
+
+    // 5) Aspect ratio single choice:
+    if (/^(fit|16:9|4:3|cover|contain|fill|stretch|default)$/i.test(itemText) ||
+        /aspect\s*ratio/i.test(openerText) || /aspect\s*ratio/i.test(popupHeader)) {
+      return true;
+    }
+
+    // 6) Generic language / quality / track item:
+    if (/^(off|none|auto|english|spanish|french|german|japanese|korean|chinese|italian|portuguese|russian|arabic|thai|vietnamese|indonesian|malay|hindi|filipino|tagalog|bulgarian)(\s*\d+)?$/i.test(itemText)) {
+      return true;
+    }
+
+    return false;
+  }
+
   function detectPopup() {
     var semantic = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"],[role="menu"],[role="listbox"],[aria-modal="true"],[data-slot*="drawer"],[data-vaul-drawer]')).filter(visible);
-    if (semantic.length) return semantic[semantic.length - 1];
-
-    var selector = '[class*="menu"],[class*="popup"],[class*="popover"],[class*="setting"],[class*="server"],[class*="subtitle"],[class*="quality"],[class*="source"],[class*="drawer"],body > div';
-    var possible = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
-      if (!visible(element) || element === document.body) return false;
-      var rect = element.getBoundingClientRect();
-      if (rect.width < innerWidth * .10 || rect.height < innerHeight * .10) return false;
-      if (rect.width > innerWidth * .98 || rect.height > innerHeight * .98) return false;
-      var computed = getComputedStyle(element);
-      if (computed.position !== 'fixed' && computed.position !== 'absolute' && element.parentElement !== document.body) return false;
-      return isEpisodesPopup(element) || discoverMenuItems(element, true).length > 0;
-    });
-    possible.sort(function (a, b) {
-      var ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
-      return ar.width * ar.height - br.width * br.height;
-    });
-    return possible[0] || null;
+    var found = null;
+    if (semantic.length) {
+      found = semantic[semantic.length - 1];
+    } else {
+      var selector = '[class*="menu"],[class*="popup"],[class*="popover"],[class*="setting"],[class*="server"],[class*="subtitle"],[class*="quality"],[class*="source"],[class*="drawer"],body > div';
+      var possible = Array.prototype.slice.call(document.querySelectorAll(selector)).filter(function (element) {
+        if (!visible(element) || element === document.body) return false;
+        var rect = element.getBoundingClientRect();
+        if (rect.width < innerWidth * .10 || rect.height < innerHeight * .10) return false;
+        if (rect.width > innerWidth * .98 || rect.height > innerHeight * .98) return false;
+        var computed = getComputedStyle(element);
+        if (computed.position !== 'fixed' && computed.position !== 'absolute' && element.parentElement !== document.body) return false;
+        return isEpisodesPopup(element) || discoverMenuItems(element, true).length > 0;
+      });
+      possible.sort(function (a, b) {
+        var ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+        return ar.width * ar.height - br.width * br.height;
+      });
+      found = possible[0] || null;
+    }
+    if (found) classifyPopup(found);
+    return found;
   }
 
   function clearSelection() {
@@ -398,14 +583,20 @@
       } else {
         selected.classList.add('daitign-tv-player-menu-selected');
       }
+      scrollCardIntoView(selected);
     } else {
       selected.classList.add(isTimeline(selected) ? 'daitign-tv-player-timeline' : 'daitign-tv-player-selected');
     }
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     preferredX = center(selected).x;
     if (resolvedState !== MENU) {
-      lastFocusedControlKind = controlKind(selected);
+      var kind = controlKind(selected);
+      lastFocusedControlKind = kind;
       lastFocusedControlLabel = label(selected);
+      if (kind !== 'skip-intro') {
+        lastStableControlKind = kind;
+        lastStableControlLabel = label(selected);
+      }
     }
     debugLog('[DAITIGN TV Player] selected', resolvedState === MENU ? (isEpisodeCard(selected) ? 'episode-card' : 'menu-option') : controlKind(selected), label(selected));
     notify(resolvedState);
@@ -663,10 +854,10 @@
     candidatesDirty = true;
     var currentCandidates = candidates(true);
     var matched = null;
-    if (previousLabel) {
+    if (previousLabel && previousKind !== 'skip-intro') {
       matched = currentCandidates.find(function (c) { return label(c) === previousLabel; });
     }
-    if (!matched && previousKind) {
+    if (!matched && previousKind && previousKind !== 'skip-intro') {
       matched = currentCandidates.find(function (c) { return controlKind(c) === previousKind; });
     }
     if (matched && controlVisible(matched)) {
@@ -697,6 +888,9 @@
       }
       if (needsEnforce || live.overlays.length === 0) {
         ensureControlsVisible();
+      }
+      if (selected && (!selected.isConnected || !controlVisible(selected))) {
+        relinkSelection();
       }
       pokePlayerActive();
     }, WATCHDOG_INTERVAL_MS);
@@ -815,8 +1009,13 @@
     if (isVideoPaused()) return;
 
     if (selected && state !== MENU) {
-      lastFocusedControlKind = controlKind(selected);
+      var k = controlKind(selected);
+      lastFocusedControlKind = k;
       lastFocusedControlLabel = label(selected);
+      if (k !== 'skip-intro') {
+        lastStableControlKind = k;
+        lastStableControlLabel = label(selected);
+      }
     }
     clearIdleTimer();
     stopKeepAliveHeartbeat();
@@ -919,11 +1118,17 @@
 
   function findRememberedOrFallbackControl(all) {
     var target = null;
-    if (lastFocusedControlLabel) {
+    if (lastFocusedControlLabel && lastFocusedControlKind !== 'skip-intro') {
       target = all.find(function (el) { return label(el) === lastFocusedControlLabel && controlVisible(el); });
     }
-    if (!target && lastFocusedControlKind) {
+    if (!target && lastFocusedControlKind && lastFocusedControlKind !== 'skip-intro') {
       target = all.find(function (el) { return controlKind(el) === lastFocusedControlKind && controlVisible(el); });
+    }
+    if (!target && lastStableControlLabel) {
+      target = all.find(function (el) { return label(el) === lastStableControlLabel && controlVisible(el); });
+    }
+    if (!target && lastStableControlKind) {
+      target = all.find(function (el) { return controlKind(el) === lastStableControlKind && controlVisible(el); });
     }
     if (!target) {
       target = all.find(function (el) { return controlKind(el) === 'play-pause' && controlVisible(el); }) || defaultControl(all);
@@ -1045,6 +1250,64 @@
     });
   }
 
+  function findGeometricTarget(current, direction, candidateList) {
+    if (!current || !candidateList || !candidateList.length) return null;
+    var curRect = current.getBoundingClientRect();
+    var curCenter = center(current);
+    var best = null;
+    var bestDist = Infinity;
+
+    for (var i = 0; i < candidateList.length; i++) {
+      var item = candidateList[i];
+      if (item === current || !controlVisible(item)) continue;
+      if (!isTimeline(current) && (direction === 'LEFT' || direction === 'RIGHT') && isTimeline(item)) continue;
+      var itemRect = item.getBoundingClientRect();
+      var itemCenter = center(item);
+
+      var dx = itemCenter.x - curCenter.x;
+      var dy = itemCenter.y - curCenter.y;
+
+      var isValid = false;
+      var primary = 0;
+      var secondary = 0;
+
+      if (direction === 'LEFT') {
+        if (itemCenter.x < curCenter.x - 2 || itemRect.right <= curRect.left + 5) {
+          isValid = true;
+          primary = curCenter.x - itemCenter.x;
+          secondary = Math.abs(dy);
+        }
+      } else if (direction === 'RIGHT') {
+        if (itemCenter.x > curCenter.x + 2 || itemRect.left >= curRect.right - 5) {
+          isValid = true;
+          primary = itemCenter.x - curCenter.x;
+          secondary = Math.abs(dy);
+        }
+      } else if (direction === 'UP') {
+        if (itemCenter.y < curCenter.y - 2 || itemRect.bottom <= curRect.top + 5) {
+          isValid = true;
+          primary = curCenter.y - itemCenter.y;
+          secondary = Math.abs(dx);
+        }
+      } else if (direction === 'DOWN') {
+        if (itemCenter.y > curCenter.y + 2 || itemRect.top >= curRect.bottom - 5) {
+          isValid = true;
+          primary = itemCenter.y - curCenter.y;
+          secondary = Math.abs(dx);
+        }
+      }
+
+      if (isValid && primary > 0) {
+        var dist = primary + secondary * 1.5;
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = item;
+        }
+      }
+    }
+    return best;
+  }
+
   function moveControl(direction) {
     registerUserActivity();
     var all = candidates(false);
@@ -1055,13 +1318,19 @@
     var row = grouped[rowIndex];
     var index = row.elements.indexOf(selected);
     var target = null;
-    if (direction === 'LEFT' || direction === 'RIGHT') target = row.elements[index + (direction === 'RIGHT' ? 1 : -1)] || null;
-    else {
+    if (direction === 'LEFT' || direction === 'RIGHT') {
+      target = row.elements[index + (direction === 'RIGHT' ? 1 : -1)] || null;
+    } else {
       var nextRow = grouped[rowIndex + (direction === 'DOWN' ? 1 : -1)];
       if (nextRow) {
         var x = preferredX == null ? center(selected).x : preferredX;
-        target = nextRow.elements.reduce(function (best, item) { return !best || Math.abs(center(item).x - x) < Math.abs(center(best).x - x) ? item : best; }, null);
+        target = nextRow.elements.reduce(function (best, item) {
+          return !best || Math.abs(center(item).x - x) < Math.abs(center(best).x - x) ? item : best;
+        }, null);
       }
+    }
+    if (!target) {
+      target = findGeometricTarget(selected, direction, all);
     }
     if (target) {
       setSelected(target);
@@ -1297,26 +1566,35 @@
   function dismissPopup(popup) {
     if (!popup) return;
     var closeBtn = findCloseButton(popup) || discoverMenuItems(popup, false).find(function (element) {
-      return /close|back|done|exit/.test(label(element));
+      return /^(close|back|done|exit)$/i.test(label(element));
     });
     if (closeBtn) {
       try { closeBtn.click(); pointerFallback(closeBtn); } catch (_) {}
     }
     dispatchKey(popup, 'Escape');
+    if (document.activeElement && document.activeElement !== document.body) {
+      try { dispatchKey(document.activeElement, 'Escape'); } catch (_) {}
+    }
     dispatchKey(document.body, 'Escape');
-    var mask = document.querySelector('.art-mask, .art-layers, .art-video-player, #artplayer, video') || document.body;
-    if (mask) {
-      try { pointerFallback(mask); } catch (_) {}
+    dispatchKey(document.documentElement, 'Escape');
+    var overlay = document.querySelector('[data-vaul-overlay], [data-slot*="drawer-overlay"], .art-mask, .art-layers');
+    if (overlay && visible(overlay)) {
+      try { pointerFallback(overlay); } catch (_) {}
     }
     window.setTimeout(function () {
       if (visible(popup)) {
-        if (visible(menuOpener)) {
-          try { menuOpener.click(); pointerFallback(menuOpener); } catch (_) {}
-        }
         try {
           popup.style.setProperty('display', 'none', 'important');
           popup.style.setProperty('visibility', 'hidden', 'important');
+          popup.setAttribute('aria-hidden', 'true');
         } catch (_) {}
+        var wrapper = typeof popup.closest === 'function' ? popup.closest('[data-slot*="drawer"], [data-vaul-drawer-wrapper], [data-vaul-drawer], [role="dialog"], [aria-modal="true"]') : null;
+        if (wrapper && wrapper !== document.body) {
+          try {
+            wrapper.style.setProperty('display', 'none', 'important');
+            wrapper.style.setProperty('visibility', 'hidden', 'important');
+          } catch (_) {}
+        }
       }
     }, 40);
   }
@@ -1375,21 +1653,21 @@
     }
 
     var itemText = label(item);
-    var openerText = controlKind(menuOpener) + ' ' + label(menuOpener);
-    var popupText = controlKind(popupBefore) + ' ' + label(popupBefore);
+    var openerText = (controlKind(menuOpener) + ' ' + label(menuOpener)).toLowerCase();
+    var popupHeader = ((typeof popupBefore.querySelector === 'function' ? popupBefore.querySelector('h1, h2, h3, [class*="title"], [class*="header"]') : null) || {}).textContent || '';
     var isSubmenuNavigation = /style|delay|speed|audio|font|color|custom|subtitle style|subtitle delay|settings/i.test(itemText) ||
-                              /style|delay|speed|advanced/i.test(popupText);
+                              /subtitle style|subtitle delay|delay|advanced/i.test(popupHeader);
     var singleChoiceMenu = !isSubmenuNavigation && (
-      /subtitle|caption|quality|server|source|fit|aspect/i.test(openerText + ' ' + popupText) ||
-      /english|filipino|tagalog|español|spanish|french|german|japanese|korean|chinese|italian|portuguese|russian|arabic|thai|vietnamese|indonesian|malay|hindi|off|none|auto|1080p?|720p?|480p?|360p?|16:9|4:3|cover|contain/i.test(
-        itemText
-      )
+      isSingleChoiceOption(item, popupBefore, menuOpener) ||
+      /subtitle|caption|quality|server|source|fit|aspect/i.test(openerText) ||
+      /english|filipino|tagalog|español|spanish|french|german|japanese|korean|chinese|italian|portuguese|russian|arabic|thai|vietnamese|indonesian|malay|hindi|off|none|auto|1080p?|720p?|480p?|360p?|16:9|4:3|cover|contain/i.test(itemText)
     );
     var before = selectionSignature(item);
     try { item.focus({ preventScroll: true }); } catch (_) {}
     item.click();
     pointerFallback(item);
-    debugLog('[DAITIGN TV Player] menu option click:', label(item));
+    debugLog('[DAITIGN TV Player] menu option click:', label(item), 'singleChoice=' + singleChoiceMenu);
+
     window.setTimeout(function () {
       if (visible(popupBefore) && popupBefore.contains(item) && selectionSignature(item) === before) pointerFallback(item);
       menuCandidatesDirty = true;
@@ -1398,10 +1676,23 @@
           debugLog('[DAITIGN TV Player] single-choice option activated; closing popup');
           dismissPopup(popupBefore);
           window.setTimeout(function () {
-            finishMenuClose();
+            if (visible(popupBefore)) {
+              try {
+                popupBefore.style.setProperty('display', 'none', 'important');
+                popupBefore.style.setProperty('visibility', 'hidden', 'important');
+              } catch (_) {}
+            }
+            window.setTimeout(function () {
+              if (!visible(popupBefore)) {
+                finishMenuClose();
+              } else {
+                syncMenu(0);
+              }
+            }, 30);
           }, 50);
           return;
         }
+
         if (visible(popupBefore)) {
           activePopup = popupBefore;
           clearIdleTimer();
@@ -1424,6 +1715,9 @@
     var openerKind = controlKind(selected);
     try { selected.focus({ preventScroll: true }); } catch (_) {}
     selected.click();
+    if (openerKind === 'skip-intro') {
+      try { pointerFallback(selected); } catch (_) {}
+    }
     candidatesDirty = true;
     menuCandidatesDirty = true;
     if (/subtitle|quality|server|settings|fit|volume|episode/.test(openerKind)) {
@@ -1431,6 +1725,17 @@
       notify(MENU);
       startMenuKeepAlive();
       syncMenu(0);
+    } else if (openerKind === 'skip-intro') {
+      registerUserActivity();
+      window.setTimeout(function () {
+        candidatesDirty = true;
+        var curCandidates = candidates(true);
+        if (selected && controlVisible(selected) && curCandidates.indexOf(selected) >= 0) {
+          registerUserActivity();
+        } else {
+          focusDefault(0);
+        }
+      }, 100);
     } else {
       window.setTimeout(function () {
         var popup = detectPopup();
@@ -1453,26 +1758,45 @@
     menuCandidateCache = [];
     menuCandidatesDirty = true;
     window.clearTimeout(menuSyncTimer);
-    if (visible(menuOpener)) setSelected(menuOpener, CONTROLS);
-    else focusDefault(0);
+    var openerToFocus = null;
+    if (menuOpener && controlVisible(menuOpener)) {
+      openerToFocus = menuOpener;
+    } else if (menuOpener) {
+      var k = controlKind(menuOpener);
+      var l = label(menuOpener);
+      var currentCandidates = candidates(true);
+      openerToFocus = currentCandidates.find(function (c) { return label(c) === l; }) ||
+                      currentCandidates.find(function (c) { return controlKind(c) === k; });
+    }
+    if (openerToFocus && controlVisible(openerToFocus)) {
+      setSelected(openerToFocus, CONTROLS);
+    } else {
+      focusDefault(0);
+    }
     registerUserActivity();
   }
 
   function closeMenu() {
-    if (state !== MENU) return false;
-    var popupBefore = activePopup;
+    if (state !== MENU && !detectPopup()) return false;
+    var popupBefore = activePopup || detectPopup();
     if (!popupBefore || !visible(popupBefore)) {
       finishMenuClose();
       return true;
     }
 
-    var close = findCloseButton(popupBefore) || discoverMenuItems(popupBefore, false).find(function (element) { return /close|back|done/.test(label(element)); });
+    var close = findCloseButton(popupBefore) || discoverMenuItems(popupBefore, false).find(function (element) { return /^(close|back|done)$/i.test(label(element)); });
     if (close) {
       try { close.click(); pointerFallback(close); } catch (_) {}
     }
     if (selected) dispatchKey(selected, 'Escape');
     dispatchKey(popupBefore, 'Escape');
     dispatchKey(document.body, 'Escape');
+    dispatchKey(document.documentElement, 'Escape');
+    var overlay = document.querySelector('[data-vaul-overlay], [data-slot*="drawer-overlay"], .art-mask, .art-layers');
+    if (overlay && visible(overlay)) {
+      try { pointerFallback(overlay); } catch (_) {}
+    }
+
     window.setTimeout(function () {
       if (!visible(popupBefore)) {
         finishMenuClose();
@@ -1484,17 +1808,26 @@
           finishMenuClose();
           return;
         }
-        // Keep PLAYER_MENU active when closing genuinely failed so Back can
-        // retry instead of accidentally hiding controls or exiting playback.
-        activePopup = popupBefore;
-        clearIdleTimer();
-        startMenuKeepAlive();
-        menuCandidatesDirty = true;
-        var items = discoverMenuItems(popupBefore, true);
-        if (items[0]) setSelected(items[0], MENU);
-        console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
-      }, 60);
-    }, 60);
+        try {
+          popupBefore.style.setProperty('display', 'none', 'important');
+          popupBefore.style.setProperty('visibility', 'hidden', 'important');
+          popupBefore.setAttribute('aria-hidden', 'true');
+        } catch (_) {}
+        window.setTimeout(function () {
+          if (!visible(popupBefore)) {
+            finishMenuClose();
+            return;
+          }
+          activePopup = popupBefore;
+          clearIdleTimer();
+          startMenuKeepAlive();
+          menuCandidatesDirty = true;
+          var items = discoverMenuItems(popupBefore, true);
+          if (items[0]) setSelected(items[0], MENU);
+          console.warn('[DAITIGN TV Player] popup remains open; Back will retry close');
+        }, 40);
+      }, 50);
+    }, 50);
     return true;
   }
 
@@ -1533,7 +1866,12 @@
   });
 
   window.DAITIGN_TV_PLAYER = {
-    getState: function () { return state; },
+    getState: function () {
+      if (state === MENU && (!activePopup || !visible(activePopup))) {
+        finishMenuClose();
+      }
+      return state;
+    },
     activity: registerUserActivity,
     ensureVisible: function () {
       if (state === HIDDEN || !selected || !controlVisible(selected)) {
@@ -1553,6 +1891,16 @@
             closeSeasonDropdown(seasonDropdown);
             return true;
           }
+          if (activePopup && visible(activePopup)) {
+            var backBtn = findSubmenuBackButton(activePopup);
+            if (backBtn && visible(backBtn)) {
+              try { backBtn.click(); pointerFallback(backBtn); } catch (_) {}
+              window.setTimeout(function () {
+                syncMenu(0);
+              }, 60);
+              return true;
+            }
+          }
         }
         if (state === MENU) { closeMenu(); return true; }
         if (state === TIMELINE) {
@@ -1562,7 +1910,15 @@
           registerUserActivity();
           return true;
         }
-        if (state !== HIDDEN) { hideControls(); return true; }
+        if (state !== HIDDEN) {
+          var remainingPopup = detectPopup();
+          if (remainingPopup && visible(remainingPopup)) {
+            closeMenu();
+            return true;
+          }
+          hideControls();
+          return true;
+        }
         return false;
       }
       var wasHidden = (state === HIDDEN || !selected || !controlVisible(selected));
@@ -1595,6 +1951,21 @@
           dispatchKey(selected, key === 'LEFT' ? 'ArrowLeft' : 'ArrowRight');
           registerUserActivity();
           return true;
+        }
+        if (key === 'RIGHT') {
+          if (selected && (selected.getAttribute('aria-haspopup') === 'true' || />|›|→/.test(selected.textContent || ''))) {
+            activateMenuItem();
+            return true;
+          }
+        }
+        if (key === 'LEFT') {
+          var backBtn = findSubmenuBackButton(activePopup);
+          if (backBtn && visible(backBtn)) {
+            try { backBtn.click(); pointerFallback(backBtn); } catch (_) {}
+            dispatchKey(activePopup, 'Escape');
+            window.setTimeout(function () { syncMenu(0); }, 60);
+            return true;
+          }
         }
         if (key === 'OK') { activateMenuItem(); return true; }
         return true;
